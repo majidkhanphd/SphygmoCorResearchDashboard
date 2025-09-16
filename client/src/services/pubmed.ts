@@ -29,6 +29,7 @@ export async function searchPublications(params: {
   query?: string;
   categories?: string[];
   researchArea?: string;
+  venue?: string;
   year?: number;
   sortBy?: string;
   limit?: number;
@@ -39,6 +40,7 @@ export async function searchPublications(params: {
   if (params.query) searchParams.append("query", params.query);
   if (params.categories) searchParams.append("categories", params.categories.join(","));
   if (params.researchArea) searchParams.append("researchArea", params.researchArea);
+  if (params.venue) searchParams.append("venue", params.venue);
   if (params.year) searchParams.append("year", params.year.toString());
   if (params.sortBy) searchParams.append("sortBy", params.sortBy);
   if (params.limit) searchParams.append("limit", params.limit.toString());

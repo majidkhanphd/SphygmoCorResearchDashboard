@@ -48,6 +48,7 @@ export const searchPublicationsSchema = z.object({
   query: z.string().optional(),
   categories: z.array(z.string()).optional(),
   researchArea: z.string().optional(),
+  venue: z.string().optional(), // Filter by journal/venue
   year: z.number().optional(),
   sortBy: z.enum(["newest", "oldest", "citations", "impact"]).default("newest"),
   limit: z.number().default(20),

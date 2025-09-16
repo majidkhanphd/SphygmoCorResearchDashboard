@@ -111,6 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         query: req.query.query,
         categories: req.query.categories ? String(req.query.categories).split(",") : undefined,
         researchArea: req.query.researchArea ? String(req.query.researchArea) : undefined,
+        venue: req.query.venue ? String(req.query.venue) : undefined,
         year: req.query.year ? parseInt(String(req.query.year)) : undefined,
         sortBy: req.query.sortBy || "newest",
         limit: req.query.limit ? parseInt(String(req.query.limit)) : 20,

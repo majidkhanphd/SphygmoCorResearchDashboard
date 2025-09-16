@@ -124,6 +124,13 @@ export class MemStorage implements IStorage {
       );
     }
 
+    // Filter by venue (journal)
+    if (params.venue) {
+      filtered = filtered.filter(pub => 
+        pub.journal === params.venue
+      );
+    }
+
     // Filter by year
     if (params.year) {
       filtered = filtered.filter(pub => 
