@@ -36,7 +36,7 @@ export default function FeaturedResearch() {
             <h2 className="text-3xl font-bold text-foreground mb-4">Featured Research</h2>
             <p className="text-muted-foreground">Latest breakthrough studies using SphygmoCor technology</p>
           </div>
-          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-8">
+          <div className="bg-card border border-border rounded-2xl p-8">
             <p className="text-center text-muted-foreground">No featured publications available yet.</p>
           </div>
         </div>
@@ -52,12 +52,12 @@ export default function FeaturedResearch() {
           <p className="text-muted-foreground">Latest breakthrough studies using SphygmoCor technology</p>
         </div>
         
-        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-8 mb-8">
+        <div className="bg-card border border-border rounded-2xl p-8 mb-8">
           <div className="flex flex-col lg:flex-row items-start gap-8">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-4">
                 {featuredArticle.categories?.map((category: string, index: number) => (
-                  <Badge key={index} variant="default" data-testid={`category-badge-${index}`}>
+                  <Badge key={index} variant="secondary" data-testid={`category-badge-${index}`}>
                     {category}
                   </Badge>
                 ))}
@@ -81,7 +81,7 @@ export default function FeaturedResearch() {
                   </p>
                 </div>
                 <Button 
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  variant="default"
                   onClick={() => window.open(featuredArticle.pubmedUrl || featuredArticle.doi, '_blank')}
                   data-testid="read-paper-button"
                 >

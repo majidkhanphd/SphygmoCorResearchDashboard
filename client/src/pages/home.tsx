@@ -191,15 +191,14 @@ export default function Home() {
       {/* PubMed Integration Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 text-center text-white">
-            <h2 className="text-3xl font-bold mb-4">PubMed Integration</h2>
-            <p className="text-lg mb-8 opacity-90">
+          <div className="bg-card border border-border rounded-2xl p-8 text-center">
+            <h2 className="text-3xl font-bold mb-4 text-foreground">PubMed Integration</h2>
+            <p className="text-lg mb-8 text-muted-foreground">
               Automatically sync and categorize SphygmoCor research papers from PubMed database
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
-                variant="secondary"
-                className="bg-white text-primary hover:bg-gray-100"
+                variant="default"
                 data-testid="sync-publications-button"
                 onClick={handleSyncPublications}
                 disabled={syncPublicationsMutation.isPending}
@@ -211,7 +210,6 @@ export default function Home() {
               </Button>
               <Button 
                 variant="outline"
-                className="border-white/30 text-white hover:bg-white/10"
                 data-testid="api-settings-button"
               >
                 <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
