@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import Navigation from "@/components/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,65 +17,76 @@ export default function Home() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [showAllAreas, setShowAllAreas] = useState(false);
   const [showAllVenues, setShowAllVenues] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
   const limit = 50;
 
-  const { data, isLoading } = useQuery({
+  const { 
+    data, 
+    isLoading, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage 
+  } = useInfiniteQuery({
     queryKey: ["/api/publications/search", { 
       query: searchQuery || undefined, 
       researchArea: selectedResearchArea || undefined,
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy: "newest",
-      limit,
-      offset: currentPage * limit
+      limit
     }],
-    queryFn: () => searchPublications({
+    queryFn: ({ pageParam = 0 }) => searchPublications({
       query: searchQuery || undefined,
       researchArea: selectedResearchArea || undefined,
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy: "newest",
       limit,
-      offset: currentPage * limit
+      offset: pageParam * limit
     }),
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage.publications || lastPage.publications.length < limit) {
+        return undefined;
+      }
+      return allPages.length;
+    },
+    initialPageParam: 0
   });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchQuery(inputValue);
-    setCurrentPage(0);
   };
 
   const handleReset = () => {
     setInputValue("");
     setSearchQuery("");
-    setCurrentPage(0);
   };
 
   const handleResearchAreaChange = (area: string | null) => {
     setSelectedResearchArea(area);
-    setCurrentPage(0);
   };
 
   const handleVenueChange = (venue: string | null) => {
     setSelectedVenue(venue);
-    setCurrentPage(0);
   };
 
   const handleYearChange = (year: number | null) => {
     setSelectedYear(year);
-    setCurrentPage(0);
   };
 
   const loadMore = () => {
-    setCurrentPage(prev => prev + 1);
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
   };
 
+  // Flatten all publications from all pages
+  const allPublications = data?.pages.flatMap(page => page.publications) || [];
+  
   // Get unique venues from publications
-  const venues = data?.publications 
+  const venues = allPublications.length > 0 
     ? Array.from(new Set(
-        data.publications
+        allPublications
           .map((p: any) => p.journal)
           .filter((journal: any): journal is string => typeof journal === 'string' && journal.length > 0)
       )).sort() as string[]
@@ -274,14 +285,14 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-            ) : data?.publications?.length === 0 ? (
+            ) : allPublications?.length === 0 ? (
               <div className="py-12">
                 <p className="text-muted-foreground text-lg">No publications found matching your criteria.</p>
                 <p className="text-muted-foreground mt-2">Try adjusting your filters or search terms.</p>
               </div>
             ) : (
               <div className="space-y-8">
-                {data?.publications?.map((publication: Publication) => {
+                {allPublications?.map((publication: Publication) => {
                   const publicationYear = new Date(publication.publicationDate).getFullYear();
                   const displayArea = getResearchAreaDisplayName(publication.researchArea);
                   
@@ -328,15 +339,16 @@ export default function Home() {
                 })}
                 
                 {/* Load more button */}
-                {data?.publications && data.publications.length < data.total && (
+                {hasNextPage && (
                   <div className="pt-8">
                     <Button 
                       variant="outline"
                       onClick={loadMore}
+                      disabled={isFetchingNextPage}
                       className="text-primary border-primary hover:bg-primary/5"
                       data-testid="load-more-button"
                     >
-                      Load more
+                      {isFetchingNextPage ? "Loading..." : "Load more"}
                     </Button>
                   </div>
                 )}
