@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Navigation from "@/components/navigation";
 import HeroSection from "@/components/hero-section";
 import FeaturedResearch from "@/components/featured-research";
@@ -9,7 +9,8 @@ import ResearchStatistics from "@/components/research-statistics";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { searchPublications } from "@/services/pubmed";
+import { searchPublications, searchPubMed } from "@/services/pubmed";
+import { useToast } from "@/hooks/use-toast";
 import type { Publication } from "@shared/schema";
 
 export default function Home() {
@@ -19,6 +20,35 @@ export default function Home() {
   const [sortBy, setSortBy] = useState("newest");
   const [currentPage, setCurrentPage] = useState(0);
   const limit = 20;
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Mutation for sync publications button
+  const syncPublicationsMutation = useMutation({
+    mutationFn: () => searchPubMed("SphygmoCor cardiovascular", 30),
+    onSuccess: (data) => {
+      toast({
+        title: "Sync Successful",
+        description: `${data.message} - ${data.imported} new publications imported.`,
+      });
+      // Invalidate all publication-related queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["/api/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/featured"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Sync Failed",
+        description: "Failed to sync publications from PubMed. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleSyncPublications = () => {
+    syncPublicationsMutation.mutate();
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["/api/publications/search", { 
@@ -153,11 +183,13 @@ export default function Home() {
                 variant="secondary"
                 className="bg-white text-primary hover:bg-gray-100"
                 data-testid="sync-publications-button"
+                onClick={handleSyncPublications}
+                disabled={syncPublicationsMutation.isPending}
               >
                 <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Sync Publications
+                {syncPublicationsMutation.isPending ? "Syncing..." : "Sync Publications"}
               </Button>
               <Button 
                 variant="outline"

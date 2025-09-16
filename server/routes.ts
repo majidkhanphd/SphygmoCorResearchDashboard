@@ -5,6 +5,68 @@ import { insertPublicationSchema, searchPublicationsSchema } from "@shared/schem
 import { z } from "zod";
 import { XMLParser } from "fast-xml-parser";
 
+// Helper to normalize XML text from fast-xml-parser
+function normalizeXmlText(value: any): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(normalizeXmlText).join(' ');
+  }
+  if (typeof value === 'object' && value !== null) {
+    if (value['#text']) {
+      return normalizeXmlText(value['#text']);
+    }
+    // Ignore attributes starting with @_ and collect other values
+    const textValues = Object.keys(value)
+      .filter(key => !key.startsWith('@_'))
+      .map(key => normalizeXmlText(value[key]))
+      .filter(text => text.trim().length > 0);
+    return textValues.join(' ');
+  }
+  return '';
+}
+
+// Helper to format abstract sections
+function formatAbstract(abstractData: any): string {
+  if (!abstractData) return '';
+  
+  if (typeof abstractData === 'string') {
+    return abstractData;
+  }
+  
+  if (Array.isArray(abstractData)) {
+    return abstractData.map(section => {
+      const label = section['@_Label'] || section['@_NlmCategory'] || '';
+      const text = normalizeXmlText(section);
+      return label ? `${label}: ${text}` : text;
+    }).join('\n\n');
+  }
+  
+  return normalizeXmlText(abstractData);
+}
+
+// Helper to parse PubMed dates
+function parsePubMedDate(pubDate: any): Date {
+  const year = parseInt(normalizeXmlText(pubDate?.Year) || new Date().getFullYear().toString());
+  const monthStr = normalizeXmlText(pubDate?.Month) || '1';
+  const day = parseInt(normalizeXmlText(pubDate?.Day) || '1');
+  
+  // Map PubMed month strings to numbers
+  const monthMap: Record<string, number> = {
+    'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+    'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+  };
+  
+  let month = monthMap[monthStr] || parseInt(monthStr) || 1;
+  if (month < 1 || month > 12) month = 1;
+  
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 // PubMed API configuration
 const PUBMED_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 
@@ -158,32 +220,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const existing = await storage.getPublicationByPmid(String(pmid));
           if (existing) continue;
 
-          const title = article?.MedlineCitation?.Article?.ArticleTitle || "";
-          const abstract = article?.MedlineCitation?.Article?.Abstract?.AbstractText || "";
-          const journal = article?.MedlineCitation?.Article?.Journal?.Title || "";
+          const title = normalizeXmlText(article?.MedlineCitation?.Article?.ArticleTitle) || "";
+          const abstract = formatAbstract(article?.MedlineCitation?.Article?.Abstract?.AbstractText) || "";
+          const journal = normalizeXmlText(article?.MedlineCitation?.Article?.Journal?.Title) || "";
           
           // Extract authors
           const authorList = article?.MedlineCitation?.Article?.AuthorList?.Author || [];
           const authorsArray = Array.isArray(authorList) ? authorList : [authorList];
           const authors = authorsArray.map((author: any) => {
-            const lastName = author?.LastName || "";
-            const foreName = author?.ForeName || "";
+            const lastName = normalizeXmlText(author?.LastName) || "";
+            const foreName = normalizeXmlText(author?.ForeName) || "";
             return `${foreName} ${lastName}`.trim();
           }).filter(name => name).join(", ");
 
           // Extract publication date
           const pubDate = article?.MedlineCitation?.Article?.Journal?.JournalIssue?.PubDate;
-          const year = pubDate?.Year || new Date().getFullYear().toString();
-          const month = pubDate?.Month || "1";
-          const day = pubDate?.Day || "1";
-          
-          const publicationDate = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
+          const publicationDate = parsePubMedDate(pubDate);
 
           // Extract DOI
           const eLocationIDs = article?.PubmedData?.ArticleIdList?.ArticleId || [];
           const eLocationArray = Array.isArray(eLocationIDs) ? eLocationIDs : [eLocationIDs];
           const doiObj = eLocationArray.find((id: any) => id?.['@_IdType'] === 'doi');
-          const doi = doiObj?.['#text'] || doiObj || "";
+          const doi = normalizeXmlText(doiObj?.['#text'] || doiObj) || "";
 
           // Auto-categorize based on keywords and abstract
           const categories = await autoCategorizePublication(title, abstract);
