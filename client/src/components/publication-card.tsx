@@ -1,25 +1,9 @@
-import { Bookmark, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import type { Publication } from "@shared/schema";
+import { getResearchAreaDisplayName } from "@shared/schema";
 
 interface PublicationCardProps {
   publication: Publication;
 }
-
-const categoryColors: Record<string, string> = {
-  "Chronic Kidney Disease (CKD)": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  "Chronic Obstructive Pulmonary Disease (COPD)": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  "Early Vascular Aging (EVA)": "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  "Heart Failure": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
-  "Hypertension": "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-  "Longevity": "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
-  "Maternal Health": "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-  "Men's Health": "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
-  "Metabolic Health": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  "Neuroscience": "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-  "Women's Health": "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
-};
 
 export default function PublicationCard({ publication }: PublicationCardProps) {
   const handleViewPaper = () => {
@@ -29,69 +13,66 @@ export default function PublicationCard({ publication }: PublicationCardProps) {
     }
   };
 
+  const formatYear = (date: Date | string) => {
+    return new Date(date).getFullYear();
+  };
+
+  // Create metadata line: Research Area • Journal • Year
+  const metadata = [
+    getResearchAreaDisplayName(publication.researchArea) || (publication.categories && publication.categories[0]),
+    publication.journal,
+    formatYear(publication.publicationDate)
+  ].filter(Boolean).join(' • ');
+
   return (
-    <div className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-all hover:-translate-y-1" data-testid={`publication-card-${publication.id}`}>
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex gap-2 flex-wrap">
-          {publication.categories?.map((category, index) => (
-            <Badge 
-              key={index} 
-              variant="secondary"
-              className={categoryColors[category] || "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"}
-              data-testid={`category-${index}`}
-            >
-              {category}
-            </Badge>
-          ))}
-        </div>
-        <span className="text-sm text-muted-foreground whitespace-nowrap" data-testid="publication-date">
-          {new Date(publication.publicationDate).toLocaleDateString()}
-        </span>
-      </div>
-      
-      <h3 className="text-xl font-semibold text-foreground mb-3 hover:text-primary cursor-pointer" data-testid="publication-title">
+    <article className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-gray-900/50 transition-all duration-300 group" data-testid={`publication-card-${publication.id}`}>
+      {/* Title */}
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" data-testid="publication-title">
         {publication.title}
       </h3>
       
-      <p className="text-muted-foreground mb-4 line-clamp-3" data-testid="publication-abstract">
+      {/* Abstract */}
+      <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6 line-clamp-3" data-testid="publication-abstract">
         {publication.abstract || "No abstract available."}
       </p>
       
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-foreground truncate" data-testid="publication-authors">
-            {publication.authors}
-          </p>
-          <p className="text-sm text-muted-foreground truncate" data-testid="publication-journal">
-            {publication.journal}
-          </p>
-          {publication.citationCount && publication.citationCount > 0 && (
-            <p className="text-xs text-muted-foreground mt-1" data-testid="citation-count">
-              {publication.citationCount} citations
-            </p>
-          )}
-        </div>
+      {/* Metadata */}
+      <div className="space-y-3">
+        <p className="text-xs text-gray-500 dark:text-gray-500 font-medium uppercase tracking-wide" data-testid="publication-metadata">
+          {metadata}
+        </p>
         
-        <div className="flex gap-2 ml-4">
-          <Button 
-            variant="outline" 
-            size="sm"
-            data-testid="save-button"
-          >
-            <Bookmark className="h-4 w-4 mr-1" />
-            Save
-          </Button>
-          <Button 
-            size="sm"
+        {/* Authors */}
+        <p className="text-sm text-gray-700 dark:text-gray-300 truncate" data-testid="publication-authors">
+          {publication.authors}
+        </p>
+        
+        {/* Citation count */}
+        {publication.citationCount && publication.citationCount > 0 && (
+          <p className="text-xs text-gray-500 dark:text-gray-500" data-testid="citation-count">
+            {publication.citationCount} citations
+          </p>
+        )}
+        
+        {/* Read paper link */}
+        {(publication.pubmedUrl || publication.doi) && (
+          <button 
             onClick={handleViewPaper}
-            disabled={!publication.pubmedUrl && !publication.doi}
+            className="text-blue-600 dark:text-blue-400 text-sm font-medium hover:text-blue-700 dark:hover:text-blue-300 transition-colors mt-4 inline-flex items-center group/link"
             data-testid="view-button"
           >
-            <ExternalLink className="h-4 w-4 mr-1" />
-            View
-          </Button>
-        </div>
+            Read paper
+            <svg 
+              className="ml-1 h-3 w-3 transition-transform group-hover/link:translate-x-0.5" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </button>
+        )}
       </div>
-    </div>
+    </article>
   );
 }

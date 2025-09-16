@@ -55,3 +55,19 @@ export const searchPublicationsSchema = z.object({
 });
 
 export type SearchPublicationsParams = z.infer<typeof searchPublicationsSchema>;
+
+// Research area slug to display name mapping
+export const RESEARCH_AREA_DISPLAY_NAMES: Record<string, string> = {
+  "biomedical-engineering": "Biomedical Engineering",
+  "computer-vision": "Computer Vision",
+  "data-analysis": "Data Analysis",
+  "methods-algorithms": "Methods and Algorithms",
+  "nlp": "Natural Language Processing",
+  "health-medical": "Health and Medical Research"
+};
+
+// Utility function to get display name from research area slug
+export const getResearchAreaDisplayName = (slug: string | null | undefined): string | null => {
+  if (!slug) return null;
+  return RESEARCH_AREA_DISPLAY_NAMES[slug] || slug;
+};

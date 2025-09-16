@@ -152,9 +152,9 @@ export default function Home() {
               </div>
 
               {isLoading ? (
-                <div className="space-y-6">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-48 w-full rounded-lg" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <Skeleton key={i} className="h-80 w-full rounded-2xl" />
                   ))}
                 </div>
               ) : data?.publications?.length === 0 ? (
@@ -163,22 +163,22 @@ export default function Home() {
                   <p className="text-muted-foreground mt-2">Try adjusting your filters or search terms.</p>
                 </div>
               ) : (
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {data?.publications?.map((publication: Publication) => (
                     <PublicationCard key={publication.id} publication={publication} />
                   ))}
-                  
-                  {data?.publications && data.publications.length < data.total && (
-                    <div className="text-center mt-12">
-                      <Button 
-                        variant="secondary"
-                        onClick={loadMore}
-                        data-testid="load-more-button"
-                      >
-                        Load More Publications
-                      </Button>
-                    </div>
-                  )}
+                </div>
+              )}
+              
+              {data?.publications && data.publications.length < data.total && (
+                <div className="text-center mt-12">
+                  <Button 
+                    variant="secondary"
+                    onClick={loadMore}
+                    data-testid="load-more-button"
+                  >
+                    Load More Publications
+                  </Button>
                 </div>
               )}
             </div>
