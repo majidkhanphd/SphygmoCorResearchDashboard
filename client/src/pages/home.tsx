@@ -4,7 +4,7 @@ import Navigation from "@/components/navigation";
 import HeroSection from "@/components/hero-section";
 import FeaturedResearch from "@/components/featured-research";
 import PublicationCard from "@/components/publication-card";
-import SidebarFilters from "@/components/sidebar-filters";
+import ResearchAreasGrid from "@/components/research-areas-grid";
 import ResearchStatistics from "@/components/research-statistics";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,7 +15,7 @@ import type { Publication } from "@shared/schema";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedResearchArea, setSelectedResearchArea] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState("newest");
   const [currentPage, setCurrentPage] = useState(0);
@@ -53,7 +53,7 @@ export default function Home() {
   const { data, isLoading } = useQuery({
     queryKey: ["/api/publications/search", { 
       query: searchQuery || undefined, 
-      categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+      researchArea: selectedResearchArea || undefined,
       year: selectedYear || undefined,
       sortBy,
       limit,
@@ -61,7 +61,7 @@ export default function Home() {
     }],
     queryFn: () => searchPublications({
       query: searchQuery || undefined,
-      categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+      researchArea: selectedResearchArea || undefined,
       year: selectedYear || undefined,
       sortBy,
       limit,
@@ -74,8 +74,8 @@ export default function Home() {
     setCurrentPage(0);
   };
 
-  const handleCategoryChange = (categories: string[]) => {
-    setSelectedCategories(categories);
+  const handleResearchAreaChange = (area: string | null) => {
+    setSelectedResearchArea(area);
     setCurrentPage(0);
   };
 
@@ -99,15 +99,33 @@ export default function Home() {
       <HeroSection />
       <FeaturedResearch />
       
+      <ResearchAreasGrid
+        selectedArea={selectedResearchArea}
+        onAreaChange={handleResearchAreaChange}
+      />
+      
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row gap-8">
-            <SidebarFilters
-              selectedCategories={selectedCategories}
-              selectedYear={selectedYear}
-              onCategoryChange={handleCategoryChange}
-              onYearChange={handleYearChange}
-            />
+          <div className="flex flex-col gap-8">
+            <div className="flex justify-center">
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">Year Filter:</span>
+                <Select value={selectedYear?.toString() || "all"} onValueChange={(value) => handleYearChange(value === "all" ? null : parseInt(value))}>
+                  <SelectTrigger className="w-40" data-testid="year-filter-select">
+                    <SelectValue placeholder="All Years" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Years</SelectItem>
+                    {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="earlier">Earlier</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
             <div className="flex-1">
               <div className="flex items-center justify-between mb-8">

@@ -321,40 +321,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function autoAssignResearchArea(title: string, abstract: string): string {
     const text = `${title} ${abstract}`.toLowerCase();
 
-    // Research area keyword mapping for Apple ML-style organization
+    // Research area keyword mapping using slug identifiers that match the frontend grid
     const researchAreaKeywords = {
-      "Biomedical Engineering": [
+      "biomedical-engineering": [
         "sphygmocor", "device", "measurement", "sensor", "monitoring", "pulse wave", 
         "arterial stiffness", "cardiac output", "hemodynamic", "medical device", "instrumentation"
       ],
-      "Computer Vision": [
+      "computer-vision": [
         "imaging", "image analysis", "medical imaging", "ultrasound", "echocardiography", 
         "radiological", "visual", "scan", "ct", "mri", "x-ray"
       ],
-      "Data Analysis": [
+      "data-analysis": [
         "statistical", "analysis", "regression", "correlation", "predictive", "model", 
         "data mining", "epidemiological", "cohort", "longitudinal", "cross-sectional", 
         "meta-analysis", "systematic review"
       ],
-      "Methods and Algorithms": [
+      "methods-algorithms": [
         "algorithm", "method", "methodology", "technique", "approach", "framework", 
         "protocol", "procedure", "validation", "comparison", "novel", "new method"
       ],
-      "Natural Language Processing": [
+      "nlp": [
         "text analysis", "natural language", "nlp", "text mining", "literature review", 
         "semantic", "linguistic", "information extraction"
       ]
     };
 
     // Check for specific research area keywords (order matters - more specific first)
-    for (const [areaName, keywords] of Object.entries(researchAreaKeywords)) {
+    for (const [areaSlug, keywords] of Object.entries(researchAreaKeywords)) {
       if (keywords.some(keyword => text.includes(keyword))) {
-        return areaName;
+        return areaSlug;
       }
     }
 
-    // Default to Health and Medical Research for general medical content
-    return "Health and Medical Research";
+    // Default to health-medical slug for general medical content
+    return "health-medical";
   }
 
   const httpServer = createServer(app);
