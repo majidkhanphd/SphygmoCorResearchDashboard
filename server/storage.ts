@@ -117,6 +117,13 @@ export class MemStorage implements IStorage {
       );
     }
 
+    // Filter by research area
+    if (params.researchArea) {
+      filtered = filtered.filter(pub => 
+        pub.researchArea === params.researchArea
+      );
+    }
+
     // Filter by year
     if (params.year) {
       filtered = filtered.filter(pub => 

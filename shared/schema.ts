@@ -14,6 +14,7 @@ export const publications = pgTable("publications", {
   doi: varchar("doi"),
   categories: json("categories").$type<string[]>().default([]),
   keywords: json("keywords").$type<string[]>().default([]),
+  researchArea: text("research_area"), // Apple ML-style research areas
   citationCount: integer("citation_count").default(0),
   isFeatured: integer("is_featured").default(0), // 0 or 1 for boolean
   pubmedUrl: text("pubmed_url"),
@@ -46,6 +47,7 @@ export type Category = typeof categories.$inferSelect;
 export const searchPublicationsSchema = z.object({
   query: z.string().optional(),
   categories: z.array(z.string()).optional(),
+  researchArea: z.string().optional(),
   year: z.number().optional(),
   sortBy: z.enum(["newest", "oldest", "citations", "impact"]).default("newest"),
   limit: z.number().default(20),

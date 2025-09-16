@@ -110,6 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const params = searchPublicationsSchema.parse({
         query: req.query.query,
         categories: req.query.categories ? String(req.query.categories).split(",") : undefined,
+        researchArea: req.query.researchArea ? String(req.query.researchArea) : undefined,
         year: req.query.year ? parseInt(String(req.query.year)) : undefined,
         sortBy: req.query.sortBy || "newest",
         limit: req.query.limit ? parseInt(String(req.query.limit)) : 20,
@@ -245,6 +246,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Auto-categorize based on keywords and abstract
           const categories = await autoCategorizePublication(title, abstract);
+          
+          // Auto-assign research area based on content
+          const researchArea = autoAssignResearchArea(title, abstract);
 
           const publicationData = {
             pmid,
@@ -256,6 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             doi,
             categories,
             keywords: [],
+            researchArea,
             pubmedUrl: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
             citationCount: 0,
             isFeatured: 0,
@@ -310,6 +315,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     return matchedCategories;
+  }
+
+  // Auto-assign research area helper function
+  function autoAssignResearchArea(title: string, abstract: string): string {
+    const text = `${title} ${abstract}`.toLowerCase();
+
+    // Research area keyword mapping for Apple ML-style organization
+    const researchAreaKeywords = {
+      "Biomedical Engineering": [
+        "sphygmocor", "device", "measurement", "sensor", "monitoring", "pulse wave", 
+        "arterial stiffness", "cardiac output", "hemodynamic", "medical device", "instrumentation"
+      ],
+      "Computer Vision": [
+        "imaging", "image analysis", "medical imaging", "ultrasound", "echocardiography", 
+        "radiological", "visual", "scan", "ct", "mri", "x-ray"
+      ],
+      "Data Analysis": [
+        "statistical", "analysis", "regression", "correlation", "predictive", "model", 
+        "data mining", "epidemiological", "cohort", "longitudinal", "cross-sectional", 
+        "meta-analysis", "systematic review"
+      ],
+      "Methods and Algorithms": [
+        "algorithm", "method", "methodology", "technique", "approach", "framework", 
+        "protocol", "procedure", "validation", "comparison", "novel", "new method"
+      ],
+      "Natural Language Processing": [
+        "text analysis", "natural language", "nlp", "text mining", "literature review", 
+        "semantic", "linguistic", "information extraction"
+      ]
+    };
+
+    // Check for specific research area keywords (order matters - more specific first)
+    for (const [areaName, keywords] of Object.entries(researchAreaKeywords)) {
+      if (keywords.some(keyword => text.includes(keyword))) {
+        return areaName;
+      }
+    }
+
+    // Default to Health and Medical Research for general medical content
+    return "Health and Medical Research";
   }
 
   const httpServer = createServer(app);
