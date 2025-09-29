@@ -136,28 +136,57 @@ export default function Home() {
           </p>
         </div>
         
-        {/* Search bar */}
-        <form onSubmit={handleSearch} className="mb-12">
-          <div className="relative max-w-2xl">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-muted-foreground" />
+        {/* Search bar - Apple style */}
+        <form onSubmit={handleSearch} style={{ marginBottom: '48px' }}>
+          <div className="relative max-w-2xl" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+            <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none" style={{ paddingLeft: '16px' }}>
+              <Search className="h-5 w-5" style={{ color: '#6E6E73' }} />
             </div>
-            <Input
+            <input
               type="text"
               placeholder="Search publications"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              className="pl-10 pr-10 py-3 text-base border-border focus:border-primary"
+              className="w-full rounded-xl transition-all duration-200 ease-in-out"
+              style={{
+                paddingLeft: '48px',
+                paddingRight: inputValue ? '48px' : '16px',
+                paddingTop: '12px',
+                paddingBottom: '12px',
+                fontSize: '17px',
+                fontWeight: '400',
+                lineHeight: '1.4',
+                color: '#1D1D1F',
+                backgroundColor: '#F6F6F6',
+                border: '1px solid #E5E5E7',
+                outline: 'none'
+              }}
+              onFocus={(e) => {
+                e.target.style.backgroundColor = '#FFFFFF';
+                e.target.style.borderColor = '#007AFF';
+                e.target.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.backgroundColor = '#F6F6F6';
+                e.target.style.borderColor = '#E5E5E7';
+                e.target.style.boxShadow = 'none';
+              }}
               data-testid="search-input"
             />
             {inputValue && (
               <button
                 type="button"
                 onClick={handleReset}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                className="absolute inset-y-0 right-0 flex items-center transition-colors duration-200"
+                style={{ paddingRight: '16px' }}
                 data-testid="reset-button"
               >
-                <X className="h-5 w-5 text-muted-foreground hover:text-foreground" />
+                <X 
+                  className="h-5 w-5" 
+                  style={{ color: '#6E6E73' }}
+                  onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
+                  onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#6E6E73'}
+                />
               </button>
             )}
           </div>
@@ -378,83 +407,128 @@ export default function Home() {
             </div>
           </div>
           
-          {/* Main content area */}
-          <div className="flex-1">
+          {/* Main content area - Apple typography */}
+          <div className="flex-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
             {isLoading ? (
-              <div className="space-y-8">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                 {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className="space-y-2">
-                    <div className="h-6 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-1/2"></div>
-                    <div className="h-4 bg-muted rounded w-2/3"></div>
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div className="h-6 rounded" style={{ backgroundColor: '#F6F6F6', width: '75%' }}></div>
+                    <div className="h-4 rounded" style={{ backgroundColor: '#F6F6F6', width: '50%' }}></div>
+                    <div className="h-4 rounded" style={{ backgroundColor: '#F6F6F6', width: '66%' }}></div>
                   </div>
                 ))}
               </div>
             ) : allPublications?.length === 0 ? (
-              <div className="py-12">
-                <p className="text-muted-foreground text-lg">No publications found matching your criteria.</p>
-                <p className="text-muted-foreground mt-2">Try adjusting your filters or search terms.</p>
+              <div style={{ paddingTop: '48px', paddingBottom: '48px' }}>
+                <p style={{ color: '#6E6E73', fontSize: '18px', fontWeight: '400', lineHeight: '1.4', marginBottom: '8px' }}>
+                  No publications found matching your criteria.
+                </p>
+                <p style={{ color: '#6E6E73', fontSize: '16px', fontWeight: '400', lineHeight: '1.4' }}>
+                  Try adjusting your filters or search terms.
+                </p>
               </div>
             ) : (
-              <div className="space-y-8">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                 {allPublications?.map((publication: Publication) => {
                   const publicationYear = new Date(publication.publicationDate).getFullYear();
                   const displayArea = getResearchAreaDisplayName(publication.researchArea);
                   
                   return (
-                    <article key={publication.id} className="space-y-2" data-testid={`publication-${publication.id}`}>
-                      {/* Title */}
-                      <h2 className="text-xl font-medium text-foreground leading-tight">
+                    <article key={publication.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }} data-testid={`publication-${publication.id}`}>
+                      {/* Title - Apple typography */}
+                      <h2 style={{ fontSize: '20px', fontWeight: '500', lineHeight: '1.25', color: '#1D1D1F', marginBottom: '4px' }}>
                         <a 
                           href={publication.pubmedUrl || publication.doi || '#'}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="hover:text-primary transition-colors"
+                          className="transition-colors duration-200"
+                          style={{ color: '#1D1D1F', textDecoration: 'none' }}
+                          onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#007AFF'}
+                          onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
                           data-testid="publication-title-link"
                         >
                           {publication.title}
                         </a>
                       </h2>
                       
-                      {/* Research area tags */}
+                      {/* Research area tags - Apple style */}
                       {displayArea && (
-                        <div className="flex flex-wrap gap-2">
-                          <Badge 
-                            variant="secondary" 
-                            className="text-xs font-normal cursor-pointer hover:bg-primary/10"
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '4px' }}>
+                          <button
                             onClick={() => handleResearchAreaChange(publication.researchArea)}
+                            className="inline-flex items-center rounded-full cursor-pointer transition-colors duration-200"
+                            style={{
+                              paddingLeft: '12px',
+                              paddingRight: '12px',
+                              paddingTop: '4px',
+                              paddingBottom: '4px',
+                              fontSize: '12px',
+                              fontWeight: '400',
+                              color: '#007AFF',
+                              backgroundColor: '#F0F7FF',
+                              border: '1px solid #007AFF20',
+                              outline: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#E0F0FF';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#F0F7FF';
+                            }}
                             data-testid="research-area-tag"
                           >
                             {displayArea}
-                          </Badge>
+                          </button>
                         </div>
                       )}
                       
-                      {/* Venue and year */}
-                      <p className="text-sm text-muted-foreground" data-testid="publication-venue">
+                      {/* Venue and year - Apple secondary text */}
+                      <p style={{ fontSize: '14px', fontWeight: '400', lineHeight: '1.4', color: '#6E6E73', marginBottom: '2px' }} data-testid="publication-venue">
                         {publication.journal}, {publicationYear}
                       </p>
                       
-                      {/* Authors */}
-                      <p className="text-sm text-muted-foreground" data-testid="publication-authors">
+                      {/* Authors - Apple secondary text */}
+                      <p style={{ fontSize: '14px', fontWeight: '400', lineHeight: '1.4', color: '#6E6E73' }} data-testid="publication-authors">
                         {publication.authors}
                       </p>
                     </article>
                   );
                 })}
                 
-                {/* Load more button */}
+                {/* Load more button - Apple style */}
                 {hasNextPage && (
-                  <div className="pt-8">
-                    <Button 
-                      variant="outline"
+                  <div style={{ paddingTop: '32px' }}>
+                    <button
                       onClick={loadMore}
                       disabled={isFetchingNextPage}
-                      className="text-primary border-primary hover:bg-primary/5"
+                      className="inline-flex items-center justify-center rounded-xl transition-all duration-200"
+                      style={{
+                        paddingLeft: '24px',
+                        paddingRight: '24px',
+                        paddingTop: '12px',
+                        paddingBottom: '12px',
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        color: '#007AFF',
+                        backgroundColor: 'transparent',
+                        border: '1px solid #007AFF',
+                        outline: 'none',
+                        cursor: isFetchingNextPage ? 'not-allowed' : 'pointer',
+                        opacity: isFetchingNextPage ? 0.6 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isFetchingNextPage) {
+                          e.currentTarget.style.backgroundColor = '#F0F7FF';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
                       data-testid="load-more-button"
                     >
                       {isFetchingNextPage ? "Loading..." : "Load more"}
-                    </Button>
+                    </button>
                   </div>
                 )}
               </div>

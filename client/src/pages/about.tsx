@@ -6,55 +6,55 @@ export default function About() {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="max-w-6xl mx-auto px-6 py-16">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl font-light tracking-tight text-foreground mb-4">
+      <main className="max-w-[980px] mx-auto px-6" style={{ paddingTop: '64px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+        <div className="text-center" style={{ marginBottom: '64px' }}>
+          <h1 style={{ fontSize: '48px', fontWeight: '300', letterSpacing: '-0.02em', color: '#1D1D1F', marginBottom: '16px', lineHeight: '1.1' }}>
             About CardiEx Research
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p style={{ fontSize: '18px', color: '#6E6E73', maxWidth: '640px', margin: '0 auto', lineHeight: '1.4' }}>
             Advancing cardiovascular health through innovative research and cutting-edge technology.
           </p>
         </div>
 
-        <section className="mb-20">
+        <section style={{ marginBottom: '80px' }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-2xl font-light text-foreground mb-6">Our Mission</h2>
-              <p className="text-muted-foreground mb-6">
+              <h2 style={{ fontSize: '28px', fontWeight: '300', color: '#1D1D1F', marginBottom: '24px', lineHeight: '1.2' }}>Our Mission</h2>
+              <p style={{ color: '#6E6E73', marginBottom: '24px', fontSize: '16px', lineHeight: '1.5' }}>
                 CardiEx Research is dedicated to transforming cardiovascular medicine through advanced 
                 research and innovative diagnostic technologies. We focus on early detection, prevention, 
                 and personalized treatment approaches that improve patient outcomes globally.
               </p>
-              <p className="text-muted-foreground">
+              <p style={{ color: '#6E6E73', fontSize: '16px', lineHeight: '1.5' }}>
                 Our work with SphygmoCor technology enables precise measurement of arterial stiffness 
                 and central blood pressure, providing insights that traditional methods cannot achieve.
               </p>
             </div>
-            <div className="bg-muted/30 rounded-2xl p-8 text-center">
+            <div className="rounded-2xl text-center" style={{ backgroundColor: '#F6F6F6', padding: '32px' }}>
               <div className="grid grid-cols-2 gap-8">
                 <div>
-                  <div className="text-3xl font-light text-foreground mb-2" data-testid="research-years">15+</div>
-                  <div className="text-sm text-muted-foreground">Years of Research</div>
+                  <div style={{ fontSize: '32px', fontWeight: '300', color: '#1D1D1F', marginBottom: '8px', lineHeight: '1.2' }} data-testid="research-years">15+</div>
+                  <div style={{ fontSize: '14px', color: '#6E6E73' }}>Years of Research</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-light text-foreground mb-2" data-testid="publications-count">200+</div>
-                  <div className="text-sm text-muted-foreground">Publications</div>
+                  <div style={{ fontSize: '32px', fontWeight: '300', color: '#1D1D1F', marginBottom: '8px', lineHeight: '1.2' }} data-testid="publications-count">200+</div>
+                  <div style={{ fontSize: '14px', color: '#6E6E73' }}>Publications</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-light text-foreground mb-2" data-testid="patients-studied">50K+</div>
-                  <div className="text-sm text-muted-foreground">Patients Studied</div>
+                  <div style={{ fontSize: '32px', fontWeight: '300', color: '#1D1D1F', marginBottom: '8px', lineHeight: '1.2' }} data-testid="patients-studied">50K+</div>
+                  <div style={{ fontSize: '14px', color: '#6E6E73' }}>Patients Studied</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-light text-foreground mb-2" data-testid="global-partners">25+</div>
-                  <div className="text-sm text-muted-foreground">Global Partners</div>
+                  <div style={{ fontSize: '32px', fontWeight: '300', color: '#1D1D1F', marginBottom: '8px', lineHeight: '1.2' }} data-testid="global-partners">25+</div>
+                  <div style={{ fontSize: '14px', color: '#6E6E73' }}>Global Partners</div>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="mb-20">
-          <h2 className="text-2xl font-light text-foreground mb-8 text-center">Research Areas</h2>
+        <section style={{ marginBottom: '80px' }}>
+          <h2 style={{ fontSize: '28px', fontWeight: '300', color: '#1D1D1F', marginBottom: '32px', textAlign: 'center', lineHeight: '1.2' }}>Research Areas</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Card className="border-0 shadow-sm">
               <CardHeader>
@@ -113,7 +113,7 @@ export default function About() {
         </section>
 
         <section>
-          <h2 className="text-2xl font-light text-foreground mb-8 text-center">Technology Platform</h2>
+          <h2 style={{ fontSize: '28px', fontWeight: '300', color: '#1D1D1F', marginBottom: '32px', textAlign: 'center', lineHeight: '1.2' }}>Technology Platform</h2>
           <Card className="border-0 shadow-sm">
             <CardContent className="p-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

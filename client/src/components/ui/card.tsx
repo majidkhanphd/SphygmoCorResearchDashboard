@@ -5,13 +5,18 @@ import { cn } from "@/lib/utils"
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    )}
+    className={cn("rounded-xl", className)}
+    style={{
+      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+      border: '1px solid #E5E5E7',
+      backgroundColor: '#FFFFFF',
+      color: '#1D1D1F',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+      ...style
+    }}
     {...props}
   />
 ))
@@ -20,10 +25,15 @@ Card.displayName = "Card"
 const CardHeader = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    className={cn("flex flex-col", className)}
+    style={{
+      gap: '6px',
+      padding: '24px',
+      ...style
+    }}
     {...props}
   />
 ))
@@ -32,13 +42,18 @@ CardHeader.displayName = "CardHeader"
 const CardTitle = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn(
-      "text-2xl font-semibold leading-none tracking-tight",
-      className
-    )}
+    className={className}
+    style={{
+      fontSize: '18px',
+      fontWeight: '500',
+      lineHeight: '1.3',
+      letterSpacing: '-0.01em',
+      color: '#1D1D1F',
+      ...style
+    }}
     {...props}
   />
 ))
@@ -47,10 +62,17 @@ CardTitle.displayName = "CardTitle"
 const CardDescription = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
+    className={className}
+    style={{
+      fontSize: '14px',
+      fontWeight: '400',
+      lineHeight: '1.4',
+      color: '#6E6E73',
+      ...style
+    }}
     {...props}
   />
 ))
@@ -59,8 +81,17 @@ CardDescription.displayName = "CardDescription"
 const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+>(({ className, style, ...props }, ref) => (
+  <div 
+    ref={ref} 
+    className={className} 
+    style={{
+      padding: '24px',
+      paddingTop: '0',
+      ...style
+    }}
+    {...props} 
+  />
 ))
 CardContent.displayName = "CardContent"
 

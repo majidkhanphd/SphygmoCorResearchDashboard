@@ -5,53 +5,53 @@
 @tailwind utilities;
 
 :root {
-  /* Apple's Minimal Color Palette - Light Mode */
-  --background: hsl(0 0% 100%);
-  --foreground: hsl(0 0% 11.4%);
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(0 0% 11.4%);
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(0 0% 11.4%);
-  --primary: hsl(214 100% 50%);
-  --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(0 0% 96.1%);
-  --secondary-foreground: hsl(0 0% 11.4%);
-  --muted: hsl(0 0% 96.1%);
-  --muted-foreground: hsl(0 0% 52.5%);
-  --accent: hsl(0 0% 96.1%);
-  --accent-foreground: hsl(0 0% 11.4%);
-  --destructive: hsl(0 84.2% 60.2%);
-  --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(0 0% 89.8%);
-  --input: hsl(0 0% 89.8%);
-  --ring: hsl(214 100% 50%);
-  --chart-1: hsl(0 0% 52.5%);
-  --chart-2: hsl(0 0% 39.2%);
-  --chart-3: hsl(0 0% 25.9%);
-  --chart-4: hsl(0 0% 70.2%);
-  --chart-5: hsl(0 0% 85.1%);
-  --sidebar: hsl(0 0% 98%);
-  --sidebar-foreground: hsl(0 0% 11.4%);
-  --sidebar-primary: hsl(214 100% 50%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(0 0% 96.1%);
-  --sidebar-accent-foreground: hsl(0 0% 11.4%);
-  --sidebar-border: hsl(0 0% 89.8%);
-  --sidebar-ring: hsl(214 100% 50%);
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-serif: Georgia, serif;
-  --font-mono: Menlo, monospace;
-  --radius: 0.75rem;
-  --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.05);
-  --shadow-xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.05);
-  --shadow-sm: 0px 1px 2px 0px hsl(0 0% 0% / 0.05), 0px 1px 3px 0px hsl(0 0% 0% / 0.1);
-  --shadow: 0px 1px 3px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px 0px hsl(0 0% 0% / 0.06);
-  --shadow-md: 0px 4px 6px -1px hsl(0 0% 0% / 0.1), 0px 2px 4px -1px hsl(0 0% 0% / 0.06);
-  --shadow-lg: 0px 10px 15px -3px hsl(0 0% 0% / 0.1), 0px 4px 6px -2px hsl(0 0% 0% / 0.05);
-  --shadow-xl: 0px 20px 25px -5px hsl(0 0% 0% / 0.1), 0px 10px 10px -5px hsl(0 0% 0% / 0.04);
-  --shadow-2xl: 0px 25px 50px -12px hsl(0 0% 0% / 0.25);
+  /* Apple's Exact Color Palette - Light Mode */
+  --background: #FFFFFF;
+  --foreground: #1D1D1F;
+  --card: #FFFFFF;
+  --card-foreground: #1D1D1F;
+  --popover: #FFFFFF;
+  --popover-foreground: #1D1D1F;
+  --primary: #007AFF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F6F6F6;
+  --secondary-foreground: #1D1D1F;
+  --muted: #F6F6F6;
+  --muted-foreground: #6E6E73;
+  --accent: #F6F6F6;
+  --accent-foreground: #1D1D1F;
+  --destructive: #FF3B30;
+  --destructive-foreground: #FFFFFF;
+  --border: #E5E5E7;
+  --input: #E5E5E7;
+  --ring: #007AFF;
+  --chart-1: #6E6E73;
+  --chart-2: #1D1D1F;
+  --chart-3: #007AFF;
+  --chart-4: #F6F6F6;
+  --chart-5: #E5E5E7;
+  --sidebar: #FAFAFA;
+  --sidebar-foreground: #1D1D1F;
+  --sidebar-primary: #007AFF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F6F6F6;
+  --sidebar-accent-foreground: #1D1D1F;
+  --sidebar-border: #E5E5E7;
+  --sidebar-ring: #007AFF;
+  --font-sans: '-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  --font-serif: 'New York', 'Times', serif;
+  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  --radius: 12px;
+  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+  --shadow-xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0px 1px 2px 0px rgba(0, 0, 0, 0.05), 0px 1px 3px 0px rgba(0, 0, 0, 0.1);
+  --shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 1px 2px 0px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0px 4px 6px -1px rgba(0, 0, 0, 0.1), 0px 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0px 10px 15px -3px rgba(0, 0, 0, 0.1), 0px 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0px 20px 25px -5px rgba(0, 0, 0, 0.1), 0px 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0px 25px 50px -12px rgba(0, 0, 0, 0.25);
   --tracking-normal: 0em;
-  --spacing: 0.25rem;
+  --spacing: 4px;
 }
 
 .dark {
@@ -88,7 +88,11 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    font-family: '-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--background);
+    color: var(--foreground);
   }
 }
 
