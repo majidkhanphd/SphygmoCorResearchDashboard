@@ -83,14 +83,23 @@ export default function Home() {
   // Flatten all publications from all pages
   const allPublications = data?.pages.flatMap(page => page.publications) || [];
   
-  // Get unique venues from publications
-  const venues = allPublications.length > 0 
-    ? Array.from(new Set(
-        allPublications
-          .map((p: any) => p.journal)
-          .filter((journal: any): journal is string => typeof journal === 'string' && journal.length > 0)
-      )).sort() as string[]
-    : [] as string[];
+  // Get authoritative filter counts from the backend (same across all pages)
+  const backendFilterCounts = data?.pages[0]?.filterCounts || {
+    researchAreas: {},
+    venues: {},
+    years: {},
+    categories: {}
+  };
+  
+  // Transform backend filter counts to match frontend expectations
+  const filterCounts = {
+    areas: backendFilterCounts.researchAreas,
+    venues: backendFilterCounts.venues, 
+    years: backendFilterCounts.years
+  };
+
+  // Get venues from backend filter counts for authoritative list
+  const venues = Object.keys(backendFilterCounts.venues).sort();
   const visibleVenues = showAllVenues ? venues : venues.slice(0, 5);
 
   // Get research areas from schema
@@ -156,41 +165,66 @@ export default function Home() {
         
         {/* Main content with sidebar and publications */}
         <div className="flex gap-16">
-          {/* Left sidebar */}
-          <div className="w-64 flex-shrink-0">
+          {/* Left sidebar - Apple ML Research Style */}
+          <div className="w-64 flex-shrink-0" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
             {/* Research Areas Filter */}
-            <div className="mb-8">
-              <h3 className="text-sm font-medium text-foreground mb-4">Research areas</h3>
-              <div className="space-y-2">
+            <div className="mb-10">
+              {/* Uppercase caption */}
+              <div className="mb-3">
+                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>RESEARCH AREAS</span>
+              </div>
+              
+              {/* Italic category label */}
+              <h3 className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Research areas</h3>
+              
+              {/* Clear button */}
+              {selectedResearchArea && (
                 <button
                   onClick={() => handleResearchAreaChange(null)}
-                  className={`block text-sm ${
+                  className="text-sm mb-3 transition-colors"
+                  style={{ color: '#007AFF' }}
+                  data-testid="clear-research-areas"
+                >
+                  Clear all
+                </button>
+              )}
+              
+              <div className="space-y-1">
+                <button
+                  onClick={() => handleResearchAreaChange(null)}
+                  className={`block text-sm w-full text-left py-1 transition-colors ${
                     !selectedResearchArea 
-                      ? "text-primary font-medium" 
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "font-medium" 
+                      : "hover:opacity-80"
                   }`}
+                  style={{ color: !selectedResearchArea ? '#1D1D1F' : '#6E6E73' }}
                   data-testid="area-all"
                 >
                   All
                 </button>
-                {visibleAreas.map(([slug, displayName]) => (
-                  <button
-                    key={slug}
-                    onClick={() => handleResearchAreaChange(slug)}
-                    className={`block text-sm ${
-                      selectedResearchArea === slug
-                        ? "text-primary font-medium"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    data-testid={`area-${slug}`}
-                  >
-                    {displayName}
-                  </button>
-                ))}
+                {visibleAreas.map(([slug, displayName]) => {
+                  const count = filterCounts.areas[slug] || 0;
+                  return (
+                    <button
+                      key={slug}
+                      onClick={() => handleResearchAreaChange(slug)}
+                      className={`block text-sm w-full text-left py-1 transition-colors ${
+                        selectedResearchArea === slug
+                          ? "font-medium"
+                          : "hover:opacity-80"
+                      }`}
+                      style={{ color: selectedResearchArea === slug ? '#1D1D1F' : '#6E6E73' }}
+                      data-testid={`area-${slug}`}
+                    >
+                      {displayName} {count > 0 && `(${count})`}
+                    </button>
+                  );
+                })}
                 {researchAreas.length > 5 && (
                   <button
                     onClick={() => setShowAllAreas(!showAllAreas)}
-                    className="flex items-center text-sm text-primary hover:text-primary/80"
+                    className="flex items-center text-sm py-1 transition-colors"
+                    style={{ color: '#007AFF' }}
                     data-testid="toggle-areas"
                   >
                     {showAllAreas ? (
@@ -207,39 +241,67 @@ export default function Home() {
               </div>
             </div>
             
+            {/* Thin separator */}
+            <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
+            
             {/* Venues Filter */}
-            <div className="mb-8">
-              <h3 className="text-sm font-medium text-foreground mb-4">Venues</h3>
-              <div className="space-y-2">
+            <div className="mb-10">
+              {/* Uppercase caption */}
+              <div className="mb-3">
+                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>VENUES</span>
+              </div>
+              
+              {/* Italic category label */}
+              <h3 className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Venues</h3>
+              
+              {/* Clear button */}
+              {selectedVenue && (
                 <button
                   onClick={() => handleVenueChange(null)}
-                  className={`block text-sm ${
+                  className="text-sm mb-3 transition-colors"
+                  style={{ color: '#007AFF' }}
+                  data-testid="clear-venues"
+                >
+                  Clear all
+                </button>
+              )}
+              
+              <div className="space-y-1">
+                <button
+                  onClick={() => handleVenueChange(null)}
+                  className={`block text-sm w-full text-left py-1 transition-colors ${
                     !selectedVenue
-                      ? "text-primary font-medium"
-                      : "text-muted-foreground hover:text-foreground"
-                  } text-left`}
+                      ? "font-medium"
+                      : "hover:opacity-80"
+                  }`}
+                  style={{ color: !selectedVenue ? '#1D1D1F' : '#6E6E73' }}
                   data-testid="venue-all"
                 >
                   All venues
                 </button>
-                {visibleVenues.map((venue) => (
-                  <button
-                    key={venue}
-                    onClick={() => handleVenueChange(venue)}
-                    className={`block text-sm ${
-                      selectedVenue === venue
-                        ? "text-primary font-medium"
-                        : "text-muted-foreground hover:text-foreground"
-                    } text-left`}
-                    data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
-                  >
-                    {venue}
-                  </button>
-                ))}
+                {visibleVenues.map((venue) => {
+                  const count = filterCounts.venues[venue] || 0;
+                  return (
+                    <button
+                      key={venue}
+                      onClick={() => handleVenueChange(venue)}
+                      className={`block text-sm w-full text-left py-1 transition-colors ${
+                        selectedVenue === venue
+                          ? "font-medium"
+                          : "hover:opacity-80"
+                      }`}
+                      style={{ color: selectedVenue === venue ? '#1D1D1F' : '#6E6E73' }}
+                      data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
+                    >
+                      {venue} {count > 0 && `(${count})`}
+                    </button>
+                  );
+                })}
                 {venues.length > 5 && (
                   <button
                     onClick={() => setShowAllVenues(!showAllVenues)}
-                    className="flex items-center text-sm text-primary hover:text-primary/80"
+                    className="flex items-center text-sm py-1 transition-colors"
+                    style={{ color: '#007AFF' }}
                     data-testid="toggle-venues"
                   >
                     {showAllVenues ? (
@@ -256,35 +318,62 @@ export default function Home() {
               </div>
             </div>
             
+            {/* Thin separator */}
+            <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
+            
             {/* Published Year Filter */}
-            <div className="mb-8">
-              <h3 className="text-sm font-medium text-foreground mb-4">Published</h3>
-              <div className="space-y-2">
+            <div className="mb-10">
+              {/* Uppercase caption */}
+              <div className="mb-3">
+                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>YEARS</span>
+              </div>
+              
+              {/* Italic category label */}
+              <h3 className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Years</h3>
+              
+              {/* Clear button */}
+              {selectedYear && (
                 <button
                   onClick={() => handleYearChange(null)}
-                  className={`block text-sm ${
+                  className="text-sm mb-3 transition-colors"
+                  style={{ color: '#007AFF' }}
+                  data-testid="clear-years"
+                >
+                  Clear all
+                </button>
+              )}
+              
+              <div className="space-y-1">
+                <button
+                  onClick={() => handleYearChange(null)}
+                  className={`block text-sm w-full text-left py-1 transition-colors ${
                     !selectedYear
-                      ? "text-primary font-medium"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "font-medium"
+                      : "hover:opacity-80"
                   }`}
+                  style={{ color: !selectedYear ? '#1D1D1F' : '#6E6E73' }}
                   data-testid="year-all"
                 >
                   All years
                 </button>
-                {availableYears.map((year) => (
-                  <button
-                    key={year}
-                    onClick={() => handleYearChange(year)}
-                    className={`block text-sm ${
-                      selectedYear === year
-                        ? "text-primary font-medium"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    data-testid={`year-${year}`}
-                  >
-                    {year}
-                  </button>
-                ))}
+                {availableYears.map((year) => {
+                  const count = filterCounts.years[year] || 0;
+                  return (
+                    <button
+                      key={year}
+                      onClick={() => handleYearChange(year)}
+                      className={`block text-sm w-full text-left py-1 transition-colors ${
+                        selectedYear === year
+                          ? "font-medium"
+                          : "hover:opacity-80"
+                      }`}
+                      style={{ color: selectedYear === year ? '#1D1D1F' : '#6E6E73' }}
+                      data-testid={`year-${year}`}
+                    >
+                      {year} {count > 0 && `(${count})`}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

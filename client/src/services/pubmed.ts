@@ -1,4 +1,5 @@
 import { apiRequest } from "@/lib/queryClient";
+import type { SearchPublicationsResponse } from "@shared/schema";
 
 export interface PubMedSearchResult {
   imported: number;
@@ -34,7 +35,7 @@ export async function searchPublications(params: {
   sortBy?: string;
   limit?: number;
   offset?: number;
-}) {
+}): Promise<SearchPublicationsResponse> {
   const searchParams = new URLSearchParams();
   
   if (params.query) searchParams.append("query", params.query);

@@ -57,6 +57,21 @@ export const searchPublicationsSchema = z.object({
 
 export type SearchPublicationsParams = z.infer<typeof searchPublicationsSchema>;
 
+// Filter counts interface for search response
+export interface FilterCounts {
+  researchAreas: Record<string, number>;
+  venues: Record<string, number>;
+  years: Record<number, number>;
+  categories: Record<string, number>;
+}
+
+// Search response interface with filter counts
+export interface SearchPublicationsResponse {
+  publications: Publication[];
+  total: number;
+  filterCounts: FilterCounts;
+}
+
 // Research area slug to display name mapping
 export const RESEARCH_AREA_DISPLAY_NAMES: Record<string, string> = {
   "biomedical-engineering": "Biomedical Engineering",
