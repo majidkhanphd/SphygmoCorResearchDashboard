@@ -4,14 +4,17 @@ import Navigation from "@/components/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
+import { useDebounce } from "@/hooks/use-debounce";
 import { searchPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
 import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES } from "@shared/schema";
 
 export default function Home() {
-  const [searchQuery, setSearchQuery] = useState("");
   const [inputValue, setInputValue] = useState("");
+  const debouncedSearchQuery = useDebounce(inputValue, 400);
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "relevance">("newest");
   const [selectedResearchArea, setSelectedResearchArea] = useState<string | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -27,19 +30,19 @@ export default function Home() {
     isFetchingNextPage 
   } = useInfiniteQuery({
     queryKey: ["/api/publications/search", { 
-      query: searchQuery || undefined, 
+      query: debouncedSearchQuery || undefined, 
       researchArea: selectedResearchArea || undefined,
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
-      sortBy: "newest",
+      sortBy,
       limit
     }],
     queryFn: ({ pageParam = 0 }) => searchPublications({
-      query: searchQuery || undefined,
+      query: debouncedSearchQuery || undefined,
       researchArea: selectedResearchArea || undefined,
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
-      sortBy: "newest",
+      sortBy,
       limit,
       offset: pageParam * limit
     }),
@@ -52,14 +55,29 @@ export default function Home() {
     initialPageParam: 0
   });
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearchQuery(inputValue);
-  };
-
   const handleReset = () => {
     setInputValue("");
-    setSearchQuery("");
+  };
+
+  const clearFilter = (filterType: 'researchArea' | 'venue' | 'year') => {
+    switch (filterType) {
+      case 'researchArea':
+        setSelectedResearchArea(null);
+        break;
+      case 'venue':
+        setSelectedVenue(null);
+        break;
+      case 'year':
+        setSelectedYear(null);
+        break;
+    }
+  };
+
+  const clearAllFilters = () => {
+    setSelectedResearchArea(null);
+    setSelectedVenue(null);
+    setSelectedYear(null);
+    setInputValue("");
   };
 
   const handleResearchAreaChange = (area: string | null) => {
@@ -136,62 +154,176 @@ export default function Home() {
           </p>
         </div>
         
-        {/* Search bar - Apple style */}
-        <form onSubmit={handleSearch} style={{ marginBottom: '48px' }}>
-          <div className="relative max-w-2xl" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+        {/* Search and Sort Section - Apple style */}
+        <div style={{ marginBottom: '48px' }}>
+          {/* Search bar and sort dropdown */}
+          <div className="flex gap-4 items-end mb-6">
+            <div className="relative max-w-2xl flex-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
             <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none" style={{ paddingLeft: '16px' }}>
               <Search className="h-5 w-5" style={{ color: '#6E6E73' }} />
             </div>
-            <input
-              type="text"
-              placeholder="Search publications"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              className="w-full rounded-xl transition-all duration-200 ease-in-out"
-              style={{
-                paddingLeft: '48px',
-                paddingRight: inputValue ? '48px' : '16px',
-                paddingTop: '12px',
-                paddingBottom: '12px',
-                fontSize: '17px',
-                fontWeight: '400',
-                lineHeight: '1.4',
-                color: '#1D1D1F',
-                backgroundColor: '#F6F6F6',
-                border: '1px solid #E5E5E7',
-                outline: 'none'
-              }}
-              onFocus={(e) => {
-                e.target.style.backgroundColor = '#FFFFFF';
-                e.target.style.borderColor = '#007AFF';
-                e.target.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.backgroundColor = '#F6F6F6';
-                e.target.style.borderColor = '#E5E5E7';
-                e.target.style.boxShadow = 'none';
-              }}
-              data-testid="search-input"
-            />
-            {inputValue && (
-              <button
-                type="button"
-                onClick={handleReset}
-                className="absolute inset-y-0 right-0 flex items-center transition-colors duration-200"
-                style={{ paddingRight: '16px' }}
-                data-testid="reset-button"
-              >
-                <X 
-                  className="h-5 w-5" 
-                  style={{ color: '#6E6E73' }}
-                  onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
-                  onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#6E6E73'}
-                />
-              </button>
-            )}
+              <input
+                type="text"
+                placeholder="Search publications"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                className="w-full rounded-xl transition-all duration-200 ease-in-out"
+                style={{
+                  paddingLeft: '48px',
+                  paddingRight: inputValue ? '48px' : '16px',
+                  paddingTop: '12px',
+                  paddingBottom: '12px',
+                  fontSize: '17px',
+                  fontWeight: '400',
+                  lineHeight: '1.4',
+                  color: '#1D1D1F',
+                  backgroundColor: '#F6F6F6',
+                  border: '1px solid #E5E5E7',
+                  outline: 'none'
+                }}
+                onFocus={(e) => {
+                  e.target.style.backgroundColor = '#FFFFFF';
+                  e.target.style.borderColor = '#007AFF';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.backgroundColor = '#F6F6F6';
+                  e.target.style.borderColor = '#E5E5E7';
+                  e.target.style.boxShadow = 'none';
+                }}
+                data-testid="search-input"
+              />
+              {inputValue && (
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="absolute inset-y-0 right-0 flex items-center transition-colors duration-200"
+                  style={{ paddingRight: '16px' }}
+                  data-testid="reset-button"
+                >
+                  <X 
+                    className="h-5 w-5" 
+                    style={{ color: '#6E6E73' }}
+                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
+                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#6E6E73'}
+                  />
+                </button>
+              )}
+            </div>
+            
+            {/* Sort Dropdown */}
+            <div className="w-48">
+              <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "relevance") => setSortBy(value)}>
+                <SelectTrigger 
+                  className="rounded-xl transition-all duration-200 ease-in-out"
+                  style={{
+                    paddingTop: '12px',
+                    paddingBottom: '12px',
+                    fontSize: '17px',
+                    fontWeight: '400',
+                    lineHeight: '1.4',
+                    color: '#1D1D1F',
+                    backgroundColor: '#F6F6F6',
+                    border: '1px solid #E5E5E7',
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
+                  }}
+                  data-testid="sort-dropdown"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest" data-testid="sort-newest">Newest</SelectItem>
+                  <SelectItem value="oldest" data-testid="sort-oldest">Oldest</SelectItem>
+                  <SelectItem value="relevance" data-testid="sort-relevance">Relevance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </form>
+        </div>
         
+        {/* Active Filter Chips */}
+        {(selectedResearchArea || selectedVenue || selectedYear || debouncedSearchQuery) && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-sm font-medium" style={{ color: '#1D1D1F' }}>Active filters:</span>
+              <button
+                onClick={clearAllFilters}
+                className="text-sm transition-colors"
+                style={{ color: '#007AFF' }}
+                data-testid="clear-all-filters"
+              >
+                Clear all
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {debouncedSearchQuery && (
+                <div 
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors"
+                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
+                  data-testid="filter-chip-search"
+                >
+                  <span>Search: {debouncedSearchQuery}</span>
+                  <button
+                    onClick={() => setInputValue('')}
+                    className="hover:opacity-70 transition-opacity"
+                    data-testid="clear-search-filter"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              {selectedResearchArea && (
+                <div 
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors"
+                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
+                  data-testid="filter-chip-research-area"
+                >
+                  <span>Research Area: {getResearchAreaDisplayName(selectedResearchArea)}</span>
+                  <button
+                    onClick={() => clearFilter('researchArea')}
+                    className="hover:opacity-70 transition-opacity"
+                    data-testid="clear-research-area-filter"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              {selectedVenue && (
+                <div 
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors"
+                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
+                  data-testid="filter-chip-venue"
+                >
+                  <span>Venue: {selectedVenue}</span>
+                  <button
+                    onClick={() => clearFilter('venue')}
+                    className="hover:opacity-70 transition-opacity"
+                    data-testid="clear-venue-filter"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              {selectedYear && (
+                <div 
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors"
+                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
+                  data-testid="filter-chip-year"
+                >
+                  <span>Year: {selectedYear}</span>
+                  <button
+                    onClick={() => clearFilter('year')}
+                    className="hover:opacity-70 transition-opacity"
+                    data-testid="clear-year-filter"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Main content with sidebar and publications */}
         <div className="flex gap-16">
           {/* Left sidebar - Apple ML Research Style */}

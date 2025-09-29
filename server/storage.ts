@@ -154,10 +154,35 @@ export class MemStorage implements IStorage {
           return b.publicationDate.getTime() - a.publicationDate.getTime();
         case "oldest":
           return a.publicationDate.getTime() - b.publicationDate.getTime();
-        case "citations":
-          return (b.citationCount || 0) - (a.citationCount || 0);
-        case "impact":
-          return (b.journalImpactFactor || 0) - (a.journalImpactFactor || 0);
+        case "relevance":
+          // Simple relevance scoring based on search query match quality
+          if (!params.query) {
+            // If no query, fall back to newest
+            return b.publicationDate.getTime() - a.publicationDate.getTime();
+          }
+          const query = params.query.toLowerCase();
+          
+          const getRelevanceScore = (pub: Publication): number => {
+            let score = 0;
+            // Title match gets highest score
+            if (pub.title.toLowerCase().includes(query)) score += 10;
+            // Author match gets medium score
+            if (pub.authors.toLowerCase().includes(query)) score += 5;
+            // Abstract match gets lower score
+            if (pub.abstract?.toLowerCase().includes(query)) score += 2;
+            // Keywords match gets medium score
+            if (pub.keywords?.some(keyword => keyword.toLowerCase().includes(query))) score += 3;
+            return score;
+          };
+          
+          const scoreA = getRelevanceScore(a);
+          const scoreB = getRelevanceScore(b);
+          
+          // If scores are equal, sort by newest
+          if (scoreA === scoreB) {
+            return b.publicationDate.getTime() - a.publicationDate.getTime();
+          }
+          return scoreB - scoreA;
         default:
           return 0;
       }
