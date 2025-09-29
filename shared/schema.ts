@@ -73,14 +73,23 @@ export interface SearchPublicationsResponse {
   filterCounts: FilterCounts;
 }
 
-// Research area slug to display name mapping
+// Research area slug to display name mapping - Cardiovascular medical categories
 export const RESEARCH_AREA_DISPLAY_NAMES: Record<string, string> = {
-  "biomedical-engineering": "Biomedical Engineering",
-  "computer-vision": "Computer Vision",
-  "data-analysis": "Data Analysis",
-  "methods-algorithms": "Methods and Algorithms",
-  "nlp": "Natural Language Processing",
-  "health-medical": "Health and Medical Research"
+  "hypertension": "Hypertension",
+  "arterial-stiffness": "Arterial Stiffness",
+  "central-blood-pressure": "Central Blood Pressure",
+  "pulse-wave-analysis": "Pulse Wave Analysis",
+  "cfpwv": "Carotid-Femoral PWV",
+  "vascular-aging": "Vascular Aging",
+  "chronic-kidney-disease": "Chronic Kidney Disease",
+  "heart-failure": "Heart Failure",
+  "coronary-artery-disease": "Coronary Artery Disease",
+  "diabetes": "Diabetes & Metabolic",
+  "pediatrics": "Pediatrics",
+  "obstetrics": "Obstetrics",
+  "sports-cardiology": "Sports Cardiology",
+  "methodology": "Methods & Validation",
+  "population-health": "Population Health"
 };
 
 // Utility function to get display name from research area slug
