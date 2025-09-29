@@ -356,7 +356,7 @@ export default function Home() {
                   style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
                   data-testid="filter-chip-research-area"
                 >
-                  <span>Research Area: {getResearchAreaDisplayName(selectedResearchArea)}</span>
+                  <span>Category: {getResearchAreaDisplayName(selectedResearchArea)}</span>
                   <button
                     onClick={() => clearFilter('researchArea')}
                     className="hover:opacity-70 transition-opacity"
@@ -406,15 +406,15 @@ export default function Home() {
         <div className="flex gap-16">
           {/* Left sidebar - Apple ML Research Style */}
           <aside className="w-64 flex-shrink-0" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} role="complementary" aria-label="Research filters">
-            {/* Research Areas Filter */}
+            {/* Medical Categories Filter */}
             <section className="mb-10" role="group" aria-labelledby="research-areas-heading">
               {/* Uppercase caption */}
               <div className="mb-3">
-                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>RESEARCH AREAS</span>
+                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>MEDICAL CATEGORIES</span>
               </div>
               
               {/* Italic category label */}
-              <h3 id="research-areas-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Research areas</h3>
+              <h3 id="research-areas-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Medical categories</h3>
               
               {/* Clear button */}
               {selectedResearchArea && (
