@@ -159,15 +159,16 @@ export default function Home() {
         </div>
         
         {/* Featured Publications Toggle - Apple style */}
-        <div style={{ marginBottom: '48px' }}>
-          <div className="inline-flex items-center rounded-xl transition-all duration-200" style={{
+        <div style={{ marginBottom: '48px' }} role="tablist" aria-label="Publication filter">
+          <div className="inline-flex items-center rounded-xl apple-transition" style={{
             backgroundColor: '#F6F6F6',
             border: '1px solid #E5E5E7',
             padding: '4px'
           }}>
             <button
+              id="tab-all-publications"
               onClick={() => setShowFeaturedOnly(false)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium apple-transition apple-focus-ring ${
                 !showFeaturedOnly ? 'shadow-sm' : ''
               }`}
               style={{
@@ -177,12 +178,16 @@ export default function Home() {
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
               }}
               data-testid="toggle-all-publications"
+              role="tab"
+              aria-selected={!showFeaturedOnly}
+              aria-controls="publications-tabpanel"
             >
               All Publications
             </button>
             <button
+              id="tab-featured-publications"
               onClick={() => setShowFeaturedOnly(true)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-1 ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium apple-transition apple-focus-ring flex items-center gap-1 ${
                 showFeaturedOnly ? 'shadow-sm' : ''
               }`}
               style={{
@@ -192,6 +197,9 @@ export default function Home() {
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
               }}
               data-testid="toggle-featured-publications"
+              role="tab"
+              aria-selected={showFeaturedOnly}
+              aria-controls="publications-tabpanel"
             >
               <Star className="h-4 w-4" fill={showFeaturedOnly ? '#FFD60A' : 'none'} stroke={showFeaturedOnly ? '#FFD60A' : 'currentColor'} />
               Featured
@@ -219,7 +227,7 @@ export default function Home() {
                 placeholder="Search publications"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full rounded-xl transition-all duration-200 ease-in-out"
+                className="w-full rounded-xl apple-transition apple-focus-ring"
                 style={{
                   paddingLeft: '48px',
                   paddingRight: inputValue ? '48px' : '16px',
@@ -236,25 +244,26 @@ export default function Home() {
                 onFocus={(e) => {
                   e.target.style.backgroundColor = '#FFFFFF';
                   e.target.style.borderColor = '#007AFF';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(0, 122, 255, 0.1)';
                 }}
                 onBlur={(e) => {
                   e.target.style.backgroundColor = '#F6F6F6';
                   e.target.style.borderColor = '#E5E5E7';
-                  e.target.style.boxShadow = 'none';
                 }}
                 data-testid="search-input"
+                aria-label="Search publications by title, author, or keywords"
+                role="searchbox"
               />
               {inputValue && (
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="absolute inset-y-0 right-0 flex items-center transition-colors duration-200"
+                  className="absolute inset-y-0 right-0 flex items-center apple-transition apple-focus-ring"
                   style={{ paddingRight: '16px' }}
                   data-testid="reset-button"
+                  aria-label="Clear search"
                 >
                   <X 
-                    className="h-5 w-5" 
+                    className="h-5 w-5 apple-transition" 
                     style={{ color: '#6E6E73' }}
                     onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
                     onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#6E6E73'}
@@ -396,24 +405,25 @@ export default function Home() {
         {/* Main content with sidebar and publications */}
         <div className="flex gap-16">
           {/* Left sidebar - Apple ML Research Style */}
-          <div className="w-64 flex-shrink-0" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+          <aside className="w-64 flex-shrink-0" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} role="complementary" aria-label="Research filters">
             {/* Research Areas Filter */}
-            <div className="mb-10">
+            <section className="mb-10" role="group" aria-labelledby="research-areas-heading">
               {/* Uppercase caption */}
               <div className="mb-3">
                 <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>RESEARCH AREAS</span>
               </div>
               
               {/* Italic category label */}
-              <h3 className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Research areas</h3>
+              <h3 id="research-areas-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Research areas</h3>
               
               {/* Clear button */}
               {selectedResearchArea && (
                 <button
                   onClick={() => handleResearchAreaChange(null)}
-                  className="text-sm mb-3 transition-colors"
+                  className="text-sm mb-3 apple-transition apple-focus-ring"
                   style={{ color: '#007AFF' }}
                   data-testid="clear-research-areas"
+                  aria-label="Clear research area filter"
                 >
                   Clear all
                 </button>
@@ -422,13 +432,14 @@ export default function Home() {
               <div className="space-y-1">
                 <button
                   onClick={() => handleResearchAreaChange(null)}
-                  className={`block text-sm w-full text-left py-1 transition-colors ${
+                  className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring ${
                     !selectedResearchArea 
                       ? "font-medium" 
                       : "hover:opacity-80"
                   }`}
                   style={{ color: !selectedResearchArea ? '#1D1D1F' : '#6E6E73' }}
                   data-testid="area-all"
+                  aria-pressed={!selectedResearchArea}
                 >
                   All
                 </button>
@@ -438,13 +449,15 @@ export default function Home() {
                     <button
                       key={slug}
                       onClick={() => handleResearchAreaChange(slug)}
-                      className={`block text-sm w-full text-left py-1 transition-colors ${
+                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring ${
                         selectedResearchArea === slug
                           ? "font-medium"
                           : "hover:opacity-80"
                       }`}
                       style={{ color: selectedResearchArea === slug ? '#1D1D1F' : '#6E6E73' }}
                       data-testid={`area-${slug}`}
+                      aria-pressed={selectedResearchArea === slug}
+                      aria-label={`Filter by ${displayName}${count > 0 ? ` (${count} publications)` : ''}`}
                     >
                       {displayName} {count > 0 && `(${count})`}
                     </button>
@@ -453,9 +466,11 @@ export default function Home() {
                 {researchAreas.length > 5 && (
                   <button
                     onClick={() => setShowAllAreas(!showAllAreas)}
-                    className="flex items-center text-sm py-1 transition-colors"
+                    className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
                     style={{ color: '#007AFF' }}
                     data-testid="toggle-areas"
+                    aria-expanded={showAllAreas}
+                    aria-label={showAllAreas ? "Show fewer research areas" : "Show more research areas"}
                   >
                     {showAllAreas ? (
                       <>
@@ -469,28 +484,29 @@ export default function Home() {
                   </button>
                 )}
               </div>
-            </div>
+            </section>
             
             {/* Thin separator */}
             <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
             
             {/* Venues Filter */}
-            <div className="mb-10">
+            <section className="mb-10" role="group" aria-labelledby="venues-heading">
               {/* Uppercase caption */}
               <div className="mb-3">
                 <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>VENUES</span>
               </div>
               
               {/* Italic category label */}
-              <h3 className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Venues</h3>
+              <h3 id="venues-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Venues</h3>
               
               {/* Clear button */}
               {selectedVenue && (
                 <button
                   onClick={() => handleVenueChange(null)}
-                  className="text-sm mb-3 transition-colors"
+                  className="text-sm mb-3 apple-transition apple-focus-ring"
                   style={{ color: '#007AFF' }}
                   data-testid="clear-venues"
+                  aria-label="Clear venue filter"
                 >
                   Clear all
                 </button>
@@ -499,13 +515,14 @@ export default function Home() {
               <div className="space-y-1">
                 <button
                   onClick={() => handleVenueChange(null)}
-                  className={`block text-sm w-full text-left py-1 transition-colors ${
+                  className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring ${
                     !selectedVenue
                       ? "font-medium"
                       : "hover:opacity-80"
                   }`}
                   style={{ color: !selectedVenue ? '#1D1D1F' : '#6E6E73' }}
                   data-testid="venue-all"
+                  aria-pressed={!selectedVenue}
                 >
                   All venues
                 </button>
@@ -515,13 +532,15 @@ export default function Home() {
                     <button
                       key={venue}
                       onClick={() => handleVenueChange(venue)}
-                      className={`block text-sm w-full text-left py-1 transition-colors ${
+                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring ${
                         selectedVenue === venue
                           ? "font-medium"
                           : "hover:opacity-80"
                       }`}
                       style={{ color: selectedVenue === venue ? '#1D1D1F' : '#6E6E73' }}
                       data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
+                      aria-pressed={selectedVenue === venue}
+                      aria-label={`Filter by ${venue}${count > 0 ? ` (${count} publications)` : ''}`}
                     >
                       {venue} {count > 0 && `(${count})`}
                     </button>
@@ -530,9 +549,11 @@ export default function Home() {
                 {venues.length > 5 && (
                   <button
                     onClick={() => setShowAllVenues(!showAllVenues)}
-                    className="flex items-center text-sm py-1 transition-colors"
+                    className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
                     style={{ color: '#007AFF' }}
                     data-testid="toggle-venues"
+                    aria-expanded={showAllVenues}
+                    aria-label={showAllVenues ? "Show fewer venues" : "Show more venues"}
                   >
                     {showAllVenues ? (
                       <>
@@ -546,28 +567,29 @@ export default function Home() {
                   </button>
                 )}
               </div>
-            </div>
+            </section>
             
             {/* Thin separator */}
             <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
             
             {/* Published Year Filter */}
-            <div className="mb-10">
+            <section className="mb-10" role="group" aria-labelledby="years-heading">
               {/* Uppercase caption */}
               <div className="mb-3">
                 <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>YEARS</span>
               </div>
               
               {/* Italic category label */}
-              <h3 className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Years</h3>
+              <h3 id="years-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Years</h3>
               
               {/* Clear button */}
               {selectedYear && (
                 <button
                   onClick={() => handleYearChange(null)}
-                  className="text-sm mb-3 transition-colors"
+                  className="text-sm mb-3 apple-transition apple-focus-ring"
                   style={{ color: '#007AFF' }}
                   data-testid="clear-years"
+                  aria-label="Clear year filter"
                 >
                   Clear all
                 </button>
@@ -576,13 +598,14 @@ export default function Home() {
               <div className="space-y-1">
                 <button
                   onClick={() => handleYearChange(null)}
-                  className={`block text-sm w-full text-left py-1 transition-colors ${
+                  className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring ${
                     !selectedYear
                       ? "font-medium"
                       : "hover:opacity-80"
                   }`}
                   style={{ color: !selectedYear ? '#1D1D1F' : '#6E6E73' }}
                   data-testid="year-all"
+                  aria-pressed={!selectedYear}
                 >
                   All years
                 </button>
@@ -592,24 +615,33 @@ export default function Home() {
                     <button
                       key={year}
                       onClick={() => handleYearChange(year)}
-                      className={`block text-sm w-full text-left py-1 transition-colors ${
+                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring ${
                         selectedYear === year
                           ? "font-medium"
                           : "hover:opacity-80"
                       }`}
                       style={{ color: selectedYear === year ? '#1D1D1F' : '#6E6E73' }}
                       data-testid={`year-${year}`}
+                      aria-pressed={selectedYear === year}
+                      aria-label={`Filter by ${year}${count > 0 ? ` (${count} publications)` : ''}`}
                     >
                       {year} {count > 0 && `(${count})`}
                     </button>
                   );
                 })}
               </div>
-            </div>
-          </div>
+            </section>
+          </aside>
           
           {/* Main content area - Apple typography */}
-          <div className="flex-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+          <section 
+            className="flex-1" 
+            id="publications-tabpanel" 
+            role="tabpanel" 
+            aria-labelledby={showFeaturedOnly ? "tab-featured-publications" : "tab-all-publications"}
+            aria-label="Publications list" 
+            style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
+          >
             {isLoading ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                 {Array.from({ length: 10 }).map((_, i) => (
@@ -800,7 +832,7 @@ export default function Home() {
                 )}
               </>
             )}
-          </div>
+          </section>
         </div>
       </div>
       
