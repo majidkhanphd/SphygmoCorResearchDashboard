@@ -53,6 +53,7 @@ export const searchPublicationsSchema = z.object({
   sortBy: z.enum(["newest", "oldest", "relevance"]).default("newest"),
   limit: z.number().default(20),
   offset: z.number().default(0),
+  featured: z.boolean().optional(), // Filter for featured publications
 });
 
 export type SearchPublicationsParams = z.infer<typeof searchPublicationsSchema>;

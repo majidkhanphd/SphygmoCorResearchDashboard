@@ -35,6 +35,7 @@ export async function searchPublications(params: {
   sortBy?: string;
   limit?: number;
   offset?: number;
+  featured?: boolean;
 }): Promise<SearchPublicationsResponse> {
   const searchParams = new URLSearchParams();
   
@@ -46,6 +47,7 @@ export async function searchPublications(params: {
   if (params.sortBy) searchParams.append("sortBy", params.sortBy);
   if (params.limit) searchParams.append("limit", params.limit.toString());
   if (params.offset) searchParams.append("offset", params.offset.toString());
+  if (params.featured !== undefined) searchParams.append("featured", params.featured.toString());
 
   const response = await apiRequest("GET", `/api/publications/search?${searchParams.toString()}`);
   return response.json();

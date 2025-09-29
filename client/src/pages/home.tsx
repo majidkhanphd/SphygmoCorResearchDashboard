@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, X, Star, ExternalLink } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { searchPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
@@ -20,6 +20,7 @@ export default function Home() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [showAllAreas, setShowAllAreas] = useState(false);
   const [showAllVenues, setShowAllVenues] = useState(false);
+  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
   const limit = 50;
 
   const { 
@@ -35,7 +36,8 @@ export default function Home() {
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy,
-      limit
+      limit,
+      featured: showFeaturedOnly || undefined
     }],
     queryFn: ({ pageParam = 0 }) => searchPublications({
       query: debouncedSearchQuery || undefined,
@@ -44,7 +46,8 @@ export default function Home() {
       year: selectedYear || undefined,
       sortBy,
       limit,
-      offset: pageParam * limit
+      offset: pageParam * limit,
+      featured: showFeaturedOnly || undefined
     }),
     getNextPageParam: (lastPage, allPages) => {
       if (!lastPage.publications || lastPage.publications.length < limit) {
@@ -78,6 +81,7 @@ export default function Home() {
     setSelectedVenue(null);
     setSelectedYear(null);
     setInputValue("");
+    setShowFeaturedOnly(false);
   };
 
   const handleResearchAreaChange = (area: string | null) => {
@@ -151,6 +155,54 @@ export default function Home() {
           </p>
           <p className="leading-relaxed" style={{ fontSize: '22px', color: '#6E6E73', lineHeight: '1.4' }}>
             Our publications span machine learning and AI, computer vision, natural language processing, and more.
+          </p>
+        </div>
+        
+        {/* Featured Publications Toggle - Apple style */}
+        <div style={{ marginBottom: '48px' }}>
+          <div className="inline-flex items-center rounded-xl transition-all duration-200" style={{
+            backgroundColor: '#F6F6F6',
+            border: '1px solid #E5E5E7',
+            padding: '4px'
+          }}>
+            <button
+              onClick={() => setShowFeaturedOnly(false)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                !showFeaturedOnly ? 'shadow-sm' : ''
+              }`}
+              style={{
+                backgroundColor: !showFeaturedOnly ? '#FFFFFF' : 'transparent',
+                color: !showFeaturedOnly ? '#1D1D1F' : '#6E6E73',
+                border: 'none',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
+              }}
+              data-testid="toggle-all-publications"
+            >
+              All Publications
+            </button>
+            <button
+              onClick={() => setShowFeaturedOnly(true)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-1 ${
+                showFeaturedOnly ? 'shadow-sm' : ''
+              }`}
+              style={{
+                backgroundColor: showFeaturedOnly ? '#FFFFFF' : 'transparent',
+                color: showFeaturedOnly ? '#1D1D1F' : '#6E6E73',
+                border: 'none',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
+              }}
+              data-testid="toggle-featured-publications"
+            >
+              <Star className="h-4 w-4" fill={showFeaturedOnly ? '#FFD60A' : 'none'} stroke={showFeaturedOnly ? '#FFD60A' : 'currentColor'} />
+              Featured
+            </button>
+          </div>
+        </div>
+        
+        {/* Page Last Updated */}
+        <div style={{ marginBottom: '32px' }}>
+          <p className="text-sm" style={{ color: '#6E6E73', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} data-testid="last-updated">
+            Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
         
@@ -242,7 +294,7 @@ export default function Home() {
         </div>
         
         {/* Active Filter Chips */}
-        {(selectedResearchArea || selectedVenue || selectedYear || debouncedSearchQuery) && (
+        {(selectedResearchArea || selectedVenue || selectedYear || debouncedSearchQuery || showFeaturedOnly) && (
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-sm font-medium" style={{ color: '#1D1D1F' }}>Active filters:</span>
@@ -256,6 +308,23 @@ export default function Home() {
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
+              {showFeaturedOnly && (
+                <div 
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors"
+                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
+                  data-testid="filter-chip-featured"
+                >
+                  <Star className="h-3 w-3" fill="#FFD60A" stroke="#FFD60A" />
+                  <span>Featured Publications</span>
+                  <button
+                    onClick={() => setShowFeaturedOnly(false)}
+                    className="hover:opacity-70 transition-opacity"
+                    data-testid="clear-featured-filter"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
               {debouncedSearchQuery && (
                 <div 
                   className="inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors"
@@ -619,12 +688,64 @@ export default function Home() {
                             fontWeight: '400', 
                             lineHeight: '1.4', 
                             color: '#6E6E73',
-                            marginBottom: '4px'
+                            marginBottom: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '8px'
                           }}>
                             {/* Venue (italicized) and year */}
                             <span data-testid="publication-venue">
                               <em>{publication.journal}</em>, {publicationYear}
                             </span>
+                            
+                            {/* DOI Badge */}
+                            {publication.doi && (
+                              <a
+                                href={`https://doi.org/${publication.doi}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded transition-colors duration-200"
+                                style={{
+                                  backgroundColor: '#F0F7FF',
+                                  color: '#007AFF',
+                                  fontSize: '12px',
+                                  fontWeight: '500',
+                                  textDecoration: 'none',
+                                  border: '1px solid #B3D9FF'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#E0F0FF';
+                                  e.currentTarget.style.borderColor = '#80C7FF';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#F0F7FF';
+                                  e.currentTarget.style.borderColor = '#B3D9FF';
+                                }}
+                                data-testid="doi-badge"
+                              >
+                                DOI
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                            
+                            {/* Featured Badge */}
+                            {publication.isFeatured === 1 && (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded"
+                                style={{
+                                  backgroundColor: '#FFF8E1',
+                                  color: '#FF8F00',
+                                  fontSize: '12px',
+                                  fontWeight: '500',
+                                  border: '1px solid #FFE0B2'
+                                }}
+                                data-testid="featured-badge"
+                              >
+                                <Star className="h-3 w-3" fill="#FFD60A" stroke="#FFD60A" />
+                                Featured
+                              </span>
+                            )}
                           </div>
                           
                           {/* Authors with em dash separators */}
@@ -682,6 +803,84 @@ export default function Home() {
           </div>
         </div>
       </div>
+      
+      {/* Apple-style Footer */}
+      <footer className="border-t" style={{ 
+        backgroundColor: '#F6F6F6', 
+        borderColor: '#E5E5E7',
+        marginTop: '96px',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
+      }}>
+        <div className="max-w-[980px] mx-auto px-6" style={{ paddingTop: '48px', paddingBottom: '48px' }}>
+          {/* Footer Links */}
+          <div className="flex flex-wrap items-center justify-center gap-6 mb-8">
+            <a 
+              href="#" 
+              className="text-sm transition-colors duration-200" 
+              style={{ color: '#6E6E73', textDecoration: 'none' }}
+              onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
+              onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#6E6E73'}
+              data-testid="footer-link-privacy"
+            >
+              Privacy Policy
+            </a>
+            <span style={{ color: '#E5E5E7' }}>|</span>
+            <a 
+              href="#" 
+              className="text-sm transition-colors duration-200" 
+              style={{ color: '#6E6E73', textDecoration: 'none' }}
+              onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
+              onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#6E6E73'}
+              data-testid="footer-link-terms"
+            >
+              Terms of Use
+            </a>
+            <span style={{ color: '#E5E5E7' }}>|</span>
+            <a 
+              href="#" 
+              className="text-sm transition-colors duration-200" 
+              style={{ color: '#6E6E73', textDecoration: 'none' }}
+              onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
+              onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#6E6E73'}
+              data-testid="footer-link-sales"
+            >
+              Sales and Refunds
+            </a>
+            <span style={{ color: '#E5E5E7' }}>|</span>
+            <a 
+              href="#" 
+              className="text-sm transition-colors duration-200" 
+              style={{ color: '#6E6E73', textDecoration: 'none' }}
+              onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
+              onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#6E6E73'}
+              data-testid="footer-link-legal"
+            >
+              Legal
+            </a>
+            <span style={{ color: '#E5E5E7' }}>|</span>
+            <a 
+              href="#" 
+              className="text-sm transition-colors duration-200" 
+              style={{ color: '#6E6E73', textDecoration: 'none' }}
+              onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
+              onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#6E6E73'}
+              data-testid="footer-link-sitemap"
+            >
+              Site Map
+            </a>
+          </div>
+          
+          {/* Copyright */}
+          <div className="text-center">
+            <p className="text-sm" style={{ color: '#6E6E73', lineHeight: '1.4' }} data-testid="footer-copyright">
+              Copyright © {new Date().getFullYear()} Apple Inc. All rights reserved.
+            </p>
+            <p className="text-xs mt-2" style={{ color: '#86868B', lineHeight: '1.4' }} data-testid="footer-location">
+              United States
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
