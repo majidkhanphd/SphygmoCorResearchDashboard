@@ -140,7 +140,7 @@ export default function Home() {
       <div className="max-w-[980px] mx-auto px-6" style={{ paddingTop: '56px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Breadcrumb - Apple style */}
         <nav style={{ marginBottom: '32px' }} data-testid="breadcrumb">
-          <span className="text-sm font-normal tracking-widest uppercase" style={{ color: '#6E6E73' }}>MACHINE LEARNING</span>
+          <span className="text-sm font-normal tracking-widest uppercase" style={{ color: '#6E6E73' }}>CARDIOVASCULAR RESEARCH</span>
         </nav>
         
         {/* Main title - Apple's exact typography */}
@@ -151,10 +151,10 @@ export default function Home() {
         {/* Hero description - Apple's exact content and styling */}
         <div className="max-w-4xl" style={{ marginBottom: '56px' }} data-testid="hero-description">
           <p className="leading-relaxed" style={{ fontSize: '22px', color: '#1D1D1F', marginBottom: '24px', lineHeight: '1.4' }}>
-            We believe machine learning is a transformative technology that will shape the future of computing and improve lives around the world. Our Research and Engineering teams work together to advance the state of the art and move breakthrough technologies into Apple products used by millions of people.
+            We advance non-invasive cardiovascular assessment through innovative SphygmoCor technology, measuring central blood pressure, arterial stiffness, and hemodynamic parameters to improve clinical outcomes across hypertension, chronic kidney disease, and heart failure.
           </p>
           <p className="leading-relaxed" style={{ fontSize: '22px', color: '#6E6E73', lineHeight: '1.4' }}>
-            Our publications span machine learning and AI, computer vision, natural language processing, and more.
+            Our publications span pulse wave analysis, carotid-femoral pulse wave velocity, vascular aging, device validation, and clinical evidence across diverse populations.
           </p>
         </div>
         
