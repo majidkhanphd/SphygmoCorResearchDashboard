@@ -429,76 +429,90 @@ export default function Home() {
                 </p>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                {allPublications?.map((publication: Publication) => {
-                  const publicationYear = new Date(publication.publicationDate).getFullYear();
-                  const displayArea = getResearchAreaDisplayName(publication.researchArea);
-                  
-                  return (
-                    <article key={publication.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }} data-testid={`publication-${publication.id}`}>
-                      {/* Title - Apple typography */}
-                      <h2 style={{ fontSize: '20px', fontWeight: '500', lineHeight: '1.25', color: '#1D1D1F', marginBottom: '4px' }}>
-                        <a 
-                          href={publication.pubmedUrl || publication.doi || '#'}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="transition-colors duration-200"
-                          style={{ color: '#1D1D1F', textDecoration: 'none' }}
-                          onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#007AFF'}
-                          onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
-                          data-testid="publication-title-link"
-                        >
-                          {publication.title}
-                        </a>
-                      </h2>
-                      
-                      {/* Research area tags - Apple style */}
-                      {displayArea && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '4px' }}>
-                          <button
-                            onClick={() => handleResearchAreaChange(publication.researchArea)}
-                            className="inline-flex items-center rounded-full cursor-pointer transition-colors duration-200"
-                            style={{
-                              paddingLeft: '12px',
-                              paddingRight: '12px',
-                              paddingTop: '4px',
-                              paddingBottom: '4px',
-                              fontSize: '12px',
-                              fontWeight: '400',
-                              color: '#007AFF',
-                              backgroundColor: '#F0F7FF',
-                              border: '1px solid #007AFF20',
-                              outline: 'none'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#E0F0FF';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#F0F7FF';
-                            }}
-                            data-testid="research-area-tag"
-                          >
-                            {displayArea}
-                          </button>
+              <>
+                {/* Apple-style Publications List using ordered list */}
+                <ol style={{ listStyle: 'none', padding: 0, margin: 0 }} data-testid="publications-list">
+                  {allPublications?.map((publication: Publication, index) => {
+                    const publicationYear = new Date(publication.publicationDate).getFullYear();
+                    // Transform authors: replace commas with em dashes
+                    const formattedAuthors = publication.authors
+                      .split(', ')
+                      .join(' — ');
+                    
+                    return (
+                      <li key={publication.id} data-testid={`publication-${publication.id}`}>
+                        {/* Apple-style publication entry */}
+                        <div style={{ 
+                          paddingTop: index === 0 ? 0 : '24px', 
+                          paddingBottom: '24px'
+                        }}>
+                          {/* Horizontal separator line (except for first item) */}
+                          {index > 0 && (
+                            <div 
+                              style={{ 
+                                height: '1px', 
+                                backgroundColor: '#E5E5E7', 
+                                marginBottom: '24px',
+                                marginTop: '-24px'
+                              }} 
+                            />
+                          )}
+                          
+                          {/* Title - Apple's conservative typography */}
+                          <h3 style={{ 
+                            fontSize: '17px', 
+                            fontWeight: '400', 
+                            lineHeight: '1.35', 
+                            color: '#1D1D1F', 
+                            marginBottom: '8px',
+                            margin: '0 0 8px 0'
+                          }}>
+                            <a 
+                              href={publication.pubmedUrl || publication.doi || '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="transition-colors duration-200"
+                              style={{ color: '#1D1D1F', textDecoration: 'none' }}
+                              onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#007AFF'}
+                              onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
+                              data-testid="publication-title-link"
+                            >
+                              {publication.title}
+                            </a>
+                          </h3>
+                          
+                          {/* Citation metadata - Apple's exact layout */}
+                          <div style={{ 
+                            fontSize: '14px', 
+                            fontWeight: '400', 
+                            lineHeight: '1.4', 
+                            color: '#6E6E73',
+                            marginBottom: '4px'
+                          }}>
+                            {/* Venue (italicized) and year */}
+                            <span data-testid="publication-venue">
+                              <em>{publication.journal}</em>, {publicationYear}
+                            </span>
+                          </div>
+                          
+                          {/* Authors with em dash separators */}
+                          <div style={{ 
+                            fontSize: '14px', 
+                            fontWeight: '400', 
+                            lineHeight: '1.4', 
+                            color: '#6E6E73'
+                          }} data-testid="publication-authors">
+                            {formattedAuthors}
+                          </div>
                         </div>
-                      )}
-                      
-                      {/* Venue and year - Apple secondary text */}
-                      <p style={{ fontSize: '14px', fontWeight: '400', lineHeight: '1.4', color: '#6E6E73', marginBottom: '2px' }} data-testid="publication-venue">
-                        {publication.journal}, {publicationYear}
-                      </p>
-                      
-                      {/* Authors - Apple secondary text */}
-                      <p style={{ fontSize: '14px', fontWeight: '400', lineHeight: '1.4', color: '#6E6E73' }} data-testid="publication-authors">
-                        {publication.authors}
-                      </p>
-                    </article>
-                  );
-                })}
+                      </li>
+                    );
+                  })}
+                </ol>
                 
                 {/* Load more button - Apple style */}
                 {hasNextPage && (
-                  <div style={{ paddingTop: '32px' }}>
+                  <div style={{ paddingTop: '32px', borderTop: '1px solid #E5E5E7', marginTop: '32px' }}>
                     <button
                       onClick={loadMore}
                       disabled={isFetchingNextPage}
@@ -531,7 +545,7 @@ export default function Home() {
                     </button>
                   </div>
                 )}
-              </div>
+              </>
             )}
           </div>
         </div>
