@@ -105,11 +105,27 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      {/* Apple-style simple header */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <h1 className="text-5xl font-semibold text-foreground mb-16 leading-tight">
-          Explore advancements in Machine Learning
+      {/* Apple's exact hero section */}
+      <div className="max-w-[980px] mx-auto px-6" style={{ paddingTop: '56px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+        {/* Breadcrumb - Apple style */}
+        <nav style={{ marginBottom: '32px' }} data-testid="breadcrumb">
+          <span className="text-sm font-normal tracking-widest uppercase" style={{ color: '#6E6E73' }}>MACHINE LEARNING</span>
+        </nav>
+        
+        {/* Main title - Apple's exact typography */}
+        <h1 className="font-semibold leading-tight tracking-tight" style={{ fontSize: '80px', color: '#1D1D1F', marginBottom: '32px', lineHeight: '1.05' }} data-testid="main-title">
+          Research
         </h1>
+        
+        {/* Hero description - Apple's exact content and styling */}
+        <div className="max-w-4xl" style={{ marginBottom: '56px' }} data-testid="hero-description">
+          <p className="leading-relaxed" style={{ fontSize: '22px', color: '#1D1D1F', marginBottom: '24px', lineHeight: '1.4' }}>
+            We believe machine learning is a transformative technology that will shape the future of computing and improve lives around the world. Our Research and Engineering teams work together to advance the state of the art and move breakthrough technologies into Apple products used by millions of people.
+          </p>
+          <p className="leading-relaxed" style={{ fontSize: '22px', color: '#6E6E73', lineHeight: '1.4' }}>
+            Our publications span machine learning and AI, computer vision, natural language processing, and more.
+          </p>
+        </div>
         
         {/* Search bar */}
         <form onSubmit={handleSearch} className="mb-12">
