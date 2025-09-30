@@ -7,18 +7,28 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Check, X, ExternalLink, Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Search, Check, X, ExternalLink, Loader2, Pencil } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
+import { RESEARCH_AREA_DISPLAY_NAMES } from "@shared/schema";
 import type { Publication } from "@shared/schema";
 
 export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected">("pending");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
+  const [editResearchArea, setEditResearchArea] = useState("");
+  const [editCategories, setEditCategories] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 400);
   const { toast } = useToast();
 
-  const { data: pendingPubs, isLoading } = useQuery<{ success: boolean; publications: Publication[]; total: number }>({
-    queryKey: ["/api/admin/publications/pending"],
+  const { data: publicationsData, isLoading } = useQuery<{ success: boolean; publications: Publication[]; total: number }>({
+    queryKey: [`/api/admin/publications/${activeTab}`],
   });
 
   const { data: statsData } = useQuery<{ success: boolean; stats: { totalPublications: number; totalByStatus: Record<string, number> } }>({
@@ -31,6 +41,8 @@ export default function Admin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
       toast({
@@ -53,6 +65,8 @@ export default function Admin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
       toast({
         title: "Publication Rejected",
@@ -68,7 +82,58 @@ export default function Admin() {
     },
   });
 
-  const filteredPublications = pendingPubs?.publications.filter(pub => {
+  const updateCategoriesMutation = useMutation({
+    mutationFn: async ({ id, researchArea, categories }: { id: string; researchArea: string; categories: string[] }) => {
+      return await apiRequest("PATCH", `/api/admin/publications/${id}/categories`, {
+        researchArea,
+        categories,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
+      setEditDialogOpen(false);
+      setEditingPublication(null);
+      toast({
+        title: "Publication Updated",
+        description: "Categories and research area updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update publication",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const openEditDialog = (publication: Publication) => {
+    setEditingPublication(publication);
+    setEditResearchArea(publication.researchArea || "");
+    setEditCategories(Array.isArray(publication.categories) ? publication.categories.join(", ") : "");
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveCategories = () => {
+    if (!editingPublication) return;
+    
+    const categoriesArray = editCategories
+      .split(",")
+      .map(cat => cat.trim())
+      .filter(cat => cat.length > 0);
+    
+    updateCategoriesMutation.mutate({
+      id: editingPublication.id,
+      researchArea: editResearchArea,
+      categories: categoriesArray,
+    });
+  };
+
+  const filteredPublications = publicationsData?.publications.filter(pub => {
     if (!debouncedSearch) return true;
     const search = debouncedSearch.toLowerCase();
     return (
@@ -93,7 +158,7 @@ export default function Admin() {
             Publication Admin
           </h1>
           <p className="text-lg text-[#6e6e73] dark:text-gray-400">
-            Review and manage pending publications
+            Review and manage publications
           </p>
         </div>
 
@@ -135,7 +200,7 @@ export default function Admin() {
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>Search Publications</CardTitle>
-            <CardDescription>Filter pending publications by title, author, or journal</CardDescription>
+            <CardDescription>Filter publications by title, author, or journal</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="relative">
@@ -151,120 +216,386 @@ export default function Admin() {
             </div>
             {debouncedSearch && (
               <p className="mt-2 text-sm text-[#6e6e73] dark:text-gray-400">
-                Showing {filteredPublications.length} of {pendingPubs?.publications.length || 0} publications
+                Showing {filteredPublications.length} of {publicationsData?.publications.length || 0} publications
               </p>
             )}
           </CardContent>
         </Card>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-[#0071e3]" />
-          </div>
-        ) : filteredPublications.length === 0 ? (
-          <Card>
-            <CardContent className="py-16 text-center">
-              <p className="text-[#6e6e73] dark:text-gray-400">
-                {debouncedSearch ? "No publications match your search" : "No pending publications"}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Pending Publications ({filteredPublications.length})</CardTitle>
-              <CardDescription>Review and approve publications for the website</CardDescription>
+        <Card>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "pending" | "approved" | "rejected")} data-testid="tabs-status">
+            <CardHeader className="pb-3">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="pending" data-testid="tab-pending">
+                  Pending ({pending})
+                </TabsTrigger>
+                <TabsTrigger value="approved" data-testid="tab-approved">
+                  Approved ({approved})
+                </TabsTrigger>
+                <TabsTrigger value="rejected" data-testid="tab-rejected">
+                  Rejected ({rejected})
+                </TabsTrigger>
+              </TabsList>
             </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[40%]">Title</TableHead>
-                      <TableHead className="w-[20%]">Journal</TableHead>
-                      <TableHead className="w-[15%]">Date</TableHead>
-                      <TableHead className="w-[10%]">Area</TableHead>
-                      <TableHead className="w-[15%] text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPublications.map((pub) => (
-                      <TableRow key={pub.id} data-testid={`row-publication-${pub.id}`}>
-                        <TableCell className="font-medium">
-                          <div className="space-y-1">
-                            <div className="line-clamp-2 text-sm" data-testid={`text-title-${pub.id}`}>
-                              {pub.title}
-                            </div>
-                            <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${pub.id}`}>
-                              {pub.authors}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm line-clamp-2" data-testid={`text-journal-${pub.id}`}>
-                            {pub.journal}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm" data-testid={`text-date-${pub.id}`}>
-                            {new Date(pub.publicationDate).toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'short' 
-                            })}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {pub.researchArea && (
-                            <Badge variant="secondary" className="text-xs" data-testid={`badge-area-${pub.id}`}>
-                              {pub.researchArea}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => pub.pubmedUrl && window.open(pub.pubmedUrl, '_blank')}
-                              className="h-8 w-8 p-0"
-                              title="View on PubMed"
-                              data-testid={`button-view-${pub.id}`}
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => approveMutation.mutate(pub.id)}
-                              disabled={approveMutation.isPending}
-                              className="h-8 bg-green-600 hover:bg-green-700 text-white"
-                              data-testid={`button-approve-${pub.id}`}
-                            >
-                              <Check className="h-4 w-4 mr-1" />
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => rejectMutation.mutate(pub.id)}
-                              disabled={rejectMutation.isPending}
-                              className="h-8"
-                              data-testid={`button-reject-${pub.id}`}
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Reject
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
+            <TabsContent value="pending" className="mt-0">
+              <CardContent className="p-0">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#0071e3]" />
+                  </div>
+                ) : filteredPublications.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <p className="text-[#6e6e73] dark:text-gray-400">
+                      {debouncedSearch ? "No publications match your search" : "No pending publications"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[35%]">Title</TableHead>
+                          <TableHead className="w-[15%]">Journal</TableHead>
+                          <TableHead className="w-[12%]">Date</TableHead>
+                          <TableHead className="w-[10%]">Area</TableHead>
+                          <TableHead className="w-[28%] text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredPublications.map((pub) => (
+                          <TableRow key={pub.id} data-testid={`row-publication-${pub.id}`}>
+                            <TableCell className="font-medium">
+                              <div className="space-y-1">
+                                <div className="line-clamp-2 text-sm" data-testid={`text-title-${pub.id}`}>
+                                  {pub.title}
+                                </div>
+                                <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${pub.id}`}>
+                                  {pub.authors}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm line-clamp-2" data-testid={`text-journal-${pub.id}`}>
+                                {pub.journal}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm" data-testid={`text-date-${pub.id}`}>
+                                {new Date(pub.publicationDate).toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'short' 
+                                })}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {pub.researchArea && (
+                                <Badge variant="secondary" className="text-xs" data-testid={`badge-area-${pub.id}`}>
+                                  {RESEARCH_AREA_DISPLAY_NAMES[pub.researchArea] || pub.researchArea}
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => pub.pubmedUrl && window.open(pub.pubmedUrl, '_blank')}
+                                  className="h-8 w-8 p-0"
+                                  title="View on PubMed"
+                                  data-testid={`button-view-${pub.id}`}
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => openEditDialog(pub)}
+                                  className="h-8 w-8 p-0"
+                                  title="Edit Categories"
+                                  data-testid={`button-edit-${pub.id}`}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  onClick={() => approveMutation.mutate(pub.id)}
+                                  disabled={approveMutation.isPending}
+                                  className="h-8 bg-green-600 hover:bg-green-700 text-white"
+                                  data-testid={`button-approve-${pub.id}`}
+                                >
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => rejectMutation.mutate(pub.id)}
+                                  disabled={rejectMutation.isPending}
+                                  className="h-8"
+                                  data-testid={`button-reject-${pub.id}`}
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </TabsContent>
+
+            <TabsContent value="approved" className="mt-0">
+              <CardContent className="p-0">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#0071e3]" />
+                  </div>
+                ) : filteredPublications.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <p className="text-[#6e6e73] dark:text-gray-400">
+                      {debouncedSearch ? "No publications match your search" : "No approved publications"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[40%]">Title</TableHead>
+                          <TableHead className="w-[20%]">Journal</TableHead>
+                          <TableHead className="w-[12%]">Date</TableHead>
+                          <TableHead className="w-[10%]">Area</TableHead>
+                          <TableHead className="w-[18%] text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredPublications.map((pub) => (
+                          <TableRow key={pub.id} data-testid={`row-publication-${pub.id}`}>
+                            <TableCell className="font-medium">
+                              <div className="space-y-1">
+                                <div className="line-clamp-2 text-sm" data-testid={`text-title-${pub.id}`}>
+                                  {pub.title}
+                                </div>
+                                <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${pub.id}`}>
+                                  {pub.authors}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm line-clamp-2" data-testid={`text-journal-${pub.id}`}>
+                                {pub.journal}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm" data-testid={`text-date-${pub.id}`}>
+                                {new Date(pub.publicationDate).toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'short' 
+                                })}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {pub.researchArea && (
+                                <Badge variant="secondary" className="text-xs" data-testid={`badge-area-${pub.id}`}>
+                                  {RESEARCH_AREA_DISPLAY_NAMES[pub.researchArea] || pub.researchArea}
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => pub.pubmedUrl && window.open(pub.pubmedUrl, '_blank')}
+                                  className="h-8 w-8 p-0"
+                                  title="View on PubMed"
+                                  data-testid={`button-view-${pub.id}`}
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => openEditDialog(pub)}
+                                  className="h-8 w-8 p-0"
+                                  title="Edit Categories"
+                                  data-testid={`button-edit-${pub.id}`}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </TabsContent>
+
+            <TabsContent value="rejected" className="mt-0">
+              <CardContent className="p-0">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#0071e3]" />
+                  </div>
+                ) : filteredPublications.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <p className="text-[#6e6e73] dark:text-gray-400">
+                      {debouncedSearch ? "No publications match your search" : "No rejected publications"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[40%]">Title</TableHead>
+                          <TableHead className="w-[20%]">Journal</TableHead>
+                          <TableHead className="w-[12%]">Date</TableHead>
+                          <TableHead className="w-[10%]">Area</TableHead>
+                          <TableHead className="w-[18%] text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredPublications.map((pub) => (
+                          <TableRow key={pub.id} data-testid={`row-publication-${pub.id}`}>
+                            <TableCell className="font-medium">
+                              <div className="space-y-1">
+                                <div className="line-clamp-2 text-sm" data-testid={`text-title-${pub.id}`}>
+                                  {pub.title}
+                                </div>
+                                <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${pub.id}`}>
+                                  {pub.authors}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm line-clamp-2" data-testid={`text-journal-${pub.id}`}>
+                                {pub.journal}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm" data-testid={`text-date-${pub.id}`}>
+                                {new Date(pub.publicationDate).toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'short' 
+                                })}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {pub.researchArea && (
+                                <Badge variant="secondary" className="text-xs" data-testid={`badge-area-${pub.id}`}>
+                                  {RESEARCH_AREA_DISPLAY_NAMES[pub.researchArea] || pub.researchArea}
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => pub.pubmedUrl && window.open(pub.pubmedUrl, '_blank')}
+                                  className="h-8 w-8 p-0"
+                                  title="View on PubMed"
+                                  data-testid={`button-view-${pub.id}`}
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => openEditDialog(pub)}
+                                  className="h-8 w-8 p-0"
+                                  title="Edit Categories"
+                                  data-testid={`button-edit-${pub.id}`}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </TabsContent>
+          </Tabs>
+        </Card>
       </main>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]" data-testid="dialog-edit-categories">
+          <DialogHeader>
+            <DialogTitle>Edit Publication Categories</DialogTitle>
+            <DialogDescription>
+              Update the research area and categories for this publication.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="research-area">Research Area</Label>
+              <Select value={editResearchArea} onValueChange={setEditResearchArea}>
+                <SelectTrigger id="research-area" data-testid="select-research-area">
+                  <SelectValue placeholder="Select research area" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(RESEARCH_AREA_DISPLAY_NAMES).map(([slug, displayName]) => (
+                    <SelectItem key={slug} value={slug} data-testid={`option-research-area-${slug}`}>
+                      {displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="categories">Categories</Label>
+              <Input
+                id="categories"
+                placeholder="Enter categories separated by commas"
+                value={editCategories}
+                onChange={(e) => setEditCategories(e.target.value)}
+                data-testid="input-categories"
+              />
+              <p className="text-sm text-[#6e6e73] dark:text-gray-400">
+                Enter multiple categories separated by commas (e.g., Hypertension, Heart Failure)
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+              data-testid="button-cancel-edit"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveCategories}
+              disabled={updateCategoriesMutation.isPending}
+              data-testid="button-save-categories"
+            >
+              {updateCategoriesMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

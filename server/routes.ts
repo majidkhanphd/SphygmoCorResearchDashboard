@@ -485,6 +485,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to get publications by status (pending, approved, rejected)
+  app.get("/api/admin/publications/:status", async (req, res) => {
+    try {
+      const { status } = req.params;
+      
+      // Validate status
+      if (!["pending", "approved", "rejected"].includes(status)) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Invalid status. Must be pending, approved, or rejected" 
+        });
+      }
+      
+      // Direct database query for publications by status (bypass approved filter)
+      const { db } = await import("./db");
+      const { publications } = await import("@shared/schema");
+      const { eq, desc } = await import("drizzle-orm");
+      
+      const pubs = await db
+        .select()
+        .from(publications)
+        .where(eq(publications.status, status))
+        .orderBy(desc(publications.publicationDate))
+        .limit(1000);
+      
+      res.json({
+        success: true,
+        publications: pubs,
+        total: pubs.length
+      });
+    } catch (error: any) {
+      console.error("Error fetching publications by status:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch publications", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Admin endpoint to update publication categories and research area
+  app.patch("/api/admin/publications/:id/categories", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { researchArea, categories } = req.body;
+      
+      // Validate input
+      if (!researchArea && !categories) {
+        return res.status(400).json({ 
+          success: false,
+          message: "At least one of researchArea or categories is required" 
+        });
+      }
+      
+      // Validate categories is an array if provided
+      if (categories !== undefined && !Array.isArray(categories)) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Categories must be an array" 
+        });
+      }
+      
+      // Build update object
+      const updates: any = {};
+      if (researchArea !== undefined) updates.researchArea = researchArea;
+      if (categories !== undefined) updates.categories = categories;
+      
+      const publication = await storage.updatePublication(id, updates);
+      
+      if (!publication) {
+        return res.status(404).json({ 
+          success: false,
+          message: "Publication not found" 
+        });
+      }
+      
+      res.json({ 
+        success: true,
+        publication,
+        message: "Publication updated successfully"
+      });
+    } catch (error: any) {
+      console.error("Error updating publication categories:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to update publication", 
+        error: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
