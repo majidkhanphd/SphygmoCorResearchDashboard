@@ -74,23 +74,36 @@ export interface SearchPublicationsResponse {
   filterCounts: FilterCounts;
 }
 
-// Research area slug to display name mapping - Cardiovascular medical categories
+// Fixed research areas for CONNEQT Health cardiovascular research
+export const RESEARCH_AREAS = [
+  "Chronic Kidney Disease (CKD)",
+  "Chronic Obstructive Pulmonary Disease (COPD)",
+  "Early Vascular Aging (EVA)",
+  "Heart Failure",
+  "Hypertension",
+  "Longevity",
+  "Maternal Health",
+  "Men's Health",
+  "Metabolic Health",
+  "Neuroscience",
+  "Women's Health"
+] as const;
+
+export type ResearchArea = typeof RESEARCH_AREAS[number];
+
+// Legacy mapping kept for backward compatibility (to be removed)
 export const RESEARCH_AREA_DISPLAY_NAMES: Record<string, string> = {
-  "hypertension": "Hypertension",
-  "arterial-stiffness": "Arterial Stiffness",
-  "central-blood-pressure": "Central Blood Pressure",
-  "pulse-wave-analysis": "Pulse Wave Analysis",
-  "cfpwv": "Carotid-Femoral PWV",
-  "vascular-aging": "Vascular Aging",
-  "chronic-kidney-disease": "Chronic Kidney Disease",
-  "heart-failure": "Heart Failure",
-  "coronary-artery-disease": "Coronary Artery Disease",
-  "diabetes": "Diabetes & Metabolic",
-  "pediatrics": "Pediatrics",
-  "obstetrics": "Obstetrics",
-  "sports-cardiology": "Sports Cardiology",
-  "methodology": "Methods & Validation",
-  "population-health": "Population Health"
+  "Chronic Kidney Disease (CKD)": "Chronic Kidney Disease (CKD)",
+  "Chronic Obstructive Pulmonary Disease (COPD)": "Chronic Obstructive Pulmonary Disease (COPD)",
+  "Early Vascular Aging (EVA)": "Early Vascular Aging (EVA)",
+  "Heart Failure": "Heart Failure",
+  "Hypertension": "Hypertension",
+  "Longevity": "Longevity",
+  "Maternal Health": "Maternal Health",
+  "Men's Health": "Men's Health",
+  "Metabolic Health": "Metabolic Health",
+  "Neuroscience": "Neuroscience",
+  "Women's Health": "Women's Health"
 };
 
 // Utility function to get display name from research area slug
