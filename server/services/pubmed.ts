@@ -82,25 +82,40 @@ export class PubMedService {
   async fetchArticleDetails(pmids: string[]): Promise<InsertPublication[]> {
     if (pmids.length === 0) return [];
 
-    const ids = pmids.join(",");
-    const url = `${this.baseUrl}/efetch.fcgi?db=pubmed&id=${ids}&retmode=xml`;
+    // Batch requests to respect PubMed's recommended limit of 200 IDs per request
+    const BATCH_SIZE = 200;
+    const allPublications: InsertPublication[] = [];
 
-    try {
-      const response = await fetch(url);
-      const xmlText = await response.text();
-      const result = this.parser.parse(xmlText);
+    for (let i = 0; i < pmids.length; i += BATCH_SIZE) {
+      const batch = pmids.slice(i, i + BATCH_SIZE);
+      const ids = batch.join(",");
+      const url = `${this.baseUrl}/efetch.fcgi?db=pubmed&id=${ids}&retmode=xml`;
 
-      // Handle both single and multiple articles
-      const articles = result.PubmedArticleSet?.PubmedArticle;
-      if (!articles) return [];
+      try {
+        const response = await fetch(url);
+        const xmlText = await response.text();
+        const result = this.parser.parse(xmlText);
 
-      const articleArray = Array.isArray(articles) ? articles : [articles];
+        // Handle both single and multiple articles
+        const articles = result.PubmedArticleSet?.PubmedArticle;
+        if (articles) {
+          const articleArray = Array.isArray(articles) ? articles : [articles];
+          const publications = articleArray
+            .map((article: PubMedArticle) => this.parseArticle(article))
+            .filter(Boolean) as InsertPublication[];
+          allPublications.push(...publications);
+        }
 
-      return articleArray.map((article: PubMedArticle) => this.parseArticle(article)).filter(Boolean) as InsertPublication[];
-    } catch (error) {
-      console.error("Error fetching PubMed article details:", error);
-      return [];
+        // Add delay between batch requests to respect rate limits (350ms)
+        if (i + BATCH_SIZE < pmids.length) {
+          await new Promise(resolve => setTimeout(resolve, 350));
+        }
+      } catch (error) {
+        console.error(`Error fetching PubMed batch ${i}-${i + batch.length}:`, error);
+      }
     }
+
+    return allPublications;
   }
 
   private parseArticle(article: PubMedArticle): InsertPublication | null {
@@ -289,7 +304,7 @@ export class PubMedService {
       }
     });
 
-    return [...new Set(keywords)]; // Remove duplicates
+    return Array.from(new Set(keywords)); // Remove duplicates
   }
 
   async syncCardiovascularResearch(maxPerTerm: number = MAX_RESULTS_PER_TERM): Promise<InsertPublication[]> {

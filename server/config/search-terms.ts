@@ -10,4 +10,4 @@ export const PUBMED_SEARCH_TERMS = [
 ];
 
 // Maximum results per search term (can be adjusted for monthly syncs)
-export const MAX_RESULTS_PER_TERM = 100;
+export const MAX_RESULTS_PER_TERM = 500;

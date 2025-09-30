@@ -13,7 +13,7 @@ export interface IStorage {
   searchPublications(params: SearchPublicationsParams): Promise<SearchPublicationsResponse>;
   getFilterCounts(params: SearchPublicationsParams): Promise<FilterCounts>;
   getFeaturedPublications(): Promise<Publication[]>;
-  getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number}>;
+  getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number, totalByStatus?: Record<string, number>}>;
 
   // Category methods
   getCategories(): Promise<Category[]>;
@@ -254,7 +254,7 @@ export class DatabaseStorage implements IStorage {
       .limit(5);
   }
 
-  async getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number}> {
+  async getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number, totalByStatus?: Record<string, number>}> {
     const [statsResult] = await db
       .select({
         totalPublications: sql<number>`count(*)::int`,
@@ -263,11 +263,25 @@ export class DatabaseStorage implements IStorage {
       .from(publications)
       .where(eq(publications.status, "approved"));
 
+    const statusCounts = await db
+      .select({
+        status: publications.status,
+        count: sql<number>`count(*)::int`
+      })
+      .from(publications)
+      .groupBy(publications.status);
+
+    const totalByStatus: Record<string, number> = {};
+    statusCounts.forEach(({ status, count }) => {
+      totalByStatus[status] = count;
+    });
+
     return {
       totalPublications: statsResult?.totalPublications || 0,
       totalCitations: statsResult?.totalCitations || 0,
       countriesCount: 150, // Mock data
-      institutionsCount: 500 // Mock data
+      institutionsCount: 500, // Mock data
+      totalByStatus
     };
   }
 

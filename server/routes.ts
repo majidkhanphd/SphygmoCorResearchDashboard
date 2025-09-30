@@ -144,9 +144,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/publications/stats", async (req, res) => {
     try {
       const stats = await storage.getPublicationStats();
-      res.json(stats);
+      res.json({ success: true, stats });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch publication statistics" });
+      res.status(500).json({ success: false, message: "Failed to fetch publication statistics" });
     }
   });
 

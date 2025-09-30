@@ -8,6 +8,7 @@ import Highlights from "@/pages/highlights";
 import Research from "@/pages/research";
 import Updates from "@/pages/updates";
 import WorkWithUs from "@/pages/work-with-us";
+import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/research" component={Research} />
       <Route path="/updates" component={Updates} />
       <Route path="/work-with-us" component={WorkWithUs} />
+      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );
