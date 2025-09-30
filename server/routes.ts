@@ -458,14 +458,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin endpoint to get all pending publications for review
   app.get("/api/admin/publications/pending", async (req, res) => {
     try {
-      const result = await storage.searchPublications({
-        sortBy: "newest",
-        limit: 1000,
-        offset: 0
-      });
+      // Direct database query for pending publications (bypass approved filter)
+      const { db } = await import("./db");
+      const { publications } = await import("@shared/schema");
+      const { eq, desc } = await import("drizzle-orm");
       
-      // Filter for pending status (the storage layer should be updated to support this)
-      const pendingPubs = result.publications.filter(p => p.status === "pending");
+      const pendingPubs = await db
+        .select()
+        .from(publications)
+        .where(eq(publications.status, "pending"))
+        .orderBy(desc(publications.publicationDate))
+        .limit(1000);
       
       res.json({
         success: true,
