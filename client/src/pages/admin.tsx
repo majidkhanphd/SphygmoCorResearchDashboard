@@ -111,6 +111,33 @@ export default function Admin() {
     },
   });
 
+  const changeStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "pending" | "approved" | "rejected" }) => {
+      return await apiRequest("PATCH", `/api/admin/publications/${id}/status`, {
+        status,
+      });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
+      const statusMessages = {
+        pending: { title: "Publication Moved to Pending", description: "The publication has been moved to pending review." },
+        approved: { title: "Publication Approved", description: "The publication is now visible on the website." },
+        rejected: { title: "Publication Rejected", description: "The publication has been rejected." },
+      };
+      toast(statusMessages[variables.status]);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Status Change Failed",
+        description: error.message || "Failed to change publication status",
+        variant: "destructive",
+      });
+    },
+  });
+
   const openEditDialog = (publication: Publication) => {
     setEditingPublication(publication);
     setEditResearchArea(publication.researchArea || "");
@@ -429,6 +456,20 @@ export default function Admin() {
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
+                                <Select
+                                  value="approved"
+                                  onValueChange={(value) => changeStatusMutation.mutate({ id: pub.id, status: value as "pending" | "approved" | "rejected" })}
+                                  disabled={changeStatusMutation.isPending}
+                                >
+                                  <SelectTrigger className="h-8 w-[140px]" data-testid={`select-status-${pub.id}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="approved" data-testid="option-status-approved">Approved</SelectItem>
+                                    <SelectItem value="pending" data-testid="option-status-pending">Move to Pending</SelectItem>
+                                    <SelectItem value="rejected" data-testid="option-status-rejected">Reject</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -519,6 +560,20 @@ export default function Admin() {
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
+                                <Select
+                                  value="rejected"
+                                  onValueChange={(value) => changeStatusMutation.mutate({ id: pub.id, status: value as "pending" | "approved" | "rejected" })}
+                                  disabled={changeStatusMutation.isPending}
+                                >
+                                  <SelectTrigger className="h-8 w-[140px]" data-testid={`select-status-${pub.id}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="rejected" data-testid="option-status-rejected">Rejected</SelectItem>
+                                    <SelectItem value="pending" data-testid="option-status-pending">Move to Pending</SelectItem>
+                                    <SelectItem value="approved" data-testid="option-status-approved">Approve</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
                             </TableCell>
                           </TableRow>

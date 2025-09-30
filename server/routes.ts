@@ -576,6 +576,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to update publication status
+  app.patch("/api/admin/publications/:id/status", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      // Validate status
+      if (!status || !["pending", "approved", "rejected"].includes(status)) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Invalid status. Must be pending, approved, or rejected" 
+        });
+      }
+      
+      const publication = await storage.updatePublication(id, { status });
+      
+      if (!publication) {
+        return res.status(404).json({ 
+          success: false,
+          message: "Publication not found" 
+        });
+      }
+      
+      res.json({ 
+        success: true,
+        publication,
+        message: `Publication status updated to ${status}`
+      });
+    } catch (error: any) {
+      console.error("Error updating publication status:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to update publication status", 
+        error: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
