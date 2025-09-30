@@ -9,21 +9,40 @@ Users can search, filter, and browse scientific publications related to cardiova
 **Completed:**
 - ✅ Apple-perfect frontend design with horizontal navigation matching Apple ML research site
 - ✅ Complete navigation structure: Overview, Research Highlights, Publications, Events, Work With Us
-- ✅ PostgreSQL database with 77 real cardiovascular research publications from PubMed
-- ✅ Automatic PubMed synchronization service for cardiovascular research terms
+- ✅ PostgreSQL database with 100 SphygmoCor-specific research publications from PubMed
+- ✅ Automatic PubMed synchronization service with configurable search terms
 - ✅ Advanced filtering: research areas, venues, years, search, sort, featured toggle
 - ✅ Backend API integration with real-time data display
+- ✅ Publication approval workflow with status tracking (pending/approved/rejected)
+- ✅ Frontend filters to display only approved publications
+- ✅ Configurable SphygmoCor-specific search terms
 
 **Admin Functions:**
-- Manual PubMed sync via: `POST /api/admin/sync-pubmed` with `{"maxPerTerm": 50}` parameter
-- Syncs 11 cardiovascular search terms (SphygmoCor, arterial stiffness, PWV, etc.)
+
+*PubMed Sync:*
+- `POST /api/admin/sync-pubmed` with `{"maxPerTerm": 100}` parameter
+- Configurable search terms in `server/config/search-terms.ts`
+- Current query: `("sphygmoCor XCEL" OR "sphygmoCor CVMS" OR "Atcor medical" OR cardiex OR "oscar 2")`
+- All synced publications start with status="pending"
 - Auto-categorizes by research area and extracts keywords
 - Rate-limited to respect PubMed API guidelines (350ms delay between requests)
 
+*Publication Approval:*
+- `GET /api/admin/publications/pending` - View all pending publications
+- `POST /api/admin/publications/:id/approve` - Approve a publication for public display
+- `POST /api/admin/publications/:id/reject` - Reject a publication
+- Only approved publications appear on the website
+- Backend-only workflow (no frontend UI for admin)
+
+**Database Status:**
+- 100 SphygmoCor-specific publications synced
+- 1 publication approved (test)
+- 99 publications pending review
+
 **Future Improvements:**
-- Add authentication to admin sync endpoint
+- Add authentication/authorization to admin endpoints
 - Implement scheduled monthly automatic sync
-- Publication review/approval workflow
+- Add automated testing for approval workflow
 - Category management interface
 
 # User Preferences
