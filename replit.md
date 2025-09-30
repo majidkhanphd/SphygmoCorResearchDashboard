@@ -1,8 +1,30 @@
 # Overview
 
-This is a research publication management system specifically designed for SphygmoCor cardiovascular research. The application allows users to search, filter, and browse scientific publications related to SphygmoCor technology, with features for importing publications from PubMed, organizing them by medical categories, and displaying featured research.
+This is a research publication management system specifically designed for CONNEQT Health's cardiovascular research. The application is a 1:1 clone of Apple's Machine Learning research page, adapted for cardiovascular/SphygmoCor research domain. 
 
-The system provides a comprehensive interface for researchers to discover relevant cardiovascular studies, with advanced filtering capabilities by categories like Chronic Kidney Disease, Hypertension, Heart Failure, and other cardiovascular specialties. It includes statistics tracking, featured publication highlighting, and PubMed API integration for automatic data import.
+Users can search, filter, and browse scientific publications related to cardiovascular research including hypertension, arterial stiffness, pulse wave analysis, and related fields. The system automatically imports publications from PubMed based on predefined cardiovascular search terms, with backend processing to categorize and organize research.
+
+## Current Status (September 2025)
+
+**Completed:**
+- ✅ Apple-perfect frontend design with horizontal navigation matching Apple ML research site
+- ✅ Complete navigation structure: Overview, Research Highlights, Publications, Events, Work With Us
+- ✅ PostgreSQL database with 77 real cardiovascular research publications from PubMed
+- ✅ Automatic PubMed synchronization service for cardiovascular research terms
+- ✅ Advanced filtering: research areas, venues, years, search, sort, featured toggle
+- ✅ Backend API integration with real-time data display
+
+**Admin Functions:**
+- Manual PubMed sync via: `POST /api/admin/sync-pubmed` with `{"maxPerTerm": 50}` parameter
+- Syncs 11 cardiovascular search terms (SphygmoCor, arterial stiffness, PWV, etc.)
+- Auto-categorizes by research area and extracts keywords
+- Rate-limited to respect PubMed API guidelines (350ms delay between requests)
+
+**Future Improvements:**
+- Add authentication to admin sync endpoint
+- Implement scheduled monthly automatic sync
+- Publication review/approval workflow
+- Category management interface
 
 # User Preferences
 
