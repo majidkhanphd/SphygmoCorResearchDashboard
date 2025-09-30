@@ -19,6 +19,7 @@ export interface IStorage {
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
   getCategoryByName(name: string): Promise<Category | undefined>;
+  deleteCategoryFromAllPublications(categoryName: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -301,6 +302,24 @@ export class DatabaseStorage implements IStorage {
   async getCategoryByName(name: string): Promise<Category | undefined> {
     const [category] = await db.select().from(categories).where(eq(categories.name, name));
     return category || undefined;
+  }
+
+  async deleteCategoryFromAllPublications(categoryName: string): Promise<number> {
+    const allPublications = await db.select().from(publications);
+    let updatedCount = 0;
+
+    for (const publication of allPublications) {
+      if (Array.isArray(publication.categories) && publication.categories.includes(categoryName)) {
+        const updatedCategories = publication.categories.filter(cat => cat !== categoryName);
+        await db
+          .update(publications)
+          .set({ categories: updatedCategories })
+          .where(eq(publications.id, publication.id));
+        updatedCount++;
+      }
+    }
+
+    return updatedCount;
   }
 }
 

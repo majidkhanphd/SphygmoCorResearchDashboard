@@ -11,9 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Check, X, ExternalLink, Loader2, Pencil } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Search, Check, X, ExternalLink, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
 import { RESEARCH_AREA_DISPLAY_NAMES } from "@shared/schema";
@@ -27,6 +26,7 @@ export default function Admin() {
   const [editResearchArea, setEditResearchArea] = useState("");
   const [editCategories, setEditCategories] = useState<string[]>([]);
   const [customCategoryInput, setCustomCategoryInput] = useState("");
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const debouncedSearch = useDebounce(searchQuery, 400);
   const { toast } = useToast();
 
@@ -174,6 +174,32 @@ export default function Admin() {
     },
   });
 
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (categoryName: string) => {
+      return await apiRequest("DELETE", `/api/admin/categories`, { name: categoryName });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
+      setCategoryToDelete(null);
+      toast({
+        title: "Category Deleted",
+        description: "The category has been removed from all publications.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete category",
+        variant: "destructive",
+      });
+      setCategoryToDelete(null);
+    },
+  });
+
   const openEditDialog = (publication: Publication) => {
     setEditingPublication(publication);
     setEditResearchArea(publication.researchArea || "");
@@ -209,8 +235,14 @@ export default function Admin() {
     }
   };
 
-  const handleRemoveCategory = (category: string) => {
-    setEditCategories(prev => prev.filter(c => c !== category));
+  const handleDeleteCategory = (categoryName: string) => {
+    setCategoryToDelete(categoryName);
+  };
+
+  const confirmDeleteCategory = () => {
+    if (categoryToDelete) {
+      deleteCategoryMutation.mutate(categoryToDelete);
+    }
   };
 
   const filteredPublications = publicationsData?.publications.filter(pub => {
@@ -276,6 +308,43 @@ export default function Admin() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="mb-8" data-testid="section-category-management">
+          <CardHeader>
+            <CardTitle>Manage Categories</CardTitle>
+            <CardDescription>Remove unused categories from the system</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {allUniqueCategories.length === 0 ? (
+              <p className="text-sm text-[#6e6e73] dark:text-gray-400">
+                No categories available. Categories will appear here once publications have been added.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {allUniqueCategories.map((category) => (
+                  <Badge
+                    key={category}
+                    variant="secondary"
+                    className="pl-3 pr-2 py-1.5"
+                    data-testid={`badge-category-${category}`}
+                  >
+                    {category}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 w-5 p-0 ml-2 hover:bg-transparent"
+                      onClick={() => handleDeleteCategory(category)}
+                      disabled={deleteCategoryMutation.isPending}
+                      data-testid={`button-delete-category-${category}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="mb-8">
           <CardHeader>
@@ -666,33 +735,29 @@ export default function Admin() {
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Available Categories</Label>
-              <ScrollArea className="h-[200px] w-full rounded-md border p-4">
-                {allUniqueCategories.length === 0 ? (
-                  <p className="text-sm text-[#6e6e73] dark:text-gray-400">
-                    No categories available. Categories will appear here once publications have been added.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {allUniqueCategories.map((category) => (
-                      <div key={category} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`category-${category}`}
-                          checked={editCategories.includes(category)}
-                          onCheckedChange={() => toggleCategory(category)}
-                          data-testid={`checkbox-category-${category}`}
-                        />
-                        <label
-                          htmlFor={`category-${category}`}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                        >
-                          {category}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
+              <Label>Categories (click to toggle)</Label>
+              {allUniqueCategories.length === 0 ? (
+                <p className="text-sm text-[#6e6e73] dark:text-gray-400 py-4">
+                  No categories available. Categories will appear here once publications have been added.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2 p-3 border rounded-md min-h-[100px]">
+                  {allUniqueCategories.map((category) => (
+                    <Badge
+                      key={category}
+                      onClick={() => toggleCategory(category)}
+                      className={`cursor-pointer transition-colors ${
+                        editCategories.includes(category)
+                          ? "bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700"
+                          : "bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300"
+                      }`}
+                      data-testid={`badge-toggle-${category}`}
+                    >
+                      {category}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="custom-category">Add Custom Category</Label>
@@ -721,32 +786,6 @@ export default function Admin() {
                 </Button>
               </div>
             </div>
-            {editCategories.length > 0 && (
-              <div className="grid gap-2">
-                <Label>Selected Categories</Label>
-                <div className="flex flex-wrap gap-2 p-3 border rounded-md min-h-[48px]">
-                  {editCategories.map((category) => (
-                    <Badge
-                      key={category}
-                      variant="secondary"
-                      className="pl-2 pr-1 py-1"
-                      data-testid={`badge-category-${category}`}
-                    >
-                      {category}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 ml-1 hover:bg-transparent"
-                        onClick={() => handleRemoveCategory(category)}
-                        data-testid={`button-remove-category-${category}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button
@@ -773,6 +812,35 @@ export default function Admin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!categoryToDelete} onOpenChange={(open) => !open && setCategoryToDelete(null)}>
+        <AlertDialogContent data-testid="dialog-delete-category-confirm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the category "{categoryToDelete}" from all publications that use it. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-category">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteCategory}
+              disabled={deleteCategoryMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="button-confirm-delete-category"
+            >
+              {deleteCategoryMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
