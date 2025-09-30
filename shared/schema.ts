@@ -19,6 +19,7 @@ export const publications = pgTable("publications", {
   isFeatured: integer("is_featured").default(0), // 0 or 1 for boolean
   pubmedUrl: text("pubmed_url"),
   journalImpactFactor: integer("journal_impact_factor"),
+  status: text("status").notNull().default("pending"), // pending, approved, rejected
   createdAt: timestamp("created_at").defaultNow()
 });
 

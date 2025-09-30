@@ -393,13 +393,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imported,
         skipped,
         total: publications.length,
-        message: `Successfully synced ${imported} new publications from PubMed`
+        message: `Successfully synced ${imported} new publications from PubMed (status: pending)`
       });
     } catch (error: any) {
       console.error("PubMed sync error:", error);
       res.status(500).json({ 
         success: false,
         message: "Failed to sync publications from PubMed", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Admin endpoint to approve a publication
+  app.post("/api/admin/publications/:id/approve", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const publication = await storage.updatePublication(id, { status: "approved" });
+      
+      if (!publication) {
+        return res.status(404).json({ message: "Publication not found" });
+      }
+      
+      res.json({ 
+        success: true,
+        publication,
+        message: "Publication approved successfully"
+      });
+    } catch (error: any) {
+      console.error("Error approving publication:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to approve publication", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Admin endpoint to reject a publication
+  app.post("/api/admin/publications/:id/reject", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const publication = await storage.updatePublication(id, { status: "rejected" });
+      
+      if (!publication) {
+        return res.status(404).json({ message: "Publication not found" });
+      }
+      
+      res.json({ 
+        success: true,
+        publication,
+        message: "Publication rejected successfully"
+      });
+    } catch (error: any) {
+      console.error("Error rejecting publication:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to reject publication", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Admin endpoint to get all pending publications for review
+  app.get("/api/admin/publications/pending", async (req, res) => {
+    try {
+      const result = await storage.searchPublications({
+        sortBy: "newest",
+        limit: 1000,
+        offset: 0
+      });
+      
+      // Filter for pending status (the storage layer should be updated to support this)
+      const pendingPubs = result.publications.filter(p => p.status === "pending");
+      
+      res.json({
+        success: true,
+        publications: pendingPubs,
+        total: pendingPubs.length
+      });
+    } catch (error: any) {
+      console.error("Error fetching pending publications:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch pending publications", 
         error: error.message 
       });
     }

@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import type { InsertPublication } from "@shared/schema";
+import { PUBMED_SEARCH_TERMS, MAX_RESULTS_PER_TERM } from "../config/search-terms";
 
 interface PubMedArticle {
   MedlineCitation: {
@@ -50,20 +51,8 @@ export class PubMedService {
     attributeNamePrefix: "@_",
   });
 
-  // Predefined cardiovascular research search terms
-  private readonly cardiovascularTerms = [
-    "SphygmoCor",
-    "arterial stiffness",
-    "pulse wave velocity",
-    "pulse wave analysis",
-    "central blood pressure",
-    "aortic blood pressure",
-    "augmentation index",
-    "carotid-femoral pulse wave velocity",
-    "cfPWV",
-    "vascular aging",
-    "arterial compliance"
-  ];
+  // Use configurable search terms from config file
+  private readonly cardiovascularTerms = PUBMED_SEARCH_TERMS;
 
   async searchPubMed(searchTerm: string, maxResults: number = 100): Promise<string[]> {
     const query = encodeURIComponent(searchTerm);
@@ -153,6 +142,7 @@ export class PubMedService {
         isFeatured: 0,
         pubmedUrl: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
         journalImpactFactor: null,
+        status: "pending",
       };
     } catch (error) {
       console.error("Error parsing article:", error);
@@ -302,8 +292,8 @@ export class PubMedService {
     return [...new Set(keywords)]; // Remove duplicates
   }
 
-  async syncCardiovascularResearch(maxPerTerm: number = 50): Promise<InsertPublication[]> {
-    console.log("Starting PubMed sync for cardiovascular research...");
+  async syncCardiovascularResearch(maxPerTerm: number = MAX_RESULTS_PER_TERM): Promise<InsertPublication[]> {
+    console.log("Starting PubMed sync for SphygmoCor research...");
     const allPublications: InsertPublication[] = [];
 
     for (const term of this.cardiovascularTerms) {

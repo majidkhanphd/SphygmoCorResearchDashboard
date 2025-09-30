@@ -66,6 +66,9 @@ export class DatabaseStorage implements IStorage {
   async searchPublications(params: SearchPublicationsParams): Promise<SearchPublicationsResponse> {
     const conditions = [];
 
+    // Always filter for approved publications only (for frontend display)
+    conditions.push(eq(publications.status, "approved"));
+
     // Build search query conditions
     if (params.query) {
       const searchQuery = `%${params.query.toLowerCase()}%`;
@@ -141,6 +144,10 @@ export class DatabaseStorage implements IStorage {
   async getFilterCounts(params: SearchPublicationsParams): Promise<FilterCounts> {
     // Base condition from search query
     const baseConditions = [];
+    
+    // Always filter for approved publications only
+    baseConditions.push(eq(publications.status, "approved"));
+    
     if (params.query) {
       const searchQuery = `%${params.query.toLowerCase()}%`;
       baseConditions.push(
@@ -239,7 +246,10 @@ export class DatabaseStorage implements IStorage {
     return db
       .select()
       .from(publications)
-      .where(eq(publications.isFeatured, 1))
+      .where(and(
+        eq(publications.isFeatured, 1),
+        eq(publications.status, "approved")
+      ))
       .orderBy(desc(publications.publicationDate))
       .limit(5);
   }
@@ -250,7 +260,8 @@ export class DatabaseStorage implements IStorage {
         totalPublications: sql<number>`count(*)::int`,
         totalCitations: sql<number>`coalesce(sum(${publications.citationCount}), 0)::int`
       })
-      .from(publications);
+      .from(publications)
+      .where(eq(publications.status, "approved"));
 
     return {
       totalPublications: statsResult?.totalPublications || 0,
