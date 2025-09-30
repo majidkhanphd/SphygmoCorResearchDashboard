@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Check, X, ExternalLink, Loader2, Pencil } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
@@ -23,7 +25,8 @@ export default function Admin() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
   const [editResearchArea, setEditResearchArea] = useState("");
-  const [editCategories, setEditCategories] = useState("");
+  const [editCategories, setEditCategories] = useState<string[]>([]);
+  const [customCategoryInput, setCustomCategoryInput] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 400);
   const { toast } = useToast();
 
@@ -31,9 +34,42 @@ export default function Admin() {
     queryKey: [`/api/admin/publications/${activeTab}`],
   });
 
+  const { data: pendingData } = useQuery<{ success: boolean; publications: Publication[]; total: number }>({
+    queryKey: ["/api/admin/publications/pending"],
+  });
+
+  const { data: approvedData } = useQuery<{ success: boolean; publications: Publication[]; total: number }>({
+    queryKey: ["/api/admin/publications/approved"],
+  });
+
+  const { data: rejectedData } = useQuery<{ success: boolean; publications: Publication[]; total: number }>({
+    queryKey: ["/api/admin/publications/rejected"],
+  });
+
   const { data: statsData } = useQuery<{ success: boolean; stats: { totalPublications: number; totalByStatus: Record<string, number> } }>({
     queryKey: ["/api/publications/stats"],
   });
+
+  const allUniqueCategories = useMemo(() => {
+    const allPublications = [
+      ...(pendingData?.publications || []),
+      ...(approvedData?.publications || []),
+      ...(rejectedData?.publications || []),
+    ];
+
+    const categoriesSet = new Set<string>();
+    allPublications.forEach(pub => {
+      if (Array.isArray(pub.categories)) {
+        pub.categories.forEach(cat => {
+          if (cat && cat.trim()) {
+            categoriesSet.add(cat.trim());
+          }
+        });
+      }
+    });
+
+    return Array.from(categoriesSet).sort((a, b) => a.localeCompare(b));
+  }, [pendingData, approvedData, rejectedData]);
 
   const approveMutation = useMutation({
     mutationFn: async (publicationId: string) => {
@@ -141,23 +177,40 @@ export default function Admin() {
   const openEditDialog = (publication: Publication) => {
     setEditingPublication(publication);
     setEditResearchArea(publication.researchArea || "");
-    setEditCategories(Array.isArray(publication.categories) ? publication.categories.join(", ") : "");
+    setEditCategories(Array.isArray(publication.categories) ? publication.categories : []);
     setEditDialogOpen(true);
   };
 
   const handleSaveCategories = () => {
     if (!editingPublication) return;
     
-    const categoriesArray = editCategories
-      .split(",")
-      .map(cat => cat.trim())
-      .filter(cat => cat.length > 0);
-    
     updateCategoriesMutation.mutate({
       id: editingPublication.id,
       researchArea: editResearchArea,
-      categories: categoriesArray,
+      categories: editCategories,
     });
+  };
+
+  const toggleCategory = (category: string) => {
+    setEditCategories(prev => {
+      if (prev.includes(category)) {
+        return prev.filter(c => c !== category);
+      } else {
+        return [...prev, category];
+      }
+    });
+  };
+
+  const handleAddCustomCategory = () => {
+    const trimmedCategory = customCategoryInput.trim();
+    if (trimmedCategory && !editCategories.includes(trimmedCategory)) {
+      setEditCategories(prev => [...prev, trimmedCategory]);
+      setCustomCategoryInput("");
+    }
+  };
+
+  const handleRemoveCategory = (category: string) => {
+    setEditCategories(prev => prev.filter(c => c !== category));
   };
 
   const filteredPublications = publicationsData?.publications.filter(pub => {
@@ -613,18 +666,87 @@ export default function Admin() {
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="categories">Categories</Label>
-              <Input
-                id="categories"
-                placeholder="Enter categories separated by commas"
-                value={editCategories}
-                onChange={(e) => setEditCategories(e.target.value)}
-                data-testid="input-categories"
-              />
-              <p className="text-sm text-[#6e6e73] dark:text-gray-400">
-                Enter multiple categories separated by commas (e.g., Hypertension, Heart Failure)
-              </p>
+              <Label>Available Categories</Label>
+              <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                {allUniqueCategories.length === 0 ? (
+                  <p className="text-sm text-[#6e6e73] dark:text-gray-400">
+                    No categories available. Categories will appear here once publications have been added.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {allUniqueCategories.map((category) => (
+                      <div key={category} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`category-${category}`}
+                          checked={editCategories.includes(category)}
+                          onCheckedChange={() => toggleCategory(category)}
+                          data-testid={`checkbox-category-${category}`}
+                        />
+                        <label
+                          htmlFor={`category-${category}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          {category}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="custom-category">Add Custom Category</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="custom-category"
+                  type="text"
+                  placeholder="Enter category name..."
+                  value={customCategoryInput}
+                  onChange={(e) => setCustomCategoryInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomCategory();
+                    }
+                  }}
+                  data-testid="input-custom-category"
+                />
+                <Button
+                  type="button"
+                  onClick={handleAddCustomCategory}
+                  disabled={!customCategoryInput.trim()}
+                  data-testid="button-add-category"
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+            {editCategories.length > 0 && (
+              <div className="grid gap-2">
+                <Label>Selected Categories</Label>
+                <div className="flex flex-wrap gap-2 p-3 border rounded-md min-h-[48px]">
+                  {editCategories.map((category) => (
+                    <Badge
+                      key={category}
+                      variant="secondary"
+                      className="pl-2 pr-1 py-1"
+                      data-testid={`badge-category-${category}`}
+                    >
+                      {category}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 ml-1 hover:bg-transparent"
+                        onClick={() => handleRemoveCategory(category)}
+                        data-testid={`button-remove-category-${category}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
