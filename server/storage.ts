@@ -1,5 +1,7 @@
 import { type Publication, type InsertPublication, type Category, type InsertCategory, type SearchPublicationsParams, type FilterCounts, type SearchPublicationsResponse } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { publications, categories } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, or, like, sql, desc, asc } from "drizzle-orm";
 
 export interface IStorage {
   // Publication methods
@@ -19,313 +21,262 @@ export interface IStorage {
   getCategoryByName(name: string): Promise<Category | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private publications: Map<string, Publication>;
-  private categories: Map<string, Category>;
-
-  constructor() {
-    this.publications = new Map();
-    this.categories = new Map();
-    
-    // Initialize default categories
-    this.initializeDefaultCategories();
-  }
-
-  private async initializeDefaultCategories() {
-    const defaultCategories = [
-      { name: "Chronic Kidney Disease (CKD)", description: "Research on kidney disease and cardiovascular complications", color: "blue" },
-      { name: "Chronic Obstructive Pulmonary Disease (COPD)", description: "Studies on pulmonary disease and vascular health", color: "green" },
-      { name: "Early Vascular Aging (EVA)", description: "Research on premature vascular aging and arterial stiffness", color: "red" },
-      { name: "Heart Failure", description: "Studies on heart failure and cardiac function", color: "indigo" },
-      { name: "Hypertension", description: "Research on high blood pressure and vascular health", color: "purple" },
-      { name: "Longevity", description: "Studies on aging and lifespan extension", color: "pink" },
-      { name: "Maternal Health", description: "Research on pregnancy and maternal cardiovascular health", color: "orange" },
-      { name: "Men's Health", description: "Male-specific cardiovascular health research", color: "teal" },
-      { name: "Metabolic Health", description: "Studies on metabolism and cardiovascular disease", color: "yellow" },
-      { name: "Neuroscience", description: "Research on brain health and vascular function", color: "gray" },
-      { name: "Women's Health", description: "Female-specific cardiovascular health research", color: "pink" }
-    ];
-
-    for (const cat of defaultCategories) {
-      const category: Category = {
-        id: randomUUID(),
-        name: cat.name,
-        description: cat.description || null,
-        color: cat.color
-      };
-      this.categories.set(category.id, category);
-    }
-  }
-
+export class DatabaseStorage implements IStorage {
   // Publication methods
   async getPublication(id: string): Promise<Publication | undefined> {
-    return this.publications.get(id);
+    const [publication] = await db.select().from(publications).where(eq(publications.id, id));
+    return publication || undefined;
   }
 
   async getPublicationByPmid(pmid: string): Promise<Publication | undefined> {
-    return Array.from(this.publications.values()).find(pub => pub.pmid === pmid);
+    const [publication] = await db.select().from(publications).where(eq(publications.pmid, pmid));
+    return publication || undefined;
   }
 
   async createPublication(insertPublication: InsertPublication): Promise<Publication> {
-    const id = randomUUID();
-    const publication: Publication = {
-      ...insertPublication,
-      id,
-      pmid: insertPublication.pmid ?? null,
-      abstract: insertPublication.abstract ?? null,
-      doi: insertPublication.doi ?? null,
-      researchArea: insertPublication.researchArea ?? null,
-      citationCount: insertPublication.citationCount ?? 0,
-      isFeatured: insertPublication.isFeatured ?? 0,
-      journalImpactFactor: insertPublication.journalImpactFactor ?? null,
-      pubmedUrl: insertPublication.pubmedUrl ?? null,
-      categories: (insertPublication.categories ?? []) as string[],
-      keywords: (insertPublication.keywords ?? []) as string[],
-      createdAt: new Date()
-    };
-    this.publications.set(id, publication);
+    const [publication] = await db
+      .insert(publications)
+      .values({
+        ...insertPublication,
+        categories: insertPublication.categories || [],
+        keywords: insertPublication.keywords || [],
+      })
+      .returning();
     return publication;
   }
 
   async updatePublication(id: string, updates: Partial<InsertPublication>): Promise<Publication | undefined> {
-    const existing = this.publications.get(id);
-    if (!existing) return undefined;
-
-    const updated: Publication = { 
-      ...existing, 
-      ...updates,
-      categories: (updates.categories ?? existing.categories ?? []) as string[],
-      keywords: (updates.keywords ?? existing.keywords ?? []) as string[]
-    };
-    this.publications.set(id, updated);
-    return updated;
+    const updateData: any = { ...updates };
+    if (updates.categories) updateData.categories = updates.categories;
+    if (updates.keywords) updateData.keywords = updates.keywords;
+    
+    const [updated] = await db
+      .update(publications)
+      .set(updateData)
+      .where(eq(publications.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   async deletePublication(id: string): Promise<boolean> {
-    return this.publications.delete(id);
+    const result = await db.delete(publications).where(eq(publications.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   async searchPublications(params: SearchPublicationsParams): Promise<SearchPublicationsResponse> {
-    let filtered = Array.from(this.publications.values());
+    const conditions = [];
 
-    // Filter by search query
+    // Build search query conditions
     if (params.query) {
-      const query = params.query.toLowerCase();
-      filtered = filtered.filter(pub => 
-        pub.title.toLowerCase().includes(query) ||
-        pub.authors.toLowerCase().includes(query) ||
-        pub.abstract?.toLowerCase().includes(query) ||
-        pub.keywords?.some(keyword => keyword.toLowerCase().includes(query))
+      const searchQuery = `%${params.query.toLowerCase()}%`;
+      conditions.push(
+        or(
+          sql`LOWER(${publications.title}) LIKE ${searchQuery}`,
+          sql`LOWER(${publications.authors}) LIKE ${searchQuery}`,
+          sql`LOWER(${publications.abstract}) LIKE ${searchQuery}`
+        )
       );
     }
 
-    // Filter by categories
-    if (params.categories && params.categories.length > 0) {
-      filtered = filtered.filter(pub => 
-        pub.categories?.some(cat => params.categories!.includes(cat))
-      );
-    }
-
-    // Filter by research area
     if (params.researchArea) {
-      filtered = filtered.filter(pub => 
-        pub.researchArea === params.researchArea
-      );
+      conditions.push(eq(publications.researchArea, params.researchArea));
     }
 
-    // Filter by venue (journal)
     if (params.venue) {
-      filtered = filtered.filter(pub => 
-        pub.journal === params.venue
-      );
+      conditions.push(eq(publications.journal, params.venue));
     }
 
-    // Filter by year
     if (params.year) {
-      filtered = filtered.filter(pub => 
-        pub.publicationDate.getFullYear() === params.year
-      );
+      conditions.push(sql`EXTRACT(YEAR FROM ${publications.publicationDate}) = ${params.year}`);
     }
 
-    // Sort
-    filtered.sort((a, b) => {
-      switch (params.sortBy) {
-        case "newest":
-          return b.publicationDate.getTime() - a.publicationDate.getTime();
-        case "oldest":
-          return a.publicationDate.getTime() - b.publicationDate.getTime();
-        case "relevance":
-          // Simple relevance scoring based on search query match quality
-          if (!params.query) {
-            // If no query, fall back to newest
-            return b.publicationDate.getTime() - a.publicationDate.getTime();
-          }
-          const query = params.query.toLowerCase();
-          
-          const getRelevanceScore = (pub: Publication): number => {
-            let score = 0;
-            // Title match gets highest score
-            if (pub.title.toLowerCase().includes(query)) score += 10;
-            // Author match gets medium score
-            if (pub.authors.toLowerCase().includes(query)) score += 5;
-            // Abstract match gets lower score
-            if (pub.abstract?.toLowerCase().includes(query)) score += 2;
-            // Keywords match gets medium score
-            if (pub.keywords?.some(keyword => keyword.toLowerCase().includes(query))) score += 3;
-            return score;
-          };
-          
-          const scoreA = getRelevanceScore(a);
-          const scoreB = getRelevanceScore(b);
-          
-          // If scores are equal, sort by newest
-          if (scoreA === scoreB) {
-            return b.publicationDate.getTime() - a.publicationDate.getTime();
-          }
-          return scoreB - scoreA;
-        default:
-          return 0;
-      }
-    });
+    if (params.featured !== undefined) {
+      conditions.push(eq(publications.isFeatured, params.featured ? 1 : 0));
+    }
 
-    const total = filtered.length;
-    const publications = filtered.slice(params.offset, params.offset + params.limit);
+    // Category filtering with JSON array
+    if (params.categories && params.categories.length > 0) {
+      const categoryConditions = params.categories.map(cat => 
+        sql`${publications.categories}::jsonb @> ${JSON.stringify([cat])}::jsonb`
+      );
+      conditions.push(or(...categoryConditions));
+    }
+
+    // Build where clause
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Determine sort order
+    let orderBy;
+    switch (params.sortBy) {
+      case "oldest":
+        orderBy = asc(publications.publicationDate);
+        break;
+      case "newest":
+      default:
+        orderBy = desc(publications.publicationDate);
+        break;
+    }
+
+    // Execute query with pagination
+    const results = await db
+      .select()
+      .from(publications)
+      .where(whereClause)
+      .orderBy(orderBy)
+      .limit(params.limit)
+      .offset(params.offset);
+
+    // Get total count
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(publications)
+      .where(whereClause);
+
+    const total = countResult?.count || 0;
     const filterCounts = await this.getFilterCounts(params);
 
-    return { publications, total, filterCounts };
+    return { publications: results, total, filterCounts };
   }
 
   async getFilterCounts(params: SearchPublicationsParams): Promise<FilterCounts> {
-    // Helper function to apply filters excluding a specific dimension
-    const applyFiltersExcept = (publications: Publication[], excludeDimension: string): Publication[] => {
-      let filtered = publications;
+    // Base condition from search query
+    const baseConditions = [];
+    if (params.query) {
+      const searchQuery = `%${params.query.toLowerCase()}%`;
+      baseConditions.push(
+        or(
+          sql`LOWER(${publications.title}) LIKE ${searchQuery}`,
+          sql`LOWER(${publications.authors}) LIKE ${searchQuery}`,
+          sql`LOWER(${publications.abstract}) LIKE ${searchQuery}`
+        )
+      );
+    }
 
-      // Always apply search query if present
-      if (params.query) {
-        const query = params.query.toLowerCase();
-        filtered = filtered.filter(pub => 
-          pub.title.toLowerCase().includes(query) ||
-          pub.authors.toLowerCase().includes(query) ||
-          pub.abstract?.toLowerCase().includes(query) ||
-          pub.keywords?.some(keyword => keyword.toLowerCase().includes(query))
-        );
-      }
+    // Research areas count (exclude researchArea filter)
+    const researchAreaConditions = [...baseConditions];
+    if (params.venue) researchAreaConditions.push(eq(publications.journal, params.venue));
+    if (params.year) researchAreaConditions.push(sql`EXTRACT(YEAR FROM ${publications.publicationDate}) = ${params.year}`);
+    if (params.categories && params.categories.length > 0) {
+      const catConditions = params.categories.map(cat => 
+        sql`${publications.categories}::jsonb @> ${JSON.stringify([cat])}::jsonb`
+      );
+      researchAreaConditions.push(or(...catConditions));
+    }
 
-      // Apply research area filter (unless we're counting research areas)
-      if (excludeDimension !== 'researchArea' && params.researchArea) {
-        filtered = filtered.filter(pub => pub.researchArea === params.researchArea);
-      }
+    const researchAreaResults = await db
+      .select({
+        area: publications.researchArea,
+        count: sql<number>`count(*)::int`
+      })
+      .from(publications)
+      .where(researchAreaConditions.length > 0 ? and(...researchAreaConditions) : undefined)
+      .groupBy(publications.researchArea);
 
-      // Apply venue filter (unless we're counting venues)
-      if (excludeDimension !== 'venue' && params.venue) {
-        filtered = filtered.filter(pub => pub.journal === params.venue);
-      }
-
-      // Apply year filter (unless we're counting years)
-      if (excludeDimension !== 'year' && params.year) {
-        filtered = filtered.filter(pub => pub.publicationDate.getFullYear() === params.year);
-      }
-
-      // Apply categories filter (unless we're counting categories)
-      if (excludeDimension !== 'categories' && params.categories && params.categories.length > 0) {
-        filtered = filtered.filter(pub => 
-          pub.categories?.some(cat => params.categories!.includes(cat))
-        );
-      }
-
-      return filtered;
-    };
-
-    const allPublications = Array.from(this.publications.values());
-
-    // Count research areas (filtered by venue, year, categories - but NOT research area)
     const researchAreas: Record<string, number> = {};
-    const publicationsForResearchAreas = applyFiltersExcept(allPublications, 'researchArea');
-    publicationsForResearchAreas.forEach((pub) => {
-      if (pub.researchArea) {
-        researchAreas[pub.researchArea] = (researchAreas[pub.researchArea] || 0) + 1;
-      }
+    researchAreaResults.forEach(r => {
+      if (r.area) researchAreas[r.area] = r.count;
     });
 
-    // Count venues (filtered by research area, year, categories - but NOT venue)
+    // Venues count (exclude venue filter)
+    const venueConditions = [...baseConditions];
+    if (params.researchArea) venueConditions.push(eq(publications.researchArea, params.researchArea));
+    if (params.year) venueConditions.push(sql`EXTRACT(YEAR FROM ${publications.publicationDate}) = ${params.year}`);
+    if (params.categories && params.categories.length > 0) {
+      const catConditions = params.categories.map(cat => 
+        sql`${publications.categories}::jsonb @> ${JSON.stringify([cat])}::jsonb`
+      );
+      venueConditions.push(or(...catConditions));
+    }
+
+    const venueResults = await db
+      .select({
+        venue: publications.journal,
+        count: sql<number>`count(*)::int`
+      })
+      .from(publications)
+      .where(venueConditions.length > 0 ? and(...venueConditions) : undefined)
+      .groupBy(publications.journal);
+
     const venues: Record<string, number> = {};
-    const publicationsForVenues = applyFiltersExcept(allPublications, 'venue');
-    publicationsForVenues.forEach((pub) => {
-      if (pub.journal) {
-        venues[pub.journal] = (venues[pub.journal] || 0) + 1;
-      }
+    venueResults.forEach(r => {
+      if (r.venue) venues[r.venue] = r.count;
     });
 
-    // Count years (filtered by research area, venue, categories - but NOT year)
+    // Years count (exclude year filter)
+    const yearConditions = [...baseConditions];
+    if (params.researchArea) yearConditions.push(eq(publications.researchArea, params.researchArea));
+    if (params.venue) yearConditions.push(eq(publications.journal, params.venue));
+    if (params.categories && params.categories.length > 0) {
+      const catConditions = params.categories.map(cat => 
+        sql`${publications.categories}::jsonb @> ${JSON.stringify([cat])}::jsonb`
+      );
+      yearConditions.push(or(...catConditions));
+    }
+
+    const yearResults = await db
+      .select({
+        year: sql<number>`EXTRACT(YEAR FROM ${publications.publicationDate})::int`,
+        count: sql<number>`count(*)::int`
+      })
+      .from(publications)
+      .where(yearConditions.length > 0 ? and(...yearConditions) : undefined)
+      .groupBy(sql`EXTRACT(YEAR FROM ${publications.publicationDate})`);
+
     const years: Record<number, number> = {};
-    const publicationsForYears = applyFiltersExcept(allPublications, 'year');
-    publicationsForYears.forEach((pub) => {
-      const year = pub.publicationDate.getFullYear();
-      years[year] = (years[year] || 0) + 1;
-    });
-
-    // Count categories (filtered by research area, venue, year - but NOT categories)
-    const categories: Record<string, number> = {};
-    const publicationsForCategories = applyFiltersExcept(allPublications, 'categories');
-    publicationsForCategories.forEach((pub) => {
-      if (pub.categories) {
-        pub.categories.forEach((category) => {
-          categories[category] = (categories[category] || 0) + 1;
-        });
-      }
+    yearResults.forEach(r => {
+      if (r.year) years[r.year] = r.count;
     });
 
     return {
       researchAreas,
       venues,
       years,
-      categories
+      categories: {} // Categories count not implemented yet
     };
   }
 
   async getFeaturedPublications(): Promise<Publication[]> {
-    return Array.from(this.publications.values())
-      .filter(pub => pub.isFeatured === 1)
-      .sort((a, b) => b.publicationDate.getTime() - a.publicationDate.getTime())
-      .slice(0, 5);
+    return db
+      .select()
+      .from(publications)
+      .where(eq(publications.isFeatured, 1))
+      .orderBy(desc(publications.publicationDate))
+      .limit(5);
   }
 
   async getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number}> {
-    const pubs = Array.from(this.publications.values());
-    const totalPublications = pubs.length;
-    const totalCitations = pubs.reduce((sum, pub) => sum + (pub.citationCount || 0), 0);
-    
-    // Mock data for countries and institutions since we don't track these in the schema
-    const countriesCount = 150;
-    const institutionsCount = 500;
+    const [statsResult] = await db
+      .select({
+        totalPublications: sql<number>`count(*)::int`,
+        totalCitations: sql<number>`coalesce(sum(${publications.citationCount}), 0)::int`
+      })
+      .from(publications);
 
     return {
-      totalPublications,
-      totalCitations,
-      countriesCount,
-      institutionsCount
+      totalPublications: statsResult?.totalPublications || 0,
+      totalCitations: statsResult?.totalCitations || 0,
+      countriesCount: 150, // Mock data
+      institutionsCount: 500 // Mock data
     };
   }
 
   // Category methods
   async getCategories(): Promise<Category[]> {
-    return Array.from(this.categories.values());
+    return db.select().from(categories);
   }
 
   async createCategory(insertCategory: InsertCategory): Promise<Category> {
-    const id = randomUUID();
-    const category: Category = { 
-      ...insertCategory, 
-      id,
-      description: insertCategory.description ?? null
-    };
-    this.categories.set(id, category);
+    const [category] = await db
+      .insert(categories)
+      .values(insertCategory)
+      .returning();
     return category;
   }
 
   async getCategoryByName(name: string): Promise<Category | undefined> {
-    return Array.from(this.categories.values()).find(cat => cat.name === name);
+    const [category] = await db.select().from(categories).where(eq(categories.name, name));
+    return category || undefined;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

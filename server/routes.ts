@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertPublicationSchema, searchPublicationsSchema } from "@shared/schema";
 import { z } from "zod";
 import { XMLParser } from "fast-xml-parser";
+import { pubmedService } from "./services/pubmed";
 
 // Helper to normalize XML text from fast-xml-parser
 function normalizeXmlText(value: any): string {
@@ -357,6 +358,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Default to health-medical slug for general medical content
     return "health-medical";
   }
+
+  // Admin endpoint to sync publications from PubMed automatically
+  app.post("/api/admin/sync-pubmed", async (req, res) => {
+    try {
+      const { maxPerTerm = 50 } = req.body;
+      
+      console.log("Starting PubMed sync...");
+      const publications = await pubmedService.syncCardiovascularResearch(maxPerTerm);
+      
+      let imported = 0;
+      let skipped = 0;
+      
+      for (const pub of publications) {
+        try {
+          // Check if publication already exists
+          const existing = await storage.getPublicationByPmid(pub.pmid || "");
+          if (existing) {
+            skipped++;
+            continue;
+          }
+          
+          await storage.createPublication(pub);
+          imported++;
+        } catch (error) {
+          console.error(`Error importing publication ${pub.pmid}:`, error);
+        }
+      }
+      
+      console.log(`Sync complete: ${imported} imported, ${skipped} skipped`);
+      
+      res.json({
+        success: true,
+        imported,
+        skipped,
+        total: publications.length,
+        message: `Successfully synced ${imported} new publications from PubMed`
+      });
+    } catch (error: any) {
+      console.error("PubMed sync error:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to sync publications from PubMed", 
+        error: error.message 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
