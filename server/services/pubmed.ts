@@ -56,7 +56,8 @@ export class PubMedService {
 
   async searchPubMed(searchTerm: string, maxResults: number = 100): Promise<string[]> {
     const query = encodeURIComponent(searchTerm);
-    const url = `${this.baseUrl}/esearch.fcgi?db=pubmed&term=${query}&retmax=${maxResults}&retmode=xml`;
+    // Use PubMed Central (pmc) database for full-text search
+    const url = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${query}&retmax=${maxResults}&retmode=xml`;
 
     try {
       const response = await fetch(url);
@@ -89,7 +90,8 @@ export class PubMedService {
     for (let i = 0; i < pmids.length; i += BATCH_SIZE) {
       const batch = pmids.slice(i, i + BATCH_SIZE);
       const ids = batch.join(",");
-      const url = `${this.baseUrl}/efetch.fcgi?db=pubmed&id=${ids}&retmode=xml`;
+      // Use PubMed Central (pmc) database
+      const url = `${this.baseUrl}/efetch.fcgi?db=pmc&id=${ids}&retmode=xml`;
 
       try {
         const response = await fetch(url);
@@ -136,8 +138,8 @@ export class PubMedService {
       // Parse DOI
       const doi = this.parseDoi(articleData.ELocationID);
 
-      // Determine research area based on title/abstract
-      const researchArea = this.categorizeResearchArea(articleData.ArticleTitle, abstract);
+      // Determine categories based on title/abstract
+      const categoriesFromText = this.categorizeToCONNEQTAreas(articleData.ArticleTitle, abstract);
 
       // Extract keywords from title and abstract
       const keywords = this.extractKeywords(articleData.ArticleTitle, abstract);
@@ -150,14 +152,13 @@ export class PubMedService {
         publicationDate,
         abstract,
         doi,
-        categories: [],
+        categories: categoriesFromText,
         keywords,
-        researchArea,
         citationCount: 0,
         isFeatured: 0,
         pubmedUrl: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
         journalImpactFactor: null,
-        status: "pending",
+        status: "approved", // Auto-approve all imported articles
       };
     } catch (error) {
       console.error("Error parsing article:", error);
@@ -233,50 +234,47 @@ export class PubMedService {
     return doiLocation?.["#text"] || null;
   }
 
-  private categorizeResearchArea(title: string, abstract: string | null): string | null {
+  private categorizeToCONNEQTAreas(title: string, abstract: string | null): string[] {
     const text = `${title} ${abstract || ""}`.toLowerCase();
+    const categories: string[] = [];
 
-    if (text.includes("hypertension") || text.includes("blood pressure")) {
-      return "hypertension";
+    // Map content to CONNEQT Health's 11 fixed research areas
+    if (text.includes("chronic kidney disease") || text.includes("renal") || text.includes("kidney")) {
+      categories.push("ckd"); // Chronic Kidney Disease (CKD)
     }
-    if (text.includes("arterial stiffness") || text.includes("arterial compliance")) {
-      return "arterial-stiffness";
+    if (text.includes("copd") || text.includes("chronic obstructive pulmonary") || text.includes("respiratory")) {
+      categories.push("copd"); // Chronic Obstructive Pulmonary Disease (COPD)
     }
-    if (text.includes("central blood pressure") || text.includes("aortic pressure")) {
-      return "central-blood-pressure";
-    }
-    if (text.includes("pulse wave velocity") || text.includes("pwv")) {
-      return "cfpwv";
-    }
-    if (text.includes("pulse wave analysis") || text.includes("augmentation index")) {
-      return "pulse-wave-analysis";
-    }
-    if (text.includes("vascular aging") || text.includes("arterial aging")) {
-      return "vascular-aging";
-    }
-    if (text.includes("chronic kidney disease") || text.includes("renal")) {
-      return "chronic-kidney-disease";
+    if (text.includes("vascular aging") || text.includes("arterial aging") || text.includes("early vascular")) {
+      categories.push("eva"); // Early Vascular Aging (EVA)
     }
     if (text.includes("heart failure") || text.includes("cardiac failure")) {
-      return "heart-failure";
+      categories.push("heart-failure");
     }
-    if (text.includes("coronary artery") || text.includes("coronary heart")) {
-      return "coronary-artery-disease";
+    if (text.includes("hypertension") || text.includes("blood pressure") || text.includes("hypertensive")) {
+      categories.push("hypertension");
     }
-    if (text.includes("diabetes") || text.includes("metabolic")) {
-      return "diabetes";
+    if (text.includes("longevity") || text.includes("aging") || text.includes("lifespan")) {
+      categories.push("longevity");
     }
-    if (text.includes("pediatric") || text.includes("children")) {
-      return "pediatrics";
+    if (text.includes("pregnancy") || text.includes("maternal") || text.includes("obstetric") || text.includes("prenatal")) {
+      categories.push("maternal-health");
     }
-    if (text.includes("pregnancy") || text.includes("maternal")) {
-      return "obstetrics";
+    if (text.includes("men's health") || text.includes("male") || text.includes("prostate") || text.includes("testosterone")) {
+      categories.push("mens-health");
     }
-    if (text.includes("validation") || text.includes("methodology")) {
-      return "methodology";
+    if (text.includes("metabolic") || text.includes("diabetes") || text.includes("obesity") || text.includes("insulin")) {
+      categories.push("metabolic-health");
+    }
+    if (text.includes("neuro") || text.includes("brain") || text.includes("cognitive") || text.includes("stroke")) {
+      categories.push("neuroscience");
+    }
+    if (text.includes("women's health") || text.includes("female") || text.includes("menopause") || text.includes("ovarian")) {
+      categories.push("womens-health");
     }
 
-    return null;
+    // Return empty array if no categories matched (will need manual categorization)
+    return categories;
   }
 
   private extractKeywords(title: string, abstract: string | null): string[] {
