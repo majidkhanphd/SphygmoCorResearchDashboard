@@ -3,7 +3,7 @@
 
 export const PUBMED_SEARCH_TERMS = [
   // Search for SphygmoCor in the full text of articles in PubMed Central
-  'SphygmoCor[body]',
+  'sphygmocor*[body]',
 ];
 
 // Maximum results per search term - set high to get all 2900+ articles

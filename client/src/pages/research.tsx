@@ -26,12 +26,14 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string
 };
 
 const getBadgeDisplayName = (category: string): string => {
+  // Check for specific acronyms that should be all caps
+  if (category === 'ckd') return 'CKD';
+  if (category === 'copd') return 'COPD';
+  if (category === 'eva') return 'EVA';
+  
+  // Get display name from slug
   const displayName = getResearchAreaDisplayName(category);
   if (!displayName) return category.replace('-', ' ');
-  
-  if (displayName.includes('(CKD)')) return 'CKD';
-  if (displayName.includes('(COPD)')) return 'COPD';
-  if (displayName.includes('(EVA)')) return 'EVA';
   
   return displayName;
 };

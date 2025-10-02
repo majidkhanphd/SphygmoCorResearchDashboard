@@ -88,19 +88,19 @@ export const RESEARCH_AREAS = [
 
 export type ResearchArea = typeof RESEARCH_AREAS[number];
 
-// Legacy mapping kept for backward compatibility (to be removed)
+// Mapping from slugs to display names
 export const RESEARCH_AREA_DISPLAY_NAMES: Record<string, string> = {
-  "Chronic Kidney Disease (CKD)": "Chronic Kidney Disease (CKD)",
-  "Chronic Obstructive Pulmonary Disease (COPD)": "Chronic Obstructive Pulmonary Disease (COPD)",
-  "Early Vascular Aging (EVA)": "Early Vascular Aging (EVA)",
-  "Heart Failure": "Heart Failure",
-  "Hypertension": "Hypertension",
-  "Longevity": "Longevity",
-  "Maternal Health": "Maternal Health",
-  "Men's Health": "Men's Health",
-  "Metabolic Health": "Metabolic Health",
-  "Neuroscience": "Neuroscience",
-  "Women's Health": "Women's Health"
+  "ckd": "Chronic Kidney Disease (CKD)",
+  "copd": "Chronic Obstructive Pulmonary Disease (COPD)",
+  "eva": "Early Vascular Aging (EVA)",
+  "heart-failure": "Heart Failure",
+  "hypertension": "Hypertension",
+  "longevity": "Longevity",
+  "maternal-health": "Maternal Health",
+  "mens-health": "Men's Health",
+  "metabolic-health": "Metabolic Health",
+  "neuroscience": "Neuroscience",
+  "womens-health": "Women's Health"
 };
 
 // Utility function to get display name from research area slug
