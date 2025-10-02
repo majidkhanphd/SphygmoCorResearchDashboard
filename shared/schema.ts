@@ -12,9 +12,8 @@ export const publications = pgTable("publications", {
   publicationDate: timestamp("publication_date").notNull(),
   abstract: text("abstract"),
   doi: varchar("doi"),
-  categories: json("categories").$type<string[]>().default([]),
   keywords: json("keywords").$type<string[]>().default([]),
-  researchArea: text("research_area"), // Apple ML-style research areas
+  researchArea: text("research_area"), // One of the 11 fixed CONNEQT Health research areas
   citationCount: integer("citation_count").default(0),
   isFeatured: integer("is_featured").default(0), // 0 or 1 for boolean
   pubmedUrl: text("pubmed_url"),
@@ -47,7 +46,6 @@ export type Category = typeof categories.$inferSelect;
 // Search and filter schemas
 export const searchPublicationsSchema = z.object({
   query: z.string().optional(),
-  categories: z.array(z.string()).optional(),
   researchArea: z.string().optional(),
   venue: z.string().optional(), // Filter by journal/venue
   year: z.number().optional(),
@@ -64,7 +62,6 @@ export interface FilterCounts {
   researchAreas: Record<string, number>;
   venues: Record<string, number>;
   years: Record<number, number>;
-  categories: Record<string, number>;
 }
 
 // Search response interface with filter counts
