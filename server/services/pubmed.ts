@@ -305,10 +305,12 @@ export class PubMedService {
       .map((author: any) => {
         // Check for name element (structured name)
         if (author.name) {
-          const surname = author.name.surname || "";
-          const givenNames = author.name["given-names"] || "";
+          const surname = this.extractText(author.name.surname) || "";
+          const givenNames = this.extractText(author.name["given-names"]) || "";
           if (surname) {
-            return givenNames ? `${surname} ${givenNames}` : surname;
+            // Extract first initial from given names
+            const firstInitial = givenNames.trim().charAt(0);
+            return firstInitial ? `${surname} ${firstInitial}` : surname;
           }
         }
         

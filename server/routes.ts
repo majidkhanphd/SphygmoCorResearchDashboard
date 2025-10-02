@@ -365,41 +365,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { maxPerTerm = 50 } = req.body;
       
       console.log("Starting PubMed sync...");
-      const publications = await pubmedService.syncCardiovascularResearch(maxPerTerm);
       
-      let imported = 0;
-      let skipped = 0;
-      
-      for (const pub of publications) {
-        try {
-          // Check if publication already exists
-          const existing = await storage.getPublicationByPmid(pub.pmid || "");
-          if (existing) {
-            skipped++;
-            continue;
+      // Start the sync and respond immediately
+      pubmedService.syncCardiovascularResearch(maxPerTerm).then(async (publications) => {
+        let imported = 0;
+        let skipped = 0;
+        
+        console.log(`Fetched ${publications.length} publications, starting import...`);
+        
+        for (const pub of publications) {
+          try {
+            // Check if publication already exists
+            const existing = await storage.getPublicationByPmid(pub.pmid || "");
+            if (existing) {
+              skipped++;
+              continue;
+            }
+            
+            await storage.createPublication(pub);
+            imported++;
+            
+            // Log progress every 100 articles
+            if (imported % 100 === 0) {
+              console.log(`Import progress: ${imported} imported, ${skipped} skipped...`);
+            }
+          } catch (error) {
+            console.error(`Error importing publication ${pub.pmid}:`, error);
           }
-          
-          await storage.createPublication(pub);
-          imported++;
-        } catch (error) {
-          console.error(`Error importing publication ${pub.pmid}:`, error);
         }
-      }
+        
+        console.log(`Sync complete: ${imported} imported, ${skipped} skipped out of ${publications.length} total`);
+      }).catch((error) => {
+        console.error("Background sync error:", error);
+      });
       
-      console.log(`Sync complete: ${imported} imported, ${skipped} skipped`);
-      
+      // Respond immediately
       res.json({
         success: true,
-        imported,
-        skipped,
-        total: publications.length,
-        message: `Successfully synced ${imported} new publications from PubMed (status: pending)`
+        message: `PubMed sync started in background. Check logs for progress.`
       });
     } catch (error: any) {
       console.error("PubMed sync error:", error);
       res.status(500).json({ 
         success: false,
-        message: "Failed to sync publications from PubMed", 
+        message: "Failed to start sync from PubMed", 
         error: error.message 
       });
     }
