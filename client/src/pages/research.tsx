@@ -142,24 +142,35 @@ export default function Home() {
     years: backendFilterCounts.years
   };
 
-  // Get venues from backend filter counts for authoritative list
-  const venues = Object.keys(backendFilterCounts.venues).sort();
+  // Get venues from backend filter counts for authoritative list - sorted by count (descending)
+  const venues = Object.keys(backendFilterCounts.venues).sort((a, b) => {
+    const countA = backendFilterCounts.venues[a] || 0;
+    const countB = backendFilterCounts.venues[b] || 0;
+    return countB - countA; // Sort descending by count
+  });
   const visibleVenues = showAllVenues ? venues : venues.slice(0, 5);
 
-  // Get research areas from schema
-  const researchAreas = Object.entries(RESEARCH_AREA_DISPLAY_NAMES);
+  // Get research areas from schema - sorted by count (descending)
+  const researchAreas = Object.entries(RESEARCH_AREA_DISPLAY_NAMES).sort((a, b) => {
+    const countA = filterCounts.areas[a[0]] || 0;
+    const countB = filterCounts.areas[b[0]] || 0;
+    return countB - countA; // Sort descending by count
+  });
   const visibleAreas = showAllAreas ? researchAreas : researchAreas.slice(0, 5);
 
   // Get years from publications
   const currentYear = new Date().getFullYear();
   const availableYears = Array.from({ length: 10 }, (_, i) => currentYear - i);
+  
+  // Calculate total count for all years
+  const totalYearCount = Object.values(filterCounts.years).reduce((sum, count) => sum + (count as number), 0);
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       
       {/* Apple's exact hero section */}
-      <div className="max-w-[980px] mx-auto px-6" style={{ paddingTop: '56px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '56px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Breadcrumb - Apple style */}
         <nav style={{ marginBottom: '32px' }} data-testid="breadcrumb">
           <span className="text-sm font-normal tracking-widest uppercase" style={{ color: '#6E6E73' }}>CARDIOVASCULAR RESEARCH</span>
@@ -190,8 +201,8 @@ export default function Home() {
         {/* Search and Sort Section - Apple style */}
         <div style={{ marginBottom: '48px' }}>
           {/* Search bar and sort dropdown */}
-          <div className="flex gap-4 items-end mb-6">
-            <div className="relative max-w-2xl flex-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center mb-6">
+            <div className="relative flex-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
             <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none" style={{ paddingLeft: '16px' }}>
               <Search className="h-5 w-5" style={{ color: '#6E6E73' }} />
             </div>
@@ -246,10 +257,10 @@ export default function Home() {
             </div>
             
             {/* Sort Dropdown */}
-            <div className="w-48">
+            <div className="w-full sm:w-48 flex-shrink-0">
               <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "relevance") => setSortBy(value)}>
                 <SelectTrigger 
-                  className="rounded-xl transition-all duration-200 ease-in-out"
+                  className="w-full rounded-xl transition-all duration-200 ease-in-out"
                   style={{
                     paddingTop: '12px',
                     paddingBottom: '12px',
@@ -359,9 +370,9 @@ export default function Home() {
         )}
 
         {/* Main content with sidebar and publications */}
-        <div className="flex gap-16">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-16">
           {/* Left sidebar - Apple ML Research Style */}
-          <aside className="w-64 flex-shrink-0" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} role="complementary" aria-label="Research filters">
+          <aside className="w-full lg:w-64 flex-shrink-0" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} role="complementary" aria-label="Research filters">
             {/* Research Areas Filter */}
             <section className="mb-10" role="group" aria-labelledby="research-areas-heading">
               {/* Uppercase caption */}
@@ -563,7 +574,7 @@ export default function Home() {
                   data-testid="year-all"
                   aria-pressed={!selectedYear}
                 >
-                  All years
+                  All years {totalYearCount > 0 && `(${totalYearCount})`}
                 </button>
                 {availableYears.map((year) => {
                   const count = filterCounts.years[year] || 0;
