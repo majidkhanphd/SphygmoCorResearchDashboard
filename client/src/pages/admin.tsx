@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Check, X, ExternalLink, Loader2, Pencil } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
@@ -22,7 +23,7 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected">("pending");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
-  const [editResearchArea, setEditResearchArea] = useState("");
+  const [editCategories, setEditCategories] = useState<string[]>([]);
   const debouncedSearch = useDebounce(searchQuery, 400);
   const { toast } = useToast();
 
@@ -30,7 +31,7 @@ export default function Admin() {
     queryKey: [`/api/admin/publications/${activeTab}`],
   });
 
-  const { data: statsData } = useQuery<{ success: boolean; stats: { totalPublications: number; totalByStatus: Record<string, number> } }>({
+  const { data: statsData } = useQuery<{ success: boolean; stats: { totalByStatus: { pending: number; approved: number; rejected: number } } }>({
     queryKey: ["/api/publications/stats"],
   });
 
@@ -42,8 +43,8 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
       toast({
         title: "Publication Approved",
         description: "The publication is now visible on the website.",
@@ -66,6 +67,7 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
       toast({
         title: "Publication Rejected",
@@ -81,23 +83,23 @@ export default function Admin() {
     },
   });
 
-  const updateResearchAreaMutation = useMutation({
-    mutationFn: async ({ id, researchArea }: { id: string; researchArea: string }) => {
+  const updateCategoriesMutation = useMutation({
+    mutationFn: async ({ id, categories }: { id: string; categories: string[] }) => {
       return await apiRequest("PATCH", `/api/admin/publications/${id}/categories`, {
-        researchArea,
+        categories,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
       setEditDialogOpen(false);
       setEditingPublication(null);
       toast({
         title: "Publication Updated",
-        description: "Research area updated successfully.",
+        description: "Categories updated successfully.",
       });
     },
     onError: (error: any) => {
@@ -119,6 +121,7 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
       const statusMessages = {
         pending: { title: "Publication Moved to Pending", description: "The publication has been moved to pending review." },
@@ -138,17 +141,25 @@ export default function Admin() {
 
   const openEditDialog = (publication: Publication) => {
     setEditingPublication(publication);
-    setEditResearchArea(publication.researchArea || "");
+    setEditCategories(publication.categories || []);
     setEditDialogOpen(true);
   };
 
-  const handleSaveResearchArea = () => {
+  const handleSaveCategories = () => {
     if (!editingPublication) return;
     
-    updateResearchAreaMutation.mutate({
+    updateCategoriesMutation.mutate({
       id: editingPublication.id,
-      researchArea: editResearchArea,
+      categories: editCategories,
     });
+  };
+
+  const toggleCategory = (category: string) => {
+    setEditCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
   };
 
   const filteredPublications = publicationsData?.publications.filter(pub => {
@@ -161,10 +172,7 @@ export default function Admin() {
     );
   }) || [];
 
-  const stats = statsData?.stats?.totalByStatus || {};
-  const pending = stats.pending || 0;
-  const approved = stats.approved || 0;
-  const rejected = stats.rejected || 0;
+  const stats = statsData?.stats?.totalByStatus || { pending: 0, approved: 0, rejected: 0 };
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-black">
@@ -178,41 +186,6 @@ export default function Admin() {
           <p className="text-lg text-[#6e6e73] dark:text-gray-400">
             Review and manage publications
           </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card data-testid="card-stats-pending">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-[#6e6e73] dark:text-gray-400">Pending</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold text-[#1d1d1f] dark:text-white" data-testid="text-pending-count">
-                {pending}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-stats-approved">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-[#6e6e73] dark:text-gray-400">Approved</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold text-green-600 dark:text-green-500" data-testid="text-approved-count">
-                {approved}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-stats-rejected">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-[#6e6e73] dark:text-gray-400">Rejected</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold text-red-600 dark:text-red-500" data-testid="text-rejected-count">
-                {rejected}
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         <Card className="mb-8">
@@ -245,13 +218,13 @@ export default function Admin() {
             <CardHeader className="pb-3">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="pending" data-testid="tab-pending">
-                  Pending ({pending})
+                  Pending ({stats.pending || 0})
                 </TabsTrigger>
                 <TabsTrigger value="approved" data-testid="tab-approved">
-                  Approved ({approved})
+                  Approved ({stats.approved || 0})
                 </TabsTrigger>
                 <TabsTrigger value="rejected" data-testid="tab-rejected">
-                  Rejected ({rejected})
+                  Rejected ({stats.rejected || 0})
                 </TabsTrigger>
               </TabsList>
             </CardHeader>
@@ -273,10 +246,10 @@ export default function Admin() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[35%]">Title</TableHead>
+                          <TableHead className="w-[35%] resize-x overflow-auto min-w-[200px]" style={{ resize: 'horizontal' }}>Title</TableHead>
                           <TableHead className="w-[15%]">Journal</TableHead>
                           <TableHead className="w-[12%]">Date</TableHead>
-                          <TableHead className="w-[10%]">Area</TableHead>
+                          <TableHead className="w-[10%]">Categories</TableHead>
                           <TableHead className="w-[28%] text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -307,11 +280,17 @@ export default function Admin() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              {pub.researchArea && (
-                                <Badge variant="secondary" className="text-xs" data-testid={`badge-area-${pub.id}`}>
-                                  {RESEARCH_AREA_DISPLAY_NAMES[pub.researchArea] || pub.researchArea}
-                                </Badge>
-                              )}
+                              <div className="flex flex-wrap gap-1">
+                                {pub.categories && pub.categories.length > 0 ? (
+                                  pub.categories.map((category) => (
+                                    <Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-category-${pub.id}-${category}`}>
+                                      {RESEARCH_AREA_DISPLAY_NAMES[category] || category}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
@@ -330,7 +309,7 @@ export default function Admin() {
                                   variant="ghost"
                                   onClick={() => openEditDialog(pub)}
                                   className="h-8 w-8 p-0"
-                                  title="Edit Research Area"
+                                  title="Edit Categories"
                                   data-testid={`button-edit-${pub.id}`}
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -385,10 +364,10 @@ export default function Admin() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[40%]">Title</TableHead>
+                          <TableHead className="w-[40%] resize-x overflow-auto min-w-[200px]" style={{ resize: 'horizontal' }}>Title</TableHead>
                           <TableHead className="w-[20%]">Journal</TableHead>
                           <TableHead className="w-[12%]">Date</TableHead>
-                          <TableHead className="w-[10%]">Area</TableHead>
+                          <TableHead className="w-[10%]">Categories</TableHead>
                           <TableHead className="w-[18%] text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -419,11 +398,17 @@ export default function Admin() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              {pub.researchArea && (
-                                <Badge variant="secondary" className="text-xs" data-testid={`badge-area-${pub.id}`}>
-                                  {RESEARCH_AREA_DISPLAY_NAMES[pub.researchArea] || pub.researchArea}
-                                </Badge>
-                              )}
+                              <div className="flex flex-wrap gap-1">
+                                {pub.categories && pub.categories.length > 0 ? (
+                                  pub.categories.map((category) => (
+                                    <Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-category-${pub.id}-${category}`}>
+                                      {RESEARCH_AREA_DISPLAY_NAMES[category] || category}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
@@ -442,7 +427,7 @@ export default function Admin() {
                                   variant="ghost"
                                   onClick={() => openEditDialog(pub)}
                                   className="h-8 w-8 p-0"
-                                  title="Edit Research Area"
+                                  title="Edit Categories"
                                   data-testid={`button-edit-${pub.id}`}
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -489,10 +474,10 @@ export default function Admin() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[40%]">Title</TableHead>
+                          <TableHead className="w-[40%] resize-x overflow-auto min-w-[200px]" style={{ resize: 'horizontal' }}>Title</TableHead>
                           <TableHead className="w-[20%]">Journal</TableHead>
                           <TableHead className="w-[12%]">Date</TableHead>
-                          <TableHead className="w-[10%]">Area</TableHead>
+                          <TableHead className="w-[10%]">Categories</TableHead>
                           <TableHead className="w-[18%] text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -523,11 +508,17 @@ export default function Admin() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              {pub.researchArea && (
-                                <Badge variant="secondary" className="text-xs" data-testid={`badge-area-${pub.id}`}>
-                                  {RESEARCH_AREA_DISPLAY_NAMES[pub.researchArea] || pub.researchArea}
-                                </Badge>
-                              )}
+                              <div className="flex flex-wrap gap-1">
+                                {pub.categories && pub.categories.length > 0 ? (
+                                  pub.categories.map((category) => (
+                                    <Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-category-${pub.id}-${category}`}>
+                                      {RESEARCH_AREA_DISPLAY_NAMES[category] || category}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
@@ -546,7 +537,7 @@ export default function Admin() {
                                   variant="ghost"
                                   onClick={() => openEditDialog(pub)}
                                   className="h-8 w-8 p-0"
-                                  title="Edit Research Area"
+                                  title="Edit Categories"
                                   data-testid={`button-edit-${pub.id}`}
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -580,28 +571,34 @@ export default function Admin() {
       </main>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]" data-testid="dialog-edit-research-area">
+        <DialogContent className="sm:max-w-[525px]" data-testid="dialog-edit-categories">
           <DialogHeader>
-            <DialogTitle>Edit Research Area</DialogTitle>
+            <DialogTitle>Edit Publication Categories</DialogTitle>
             <DialogDescription>
-              Update the research area for this publication.
+              Select one or more research areas for this publication.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="research-area">Research Area</Label>
-              <Select value={editResearchArea} onValueChange={setEditResearchArea}>
-                <SelectTrigger id="research-area" data-testid="select-research-area">
-                  <SelectValue placeholder="Select research area" />
-                </SelectTrigger>
-                <SelectContent>
-                  {RESEARCH_AREAS.map((area) => (
-                    <SelectItem key={area} value={area} data-testid={`option-research-area-${area}`}>
+            <div className="grid gap-3">
+              <Label>Research Areas</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {RESEARCH_AREAS.map((area) => (
+                  <div key={area} className="flex items-start space-x-2">
+                    <Checkbox
+                      id={`category-${area}`}
+                      checked={editCategories.includes(area)}
+                      onCheckedChange={() => toggleCategory(area)}
+                      data-testid={`checkbox-category-${area}`}
+                    />
+                    <label
+                      htmlFor={`category-${area}`}
+                      className="text-sm leading-tight cursor-pointer"
+                    >
                       {area}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </label>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -613,11 +610,11 @@ export default function Admin() {
               Cancel
             </Button>
             <Button
-              onClick={handleSaveResearchArea}
-              disabled={updateResearchAreaMutation.isPending}
-              data-testid="button-save-research-area"
+              onClick={handleSaveCategories}
+              disabled={updateCategoriesMutation.isPending}
+              data-testid="button-save-categories"
             >
-              {updateResearchAreaMutation.isPending ? (
+              {updateCategoriesMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Saving...

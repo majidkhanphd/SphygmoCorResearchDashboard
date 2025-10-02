@@ -13,7 +13,7 @@ export const publications = pgTable("publications", {
   abstract: text("abstract"),
   doi: varchar("doi"),
   keywords: json("keywords").$type<string[]>().default([]),
-  researchArea: text("research_area"), // One of the 11 fixed CONNEQT Health research areas
+  categories: json("categories").$type<string[]>().default([]), // Multiple selections from 11 fixed research areas
   citationCount: integer("citation_count").default(0),
   isFeatured: integer("is_featured").default(0), // 0 or 1 for boolean
   pubmedUrl: text("pubmed_url"),
@@ -46,7 +46,7 @@ export type Category = typeof categories.$inferSelect;
 // Search and filter schemas
 export const searchPublicationsSchema = z.object({
   query: z.string().optional(),
-  researchArea: z.string().optional(),
+  categories: z.array(z.string()).optional(), // Filter by one or more of the 11 fixed research areas
   venue: z.string().optional(), // Filter by journal/venue
   year: z.number().optional(),
   sortBy: z.enum(["newest", "oldest", "relevance"]).default("newest"),
@@ -59,7 +59,7 @@ export type SearchPublicationsParams = z.infer<typeof searchPublicationsSchema>;
 
 // Filter counts interface for search response
 export interface FilterCounts {
-  researchAreas: Record<string, number>;
+  categories: Record<string, number>; // Counts for each of the 11 research areas
   venues: Record<string, number>;
   years: Record<number, number>;
 }

@@ -38,6 +38,7 @@ export class DatabaseStorage implements IStorage {
       .insert(publications)
       .values({
         ...insertPublication,
+        categories: insertPublication.categories || [],
       } as any)
       .returning();
     return publication;
@@ -46,6 +47,7 @@ export class DatabaseStorage implements IStorage {
   async updatePublication(id: string, updates: Partial<InsertPublication>): Promise<Publication | undefined> {
     const updateData: any = { ...updates };
     if (updates.keywords) updateData.keywords = updates.keywords;
+    if (updates.categories) updateData.categories = updates.categories;
     
     const [updated] = await db
       .update(publications)
@@ -78,10 +80,6 @@ export class DatabaseStorage implements IStorage {
       );
     }
 
-    if (params.researchArea) {
-      conditions.push(eq(publications.researchArea, params.researchArea));
-    }
-
     if (params.venue) {
       conditions.push(eq(publications.journal, params.venue));
     }
@@ -92,6 +90,14 @@ export class DatabaseStorage implements IStorage {
 
     if (params.featured !== undefined) {
       conditions.push(eq(publications.isFeatured, params.featured ? 1 : 0));
+    }
+
+    // Category filtering with JSON array
+    if (params.categories && params.categories.length > 0) {
+      const categoryConditions = params.categories.map(cat => 
+        sql`${publications.categories}::jsonb @> ${JSON.stringify([cat])}::jsonb`
+      );
+      conditions.push(or(...categoryConditions));
     }
 
     // Build where clause
@@ -148,28 +154,33 @@ export class DatabaseStorage implements IStorage {
       );
     }
 
-    // Research areas count (exclude researchArea filter)
-    const researchAreaConditions = [...baseConditions];
-    if (params.venue) researchAreaConditions.push(eq(publications.journal, params.venue));
-    if (params.year) researchAreaConditions.push(sql`EXTRACT(YEAR FROM ${publications.publicationDate}) = ${params.year}`);
+    // Category counts (exclude categories filter)
+    const categoryConditions = [...baseConditions];
+    if (params.venue) categoryConditions.push(eq(publications.journal, params.venue));
+    if (params.year) categoryConditions.push(sql`EXTRACT(YEAR FROM ${publications.publicationDate}) = ${params.year}`);
 
-    const researchAreaResults = await db
+    const categoryResults = await db
       .select({
-        area: publications.researchArea,
-        count: sql<number>`count(*)::int`
+        category: sql<string>`jsonb_array_elements_text(${publications.categories})`.as('category'),
+        count: sql<number>`count(*)`.as('count')
       })
       .from(publications)
-      .where(researchAreaConditions.length > 0 ? and(...researchAreaConditions) : undefined)
-      .groupBy(publications.researchArea);
+      .where(categoryConditions.length > 0 ? and(...categoryConditions) : undefined)
+      .groupBy(sql`category`);
 
-    const researchAreas: Record<string, number> = {};
-    researchAreaResults.forEach(r => {
-      if (r.area) researchAreas[r.area] = r.count;
+    const categoryCounts: Record<string, number> = {};
+    categoryResults.forEach(row => {
+      if (row.category) categoryCounts[row.category] = row.count;
     });
 
     // Venues count (exclude venue filter)
     const venueConditions = [...baseConditions];
-    if (params.researchArea) venueConditions.push(eq(publications.researchArea, params.researchArea));
+    if (params.categories && params.categories.length > 0) {
+      const catConditions = params.categories.map(cat => 
+        sql`${publications.categories}::jsonb @> ${JSON.stringify([cat])}::jsonb`
+      );
+      venueConditions.push(or(...catConditions));
+    }
     if (params.year) venueConditions.push(sql`EXTRACT(YEAR FROM ${publications.publicationDate}) = ${params.year}`);
 
     const venueResults = await db
@@ -188,7 +199,12 @@ export class DatabaseStorage implements IStorage {
 
     // Years count (exclude year filter)
     const yearConditions = [...baseConditions];
-    if (params.researchArea) yearConditions.push(eq(publications.researchArea, params.researchArea));
+    if (params.categories && params.categories.length > 0) {
+      const catConditions = params.categories.map(cat => 
+        sql`${publications.categories}::jsonb @> ${JSON.stringify([cat])}::jsonb`
+      );
+      yearConditions.push(or(...catConditions));
+    }
     if (params.venue) yearConditions.push(eq(publications.journal, params.venue));
 
     const yearResults = await db
@@ -206,7 +222,7 @@ export class DatabaseStorage implements IStorage {
     });
 
     return {
-      researchAreas,
+      categories: categoryCounts,
       venues,
       years
     };

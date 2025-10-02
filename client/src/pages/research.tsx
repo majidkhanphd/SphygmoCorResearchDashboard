@@ -32,7 +32,7 @@ export default function Home() {
   } = useInfiniteQuery({
     queryKey: ["/api/publications/search", { 
       query: debouncedSearchQuery || undefined, 
-      researchArea: selectedResearchArea || undefined,
+      categories: selectedResearchArea ? [selectedResearchArea] : undefined,
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy,
@@ -41,7 +41,7 @@ export default function Home() {
     }],
     queryFn: ({ pageParam = 0 }) => searchPublications({
       query: debouncedSearchQuery || undefined,
-      researchArea: selectedResearchArea || undefined,
+      categories: selectedResearchArea ? [selectedResearchArea] : undefined,
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy,
@@ -107,14 +107,14 @@ export default function Home() {
   
   // Get authoritative filter counts from the backend (same across all pages)
   const backendFilterCounts = data?.pages[0]?.filterCounts || {
-    researchAreas: {},
+    categories: {},
     venues: {},
     years: {}
   };
   
   // Transform backend filter counts to match frontend expectations
   const filterCounts = {
-    areas: backendFilterCounts.researchAreas,
+    areas: backendFilterCounts.categories,
     venues: backendFilterCounts.venues, 
     years: backendFilterCounts.years
   };
