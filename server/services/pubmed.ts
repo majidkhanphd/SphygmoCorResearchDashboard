@@ -2,37 +2,69 @@ import { XMLParser } from "fast-xml-parser";
 import type { InsertPublication } from "@shared/schema";
 import { PUBMED_SEARCH_TERMS, MAX_RESULTS_PER_TERM } from "../config/search-terms";
 
-interface PubMedArticle {
-  MedlineCitation: {
-    PMID: { "#text": string };
-    Article: {
-      ArticleTitle: string;
-      Abstract?: { AbstractText: string | string[] };
-      AuthorList?: {
-        Author: Array<{
-          LastName?: string;
-          ForeName?: string;
-          Initials?: string;
+// PMC Article structure (PubMed Central XML format)
+interface PMCArticle {
+  front: {
+    "journal-meta"?: {
+      "journal-title-group"?: {
+        "journal-title": string | { "#text": string };
+      };
+      "journal-title"?: string | { "#text": string };
+      "journal-id"?: Array<{ "@_journal-id-type": string; "#text": string }> | { "@_journal-id-type": string; "#text": string };
+    };
+    "article-meta": {
+      "article-id": Array<{ "@_pub-id-type": string; "#text": string }> | { "@_pub-id-type": string; "#text": string };
+      "title-group": {
+        "article-title": string | { "#text": string } | Array<any>;
+      };
+      abstract?: {
+        p?: string | string[] | Array<{ "#text": string }> | { "#text": string };
+        sec?: Array<{
+          title?: string;
+          p?: string | string[] | Array<{ "#text": string }> | { "#text": string };
         }> | {
-          LastName?: string;
-          ForeName?: string;
-          Initials?: string;
+          title?: string;
+          p?: string | string[] | Array<{ "#text": string }> | { "#text": string };
         };
-      };
-      Journal: {
-        Title: string;
-        JournalIssue: {
-          PubDate: {
-            Year?: string;
-            Month?: string;
-            Day?: string;
-            MedlineDate?: string;
+        "#text"?: string;
+      } | string;
+      "contrib-group"?: {
+        contrib: Array<{
+          "@_contrib-type"?: string;
+          name?: {
+            surname?: string;
+            "given-names"?: string;
           };
+          "string-name"?: string | { "#text": string };
+          collab?: string | { "#text": string };
+        }> | {
+          "@_contrib-type"?: string;
+          name?: {
+            surname?: string;
+            "given-names"?: string;
+          };
+          "string-name"?: string | { "#text": string };
+          collab?: string | { "#text": string };
         };
+      } | Array<{
+        contrib: any;
+      }>;
+      "pub-date"?: Array<{
+        "@_pub-type"?: string;
+        "@_date-type"?: string;
+        year?: string | { "#text": string };
+        month?: string | { "#text": string };
+        day?: string | { "#text": string };
+      }> | {
+        "@_pub-type"?: string;
+        "@_date-type"?: string;
+        year?: string | { "#text": string };
+        month?: string | { "#text": string };
+        day?: string | { "#text": string };
       };
-      ELocationID?: Array<{ "@_EIdType": string; "#text": string }> | { "@_EIdType": string; "#text": string };
     };
   };
+  "@_id"?: string; // PMC ID might be as an attribute
 }
 
 interface PubMedSearchResult {
@@ -49,6 +81,9 @@ export class PubMedService {
   private parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "@_",
+    textNodeName: "#text",
+    parseAttributeValue: false,
+    trimValues: true,
   });
 
   // Use configurable search terms from config file
@@ -80,15 +115,15 @@ export class PubMedService {
     }
   }
 
-  async fetchArticleDetails(pmids: string[]): Promise<InsertPublication[]> {
-    if (pmids.length === 0) return [];
+  async fetchArticleDetails(pmcids: string[]): Promise<InsertPublication[]> {
+    if (pmcids.length === 0) return [];
 
     // Batch requests to respect PubMed's recommended limit of 200 IDs per request
     const BATCH_SIZE = 200;
     const allPublications: InsertPublication[] = [];
 
-    for (let i = 0; i < pmids.length; i += BATCH_SIZE) {
-      const batch = pmids.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < pmcids.length; i += BATCH_SIZE) {
+      const batch = pmcids.slice(i, i + BATCH_SIZE);
       const ids = batch.join(",");
       // Use PubMed Central (pmc) database
       const url = `${this.baseUrl}/efetch.fcgi?db=pmc&id=${ids}&retmode=xml`;
@@ -98,57 +133,79 @@ export class PubMedService {
         const xmlText = await response.text();
         const result = this.parser.parse(xmlText);
 
-        // Handle both single and multiple articles
-        const articles = result.PubmedArticleSet?.PubmedArticle;
+        // PMC returns articles in a <pmc-articleset> root element
+        const articles = result["pmc-articleset"]?.article || result.article;
         if (articles) {
           const articleArray = Array.isArray(articles) ? articles : [articles];
           const publications = articleArray
-            .map((article: PubMedArticle) => this.parseArticle(article))
+            .map((article: PMCArticle) => this.parseArticle(article))
             .filter(Boolean) as InsertPublication[];
           allPublications.push(...publications);
         }
 
         // Add delay between batch requests to respect rate limits (350ms)
-        if (i + BATCH_SIZE < pmids.length) {
+        if (i + BATCH_SIZE < pmcids.length) {
           await new Promise(resolve => setTimeout(resolve, 350));
         }
       } catch (error) {
-        console.error(`Error fetching PubMed batch ${i}-${i + batch.length}:`, error);
+        console.error(`Error fetching PMC batch ${i}-${i + batch.length}:`, error);
       }
     }
 
     return allPublications;
   }
 
-  private parseArticle(article: PubMedArticle): InsertPublication | null {
+  private parseArticle(article: PMCArticle): InsertPublication | null {
     try {
-      const medlineCitation = article.MedlineCitation;
-      const articleData = medlineCitation.Article;
-      const pmid = medlineCitation.PMID["#text"];
+      // Check if article has the expected structure
+      if (!article.front?.["article-meta"]) {
+        console.error("Article missing required front/article-meta structure");
+        return null;
+      }
+
+      const articleMeta = article.front["article-meta"];
+      const journalMeta = article.front["journal-meta"];
+
+      // Parse PMC ID
+      const pmcId = this.parsePmcId(articleMeta["article-id"], article["@_id"]);
+      if (!pmcId) {
+        console.error("No PMC ID found for article");
+        return null;
+      }
+
+      // Parse title
+      const title = this.parseTitle(articleMeta["title-group"]);
+      if (!title) {
+        console.error("No title found for article");
+        return null;
+      }
 
       // Parse authors
-      const authors = this.parseAuthors(articleData.AuthorList);
+      const authors = this.parseAuthors(articleMeta["contrib-group"]);
+
+      // Parse journal
+      const journal = this.parseJournal(journalMeta);
 
       // Parse abstract
-      const abstract = this.parseAbstract(articleData.Abstract);
+      const abstract = this.parseAbstract(articleMeta.abstract);
 
       // Parse publication date
-      const publicationDate = this.parsePublicationDate(articleData.Journal.JournalIssue.PubDate);
+      const publicationDate = this.parsePublicationDate(articleMeta["pub-date"]);
 
       // Parse DOI
-      const doi = this.parseDoi(articleData.ELocationID);
+      const doi = this.parseDoi(articleMeta["article-id"]);
 
       // Determine categories based on title/abstract
-      const categoriesFromText = this.categorizeToCONNEQTAreas(articleData.ArticleTitle, abstract);
+      const categoriesFromText = this.categorizeToCONNEQTAreas(title, abstract);
 
       // Extract keywords from title and abstract
-      const keywords = this.extractKeywords(articleData.ArticleTitle, abstract);
+      const keywords = this.extractKeywords(title, abstract);
 
       return {
-        pmid,
-        title: articleData.ArticleTitle,
+        pmid: pmcId, // Store PMC ID in the pmid field
+        title,
         authors,
-        journal: articleData.Journal.Title,
+        journal,
         publicationDate,
         abstract,
         doi,
@@ -156,82 +213,290 @@ export class PubMedService {
         keywords,
         citationCount: 0,
         isFeatured: 0,
-        pubmedUrl: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
+        pubmedUrl: `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${pmcId}/`,
         journalImpactFactor: null,
         status: "approved", // Auto-approve all imported articles
       };
     } catch (error) {
-      console.error("Error parsing article:", error);
+      console.error("Error parsing PMC article:", error);
       return null;
     }
   }
 
-  private parseAuthors(authorList?: any): string {
-    if (!authorList?.Author) return "Unknown";
+  private parsePmcId(articleIds: any, attributeId?: string): string | null {
+    // First try to get from article attribute
+    if (attributeId) {
+      // Remove "PMC" prefix if present
+      return attributeId.replace(/^PMC/i, "");
+    }
 
-    const authors = Array.isArray(authorList.Author) ? authorList.Author : [authorList.Author];
+    // Then try to get from article-id elements
+    if (!articleIds) return null;
 
-    return authors
+    const idArray = Array.isArray(articleIds) ? articleIds : [articleIds];
+    
+    // Look for PMC ID specifically
+    const pmcIdObj = idArray.find((id: any) => 
+      id["@_pub-id-type"] === "pmc" || 
+      id["@_pub-id-type"] === "pmcid"
+    );
+
+    if (pmcIdObj) {
+      const idText = pmcIdObj["#text"] || pmcIdObj;
+      // Remove "PMC" prefix if present
+      return String(idText).replace(/^PMC/i, "");
+    }
+
+    // Fallback: use any available ID
+    const firstId = idArray[0];
+    if (firstId) {
+      const idText = firstId["#text"] || firstId;
+      return String(idText).replace(/^PMC/i, "");
+    }
+
+    return null;
+  }
+
+  private parseTitle(titleGroup: any): string | null {
+    if (!titleGroup?.["article-title"]) return null;
+
+    const articleTitle = titleGroup["article-title"];
+    
+    // Handle string
+    if (typeof articleTitle === "string") {
+      return articleTitle;
+    }
+
+    // Handle object with #text
+    if (articleTitle["#text"]) {
+      return articleTitle["#text"];
+    }
+
+    // Handle array (complex title with formatting)
+    if (Array.isArray(articleTitle)) {
+      return articleTitle
+        .map((part: any) => (typeof part === "string" ? part : part["#text"] || ""))
+        .join("")
+        .trim();
+    }
+
+    return String(articleTitle);
+  }
+
+  private parseAuthors(contribGroup?: any): string {
+    if (!contribGroup) return "Unknown";
+
+    // Handle array of contrib-group elements
+    let contribs;
+    if (Array.isArray(contribGroup)) {
+      // Flatten all contrib elements from multiple contrib-groups
+      contribs = contribGroup.flatMap(group => group.contrib || []);
+    } else {
+      contribs = contribGroup.contrib;
+    }
+
+    if (!contribs) return "Unknown";
+
+    const authors = Array.isArray(contribs) ? contribs : [contribs];
+
+    // Filter for authors only (not editors, etc.)
+    const authorNames = authors
+      .filter((contrib: any) => !contrib["@_contrib-type"] || contrib["@_contrib-type"] === "author")
       .map((author: any) => {
-        if (author.LastName && author.ForeName) {
-          return `${author.LastName} ${author.Initials || author.ForeName}`;
+        // Check for name element (structured name)
+        if (author.name) {
+          const surname = author.name.surname || "";
+          const givenNames = author.name["given-names"] || "";
+          if (surname) {
+            return givenNames ? `${surname} ${givenNames}` : surname;
+          }
         }
-        return author.LastName || "Unknown";
+        
+        // Check for string-name (unstructured name)
+        if (author["string-name"]) {
+          const stringName = author["string-name"];
+          return typeof stringName === "string" ? stringName : stringName["#text"] || "";
+        }
+        
+        // Check for collab (collaboration/group author)
+        if (author.collab) {
+          const collab = author.collab;
+          return typeof collab === "string" ? collab : collab["#text"] || "";
+        }
+        
+        return "";
       })
-      .filter(Boolean)
-      .join(", ");
+      .filter(Boolean);
+
+    if (authorNames.length === 0) return "Unknown";
+    
+    // Format as "FirstAuthor et al." if multiple authors
+    if (authorNames.length > 1) {
+      return `${authorNames[0]} et al.`;
+    }
+    
+    return authorNames[0];
+  }
+
+  private parseJournal(journalMeta?: any): string {
+    if (!journalMeta) return "Unknown Journal";
+
+    // Try journal-title-group first
+    if (journalMeta["journal-title-group"]) {
+      const titleGroup = journalMeta["journal-title-group"];
+      if (titleGroup["journal-title"]) {
+        const title = titleGroup["journal-title"];
+        return typeof title === "string" ? title : title["#text"] || "Unknown Journal";
+      }
+    }
+
+    // Try direct journal-title
+    if (journalMeta["journal-title"]) {
+      const title = journalMeta["journal-title"];
+      return typeof title === "string" ? title : title["#text"] || "Unknown Journal";
+    }
+
+    // Try journal-id as fallback
+    if (journalMeta["journal-id"]) {
+      const journalIds = Array.isArray(journalMeta["journal-id"]) 
+        ? journalMeta["journal-id"] 
+        : [journalMeta["journal-id"]];
+      
+      const journalId = journalIds.find((id: any) => 
+        id["@_journal-id-type"] === "nlm-ta" || 
+        id["@_journal-id-type"] === "iso-abbrev"
+      ) || journalIds[0];
+      
+      if (journalId) {
+        return journalId["#text"] || "Unknown Journal";
+      }
+    }
+
+    return "Unknown Journal";
   }
 
   private parseAbstract(abstractData?: any): string | null {
-    if (!abstractData?.AbstractText) return null;
+    if (!abstractData) return null;
 
-    if (typeof abstractData.AbstractText === "string") {
-      return abstractData.AbstractText;
+    // Handle string abstract
+    if (typeof abstractData === "string") {
+      return abstractData;
     }
 
-    if (Array.isArray(abstractData.AbstractText)) {
-      return abstractData.AbstractText
-        .map((text: any) => (typeof text === "string" ? text : text["#text"] || ""))
+    // Handle abstract with #text
+    if (abstractData["#text"]) {
+      return abstractData["#text"];
+    }
+
+    // Handle abstract with paragraphs
+    if (abstractData.p) {
+      const paragraphs = Array.isArray(abstractData.p) ? abstractData.p : [abstractData.p];
+      return paragraphs
+        .map((p: any) => {
+          if (typeof p === "string") return p;
+          if (p["#text"]) return p["#text"];
+          return "";
+        })
+        .filter(Boolean)
         .join(" ");
     }
 
-    return abstractData.AbstractText["#text"] || null;
-  }
-
-  private parsePublicationDate(pubDate: any): Date {
-    if (pubDate.Year) {
-      const year = parseInt(pubDate.Year);
-      const month = pubDate.Month ? this.parseMonth(pubDate.Month) : 0;
-      const day = pubDate.Day ? parseInt(pubDate.Day) : 1;
-      return new Date(year, month, day);
+    // Handle abstract with sections
+    if (abstractData.sec) {
+      const sections = Array.isArray(abstractData.sec) ? abstractData.sec : [abstractData.sec];
+      return sections
+        .map((sec: any) => {
+          const title = sec.title ? `${sec.title}: ` : "";
+          let content = "";
+          
+          if (sec.p) {
+            const paragraphs = Array.isArray(sec.p) ? sec.p : [sec.p];
+            content = paragraphs
+              .map((p: any) => (typeof p === "string" ? p : p["#text"] || ""))
+              .join(" ");
+          }
+          
+          return title + content;
+        })
+        .filter(Boolean)
+        .join(" ");
     }
 
-    if (pubDate.MedlineDate) {
-      // Parse dates like "2023 Jan-Feb" or "2023"
-      const yearMatch = pubDate.MedlineDate.match(/(\d{4})/);
-      if (yearMatch) {
-        return new Date(parseInt(yearMatch[1]), 0, 1);
+    return null;
+  }
+
+  private parsePublicationDate(pubDates?: any): Date {
+    if (!pubDates) return new Date();
+
+    const dates = Array.isArray(pubDates) ? pubDates : [pubDates];
+    
+    // Prefer epub or ppub date types
+    const preferredDate = dates.find((date: any) => 
+      date["@_pub-type"] === "epub" || 
+      date["@_pub-type"] === "ppub" ||
+      date["@_date-type"] === "pub"
+    ) || dates[0];
+
+    if (preferredDate) {
+      const year = this.extractText(preferredDate.year);
+      const month = this.extractText(preferredDate.month);
+      const day = this.extractText(preferredDate.day);
+
+      if (year) {
+        const yearNum = parseInt(year);
+        const monthNum = month ? this.parseMonth(month) : 0;
+        const dayNum = day ? parseInt(day) : 1;
+        return new Date(yearNum, monthNum, dayNum);
       }
     }
 
     return new Date();
   }
 
+  private extractText(value: any): string | null {
+    if (!value) return null;
+    if (typeof value === "string") return value;
+    if (value["#text"]) return value["#text"];
+    return String(value);
+  }
+
   private parseMonth(month: string): number {
+    // Handle numeric months
+    const monthNum = parseInt(month);
+    if (!isNaN(monthNum)) {
+      return monthNum - 1; // Convert to 0-based
+    }
+
+    // Handle text months
     const months: Record<string, number> = {
-      Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-      Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+      Jan: 0, January: 0,
+      Feb: 1, February: 1,
+      Mar: 2, March: 2,
+      Apr: 3, April: 3,
+      May: 4,
+      Jun: 5, June: 5,
+      Jul: 6, July: 6,
+      Aug: 7, August: 7,
+      Sep: 8, September: 8,
+      Oct: 9, October: 9,
+      Nov: 10, November: 10,
+      Dec: 11, December: 11,
     };
+    
     return months[month] ?? 0;
   }
 
-  private parseDoi(eLocationID?: any): string | null {
-    if (!eLocationID) return null;
+  private parseDoi(articleIds?: any): string | null {
+    if (!articleIds) return null;
 
-    const locations = Array.isArray(eLocationID) ? eLocationID : [eLocationID];
-    const doiLocation = locations.find((loc: any) => loc["@_EIdType"] === "doi");
-
-    return doiLocation?.["#text"] || null;
+    const idArray = Array.isArray(articleIds) ? articleIds : [articleIds];
+    const doiObj = idArray.find((id: any) => id["@_pub-id-type"] === "doi");
+    
+    if (doiObj) {
+      return doiObj["#text"] || doiObj;
+    }
+    
+    return null;
   }
 
   private categorizeToCONNEQTAreas(title: string, abstract: string | null): string[] {
@@ -306,16 +571,16 @@ export class PubMedService {
   }
 
   async syncCardiovascularResearch(maxPerTerm: number = MAX_RESULTS_PER_TERM): Promise<InsertPublication[]> {
-    console.log("Starting PubMed sync for SphygmoCor research...");
+    console.log("Starting PMC sync for SphygmoCor research...");
     const allPublications: InsertPublication[] = [];
 
     for (const term of this.cardiovascularTerms) {
-      console.log(`Searching PubMed for: ${term}`);
-      const pmids = await this.searchPubMed(term, maxPerTerm);
-      console.log(`Found ${pmids.length} articles for "${term}"`);
+      console.log(`Searching PMC for: ${term}`);
+      const pmcIds = await this.searchPubMed(term, maxPerTerm);
+      console.log(`Found ${pmcIds.length} articles for "${term}"`);
 
-      if (pmids.length > 0) {
-        const publications = await this.fetchArticleDetails(pmids);
+      if (pmcIds.length > 0) {
+        const publications = await this.fetchArticleDetails(pmcIds);
         allPublications.push(...publications);
       }
 
@@ -323,7 +588,7 @@ export class PubMedService {
       await new Promise((resolve) => setTimeout(resolve, 350));
     }
 
-    // Remove duplicates based on PMID
+    // Remove duplicates based on PMC ID (stored in pmid field)
     const uniquePublications = this.removeDuplicates(allPublications);
     console.log(`Sync complete. Found ${uniquePublications.length} unique publications`);
 
