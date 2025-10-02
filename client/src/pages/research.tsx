@@ -9,7 +9,7 @@ import { ChevronDown, ChevronUp, Search, X, Star, ExternalLink } from "lucide-re
 import { useDebounce } from "@/hooks/use-debounce";
 import { searchPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
-import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES } from "@shared/schema";
+import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES, RESEARCH_AREAS } from "@shared/schema";
 
 export default function Home() {
   const [inputValue, setInputValue] = useState("");
@@ -109,8 +109,7 @@ export default function Home() {
   const backendFilterCounts = data?.pages[0]?.filterCounts || {
     researchAreas: {},
     venues: {},
-    years: {},
-    categories: {}
+    years: {}
   };
   
   // Transform backend filter counts to match frontend expectations
@@ -356,7 +355,7 @@ export default function Home() {
                   style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
                   data-testid="filter-chip-research-area"
                 >
-                  <span>Category: {getResearchAreaDisplayName(selectedResearchArea)}</span>
+                  <span>Research Area: {getResearchAreaDisplayName(selectedResearchArea)}</span>
                   <button
                     onClick={() => clearFilter('researchArea')}
                     className="hover:opacity-70 transition-opacity"
@@ -406,15 +405,15 @@ export default function Home() {
         <div className="flex gap-16">
           {/* Left sidebar - Apple ML Research Style */}
           <aside className="w-64 flex-shrink-0" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} role="complementary" aria-label="Research filters">
-            {/* Medical Categories Filter */}
+            {/* Research Areas Filter */}
             <section className="mb-10" role="group" aria-labelledby="research-areas-heading">
               {/* Uppercase caption */}
               <div className="mb-3">
-                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>MEDICAL CATEGORIES</span>
+                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>RESEARCH AREAS</span>
               </div>
               
               {/* Italic category label */}
-              <h3 id="research-areas-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Medical categories</h3>
+              <h3 id="research-areas-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Research areas</h3>
               
               {/* Clear button */}
               {selectedResearchArea && (

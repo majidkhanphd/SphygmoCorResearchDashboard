@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
@@ -11,11 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Search, Check, X, ExternalLink, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Search, Check, X, ExternalLink, Loader2, Pencil } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
-import { RESEARCH_AREA_DISPLAY_NAMES } from "@shared/schema";
+import { RESEARCH_AREAS, RESEARCH_AREA_DISPLAY_NAMES } from "@shared/schema";
 import type { Publication } from "@shared/schema";
 
 export default function Admin() {
@@ -24,9 +23,6 @@ export default function Admin() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
   const [editResearchArea, setEditResearchArea] = useState("");
-  const [editCategories, setEditCategories] = useState<string[]>([]);
-  const [customCategoryInput, setCustomCategoryInput] = useState("");
-  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const debouncedSearch = useDebounce(searchQuery, 400);
   const { toast } = useToast();
 
@@ -34,42 +30,9 @@ export default function Admin() {
     queryKey: [`/api/admin/publications/${activeTab}`],
   });
 
-  const { data: pendingData } = useQuery<{ success: boolean; publications: Publication[]; total: number }>({
-    queryKey: ["/api/admin/publications/pending"],
-  });
-
-  const { data: approvedData } = useQuery<{ success: boolean; publications: Publication[]; total: number }>({
-    queryKey: ["/api/admin/publications/approved"],
-  });
-
-  const { data: rejectedData } = useQuery<{ success: boolean; publications: Publication[]; total: number }>({
-    queryKey: ["/api/admin/publications/rejected"],
-  });
-
   const { data: statsData } = useQuery<{ success: boolean; stats: { totalPublications: number; totalByStatus: Record<string, number> } }>({
     queryKey: ["/api/publications/stats"],
   });
-
-  const allUniqueCategories = useMemo(() => {
-    const allPublications = [
-      ...(pendingData?.publications || []),
-      ...(approvedData?.publications || []),
-      ...(rejectedData?.publications || []),
-    ];
-
-    const categoriesSet = new Set<string>();
-    allPublications.forEach(pub => {
-      if (Array.isArray(pub.categories)) {
-        pub.categories.forEach(cat => {
-          if (cat && cat.trim()) {
-            categoriesSet.add(cat.trim());
-          }
-        });
-      }
-    });
-
-    return Array.from(categoriesSet).sort((a, b) => a.localeCompare(b));
-  }, [pendingData, approvedData, rejectedData]);
 
   const approveMutation = useMutation({
     mutationFn: async (publicationId: string) => {
@@ -118,11 +81,10 @@ export default function Admin() {
     },
   });
 
-  const updateCategoriesMutation = useMutation({
-    mutationFn: async ({ id, researchArea, categories }: { id: string; researchArea: string; categories: string[] }) => {
+  const updateResearchAreaMutation = useMutation({
+    mutationFn: async ({ id, researchArea }: { id: string; researchArea: string }) => {
       return await apiRequest("PATCH", `/api/admin/publications/${id}/categories`, {
         researchArea,
-        categories,
       });
     },
     onSuccess: () => {
@@ -135,7 +97,7 @@ export default function Admin() {
       setEditingPublication(null);
       toast({
         title: "Publication Updated",
-        description: "Categories and research area updated successfully.",
+        description: "Research area updated successfully.",
       });
     },
     onError: (error: any) => {
@@ -174,75 +136,19 @@ export default function Admin() {
     },
   });
 
-  const deleteCategoryMutation = useMutation({
-    mutationFn: async (categoryName: string) => {
-      return await apiRequest("DELETE", `/api/admin/categories`, { name: categoryName });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
-      setCategoryToDelete(null);
-      toast({
-        title: "Category Deleted",
-        description: "The category has been removed from all publications.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Delete Failed",
-        description: error.message || "Failed to delete category",
-        variant: "destructive",
-      });
-      setCategoryToDelete(null);
-    },
-  });
-
   const openEditDialog = (publication: Publication) => {
     setEditingPublication(publication);
     setEditResearchArea(publication.researchArea || "");
-    setEditCategories(Array.isArray(publication.categories) ? publication.categories : []);
     setEditDialogOpen(true);
   };
 
-  const handleSaveCategories = () => {
+  const handleSaveResearchArea = () => {
     if (!editingPublication) return;
     
-    updateCategoriesMutation.mutate({
+    updateResearchAreaMutation.mutate({
       id: editingPublication.id,
       researchArea: editResearchArea,
-      categories: editCategories,
     });
-  };
-
-  const toggleCategory = (category: string) => {
-    setEditCategories(prev => {
-      if (prev.includes(category)) {
-        return prev.filter(c => c !== category);
-      } else {
-        return [...prev, category];
-      }
-    });
-  };
-
-  const handleAddCustomCategory = () => {
-    const trimmedCategory = customCategoryInput.trim();
-    if (trimmedCategory && !editCategories.includes(trimmedCategory)) {
-      setEditCategories(prev => [...prev, trimmedCategory]);
-      setCustomCategoryInput("");
-    }
-  };
-
-  const handleDeleteCategory = (categoryName: string) => {
-    setCategoryToDelete(categoryName);
-  };
-
-  const confirmDeleteCategory = () => {
-    if (categoryToDelete) {
-      deleteCategoryMutation.mutate(categoryToDelete);
-    }
   };
 
   const filteredPublications = publicationsData?.publications.filter(pub => {
@@ -308,43 +214,6 @@ export default function Admin() {
             </CardContent>
           </Card>
         </div>
-
-        <Card className="mb-8" data-testid="section-category-management">
-          <CardHeader>
-            <CardTitle>Manage Categories</CardTitle>
-            <CardDescription>Remove unused categories from the system</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {allUniqueCategories.length === 0 ? (
-              <p className="text-sm text-[#6e6e73] dark:text-gray-400">
-                No categories available. Categories will appear here once publications have been added.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {allUniqueCategories.map((category) => (
-                  <Badge
-                    key={category}
-                    variant="secondary"
-                    className="pl-3 pr-2 py-1.5"
-                    data-testid={`badge-category-${category}`}
-                  >
-                    {category}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 w-5 p-0 ml-2 hover:bg-transparent"
-                      onClick={() => handleDeleteCategory(category)}
-                      disabled={deleteCategoryMutation.isPending}
-                      data-testid={`button-delete-category-${category}`}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         <Card className="mb-8">
           <CardHeader>
@@ -461,7 +330,7 @@ export default function Admin() {
                                   variant="ghost"
                                   onClick={() => openEditDialog(pub)}
                                   className="h-8 w-8 p-0"
-                                  title="Edit Categories"
+                                  title="Edit Research Area"
                                   data-testid={`button-edit-${pub.id}`}
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -573,7 +442,7 @@ export default function Admin() {
                                   variant="ghost"
                                   onClick={() => openEditDialog(pub)}
                                   className="h-8 w-8 p-0"
-                                  title="Edit Categories"
+                                  title="Edit Research Area"
                                   data-testid={`button-edit-${pub.id}`}
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -677,7 +546,7 @@ export default function Admin() {
                                   variant="ghost"
                                   onClick={() => openEditDialog(pub)}
                                   className="h-8 w-8 p-0"
-                                  title="Edit Categories"
+                                  title="Edit Research Area"
                                   data-testid={`button-edit-${pub.id}`}
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -711,11 +580,11 @@ export default function Admin() {
       </main>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]" data-testid="dialog-edit-categories">
+        <DialogContent className="sm:max-w-[425px]" data-testid="dialog-edit-research-area">
           <DialogHeader>
-            <DialogTitle>Edit Publication Categories</DialogTitle>
+            <DialogTitle>Edit Research Area</DialogTitle>
             <DialogDescription>
-              Update the research area and categories for this publication.
+              Update the research area for this publication.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -726,65 +595,13 @@ export default function Admin() {
                   <SelectValue placeholder="Select research area" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(RESEARCH_AREA_DISPLAY_NAMES).map(([slug, displayName]) => (
-                    <SelectItem key={slug} value={slug} data-testid={`option-research-area-${slug}`}>
-                      {displayName}
+                  {RESEARCH_AREAS.map((area) => (
+                    <SelectItem key={area} value={area} data-testid={`option-research-area-${area}`}>
+                      {area}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>Categories (click to toggle)</Label>
-              {allUniqueCategories.length === 0 ? (
-                <p className="text-sm text-[#6e6e73] dark:text-gray-400 py-4">
-                  No categories available. Categories will appear here once publications have been added.
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-2 p-3 border rounded-md min-h-[100px]">
-                  {allUniqueCategories.map((category) => (
-                    <Badge
-                      key={category}
-                      onClick={() => toggleCategory(category)}
-                      className={`cursor-pointer transition-colors ${
-                        editCategories.includes(category)
-                          ? "bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700"
-                          : "bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300"
-                      }`}
-                      data-testid={`badge-toggle-${category}`}
-                    >
-                      {category}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="custom-category">Add Custom Category</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="custom-category"
-                  type="text"
-                  placeholder="Enter category name..."
-                  value={customCategoryInput}
-                  onChange={(e) => setCustomCategoryInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddCustomCategory();
-                    }
-                  }}
-                  data-testid="input-custom-category"
-                />
-                <Button
-                  type="button"
-                  onClick={handleAddCustomCategory}
-                  disabled={!customCategoryInput.trim()}
-                  data-testid="button-add-category"
-                >
-                  Add
-                </Button>
-              </div>
             </div>
           </div>
           <DialogFooter>
@@ -796,11 +613,11 @@ export default function Admin() {
               Cancel
             </Button>
             <Button
-              onClick={handleSaveCategories}
-              disabled={updateCategoriesMutation.isPending}
-              data-testid="button-save-categories"
+              onClick={handleSaveResearchArea}
+              disabled={updateResearchAreaMutation.isPending}
+              data-testid="button-save-research-area"
             >
-              {updateCategoriesMutation.isPending ? (
+              {updateResearchAreaMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Saving...
@@ -813,34 +630,6 @@ export default function Admin() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!categoryToDelete} onOpenChange={(open) => !open && setCategoryToDelete(null)}>
-        <AlertDialogContent data-testid="dialog-delete-category-confirm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Category?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove the category "{categoryToDelete}" from all publications that use it. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete-category">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDeleteCategory}
-              disabled={deleteCategoryMutation.isPending}
-              className="bg-red-600 hover:bg-red-700"
-              data-testid="button-confirm-delete-category"
-            >
-              {deleteCategoryMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

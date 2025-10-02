@@ -19,7 +19,6 @@ export interface IStorage {
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
   getCategoryByName(name: string): Promise<Category | undefined>;
-  deleteCategoryFromAllPublications(categoryName: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -39,16 +38,13 @@ export class DatabaseStorage implements IStorage {
       .insert(publications)
       .values({
         ...insertPublication,
-        categories: insertPublication.categories || [],
-        keywords: insertPublication.keywords || [],
-      })
+      } as any)
       .returning();
     return publication;
   }
 
   async updatePublication(id: string, updates: Partial<InsertPublication>): Promise<Publication | undefined> {
     const updateData: any = { ...updates };
-    if (updates.categories) updateData.categories = updates.categories;
     if (updates.keywords) updateData.keywords = updates.keywords;
     
     const [updated] = await db
@@ -96,14 +92,6 @@ export class DatabaseStorage implements IStorage {
 
     if (params.featured !== undefined) {
       conditions.push(eq(publications.isFeatured, params.featured ? 1 : 0));
-    }
-
-    // Category filtering with JSON array
-    if (params.categories && params.categories.length > 0) {
-      const categoryConditions = params.categories.map(cat => 
-        sql`${publications.categories}::jsonb @> ${JSON.stringify([cat])}::jsonb`
-      );
-      conditions.push(or(...categoryConditions));
     }
 
     // Build where clause
@@ -164,12 +152,6 @@ export class DatabaseStorage implements IStorage {
     const researchAreaConditions = [...baseConditions];
     if (params.venue) researchAreaConditions.push(eq(publications.journal, params.venue));
     if (params.year) researchAreaConditions.push(sql`EXTRACT(YEAR FROM ${publications.publicationDate}) = ${params.year}`);
-    if (params.categories && params.categories.length > 0) {
-      const catConditions = params.categories.map(cat => 
-        sql`${publications.categories}::jsonb @> ${JSON.stringify([cat])}::jsonb`
-      );
-      researchAreaConditions.push(or(...catConditions));
-    }
 
     const researchAreaResults = await db
       .select({
@@ -189,12 +171,6 @@ export class DatabaseStorage implements IStorage {
     const venueConditions = [...baseConditions];
     if (params.researchArea) venueConditions.push(eq(publications.researchArea, params.researchArea));
     if (params.year) venueConditions.push(sql`EXTRACT(YEAR FROM ${publications.publicationDate}) = ${params.year}`);
-    if (params.categories && params.categories.length > 0) {
-      const catConditions = params.categories.map(cat => 
-        sql`${publications.categories}::jsonb @> ${JSON.stringify([cat])}::jsonb`
-      );
-      venueConditions.push(or(...catConditions));
-    }
 
     const venueResults = await db
       .select({
@@ -214,12 +190,6 @@ export class DatabaseStorage implements IStorage {
     const yearConditions = [...baseConditions];
     if (params.researchArea) yearConditions.push(eq(publications.researchArea, params.researchArea));
     if (params.venue) yearConditions.push(eq(publications.journal, params.venue));
-    if (params.categories && params.categories.length > 0) {
-      const catConditions = params.categories.map(cat => 
-        sql`${publications.categories}::jsonb @> ${JSON.stringify([cat])}::jsonb`
-      );
-      yearConditions.push(or(...catConditions));
-    }
 
     const yearResults = await db
       .select({
@@ -238,8 +208,7 @@ export class DatabaseStorage implements IStorage {
     return {
       researchAreas,
       venues,
-      years,
-      categories: {} // Categories count not implemented yet
+      years
     };
   }
 
@@ -302,24 +271,6 @@ export class DatabaseStorage implements IStorage {
   async getCategoryByName(name: string): Promise<Category | undefined> {
     const [category] = await db.select().from(categories).where(eq(categories.name, name));
     return category || undefined;
-  }
-
-  async deleteCategoryFromAllPublications(categoryName: string): Promise<number> {
-    const allPublications = await db.select().from(publications);
-    let updatedCount = 0;
-
-    for (const publication of allPublications) {
-      if (Array.isArray(publication.categories) && publication.categories.includes(categoryName)) {
-        const updatedCategories = publication.categories.filter(cat => cat !== categoryName);
-        await db
-          .update(publications)
-          .set({ categories: updatedCategories })
-          .where(eq(publications.id, publication.id));
-        updatedCount++;
-      }
-    }
-
-    return updatedCount;
   }
 }
 

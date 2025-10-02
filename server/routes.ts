@@ -614,35 +614,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin endpoint to delete a category from all publications
-  app.delete("/api/admin/categories", async (req, res) => {
-    try {
-      const { name } = req.body;
-      
-      if (!name) {
-        return res.status(400).json({ 
-          success: false,
-          message: "Category name is required" 
-        });
-      }
-      
-      const updatedCount = await storage.deleteCategoryFromAllPublications(name);
-      
-      res.json({ 
-        success: true,
-        updatedCount,
-        message: `Category "${name}" removed from ${updatedCount} publication(s)`
-      });
-    } catch (error: any) {
-      console.error("Error deleting category:", error);
-      res.status(500).json({ 
-        success: false,
-        message: "Failed to delete category", 
-        error: error.message 
-      });
-    }
-  });
-
   const httpServer = createServer(app);
   return httpServer;
 }
