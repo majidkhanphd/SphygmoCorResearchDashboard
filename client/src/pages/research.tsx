@@ -11,6 +11,21 @@ import { searchPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
 import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES, RESEARCH_AREAS } from "@shared/schema";
 
+// Color mapping for research area categories (Apple-style)
+const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  "ckd": { bg: "#E3F2FD", text: "#1565C0", border: "#90CAF9" },
+  "copd": { bg: "#F3E5F5", text: "#6A1B9A", border: "#CE93D8" },
+  "eva": { bg: "#E8F5E9", text: "#2E7D32", border: "#A5D6A7" },
+  "heart-failure": { bg: "#FCE4EC", text: "#C2185B", border: "#F48FB1" },
+  "hypertension": { bg: "#FFF3E0", text: "#E65100", border: "#FFCC80" },
+  "longevity": { bg: "#E0F2F1", text: "#00695C", border: "#80CBC4" },
+  "maternal-health": { bg: "#F1F8E9", text: "#558B2F", border: "#C5E1A5" },
+  "mens-health": { bg: "#E1F5FE", text: "#0277BD", border: "#81D4FA" },
+  "metabolic-health": { bg: "#FFF9C4", text: "#F57F17", border: "#FFF59D" },
+  "neuroscience": { bg: "#EDE7F6", text: "#4527A0", border: "#B39DDB" },
+  "womens-health": { bg: "#FCE4EC", text: "#AD1457", border: "#F48FB1" }
+};
+
 export default function Home() {
   const [inputValue, setInputValue] = useState("");
   const debouncedSearchQuery = useDebounce(inputValue, 400);
@@ -20,7 +35,6 @@ export default function Home() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [showAllAreas, setShowAllAreas] = useState(false);
   const [showAllVenues, setShowAllVenues] = useState(false);
-  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
   const limit = 50;
 
   const { 
@@ -36,8 +50,7 @@ export default function Home() {
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy,
-      limit,
-      featured: showFeaturedOnly || undefined
+      limit
     }],
     queryFn: ({ pageParam = 0 }) => searchPublications({
       query: debouncedSearchQuery || undefined,
@@ -46,8 +59,7 @@ export default function Home() {
       year: selectedYear || undefined,
       sortBy,
       limit,
-      offset: pageParam * limit,
-      featured: showFeaturedOnly || undefined
+      offset: pageParam * limit
     }),
     getNextPageParam: (lastPage, allPages) => {
       if (!lastPage.publications || lastPage.publications.length < limit) {
@@ -81,7 +93,6 @@ export default function Home() {
     setSelectedVenue(null);
     setSelectedYear(null);
     setInputValue("");
-    setShowFeaturedOnly(false);
   };
 
   const handleResearchAreaChange = (area: string | null) => {
@@ -155,55 +166,6 @@ export default function Home() {
           <p className="leading-relaxed" style={{ fontSize: '22px', color: '#6E6E73', lineHeight: '1.4' }}>
             Our publications span pulse wave analysis, carotid-femoral pulse wave velocity, vascular aging, device validation, and clinical evidence across diverse populations.
           </p>
-        </div>
-        
-        {/* Featured Publications Toggle - Apple style */}
-        <div style={{ marginBottom: '48px' }} role="tablist" aria-label="Publication filter">
-          <div className="inline-flex items-center rounded-xl apple-transition" style={{
-            backgroundColor: '#F6F6F6',
-            border: '1px solid #E5E5E7',
-            padding: '4px'
-          }}>
-            <button
-              id="tab-all-publications"
-              onClick={() => setShowFeaturedOnly(false)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium apple-transition apple-focus-ring ${
-                !showFeaturedOnly ? 'shadow-sm' : ''
-              }`}
-              style={{
-                backgroundColor: !showFeaturedOnly ? '#FFFFFF' : 'transparent',
-                color: !showFeaturedOnly ? '#1D1D1F' : '#6E6E73',
-                border: 'none',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
-              }}
-              data-testid="toggle-all-publications"
-              role="tab"
-              aria-selected={!showFeaturedOnly}
-              aria-controls="publications-tabpanel"
-            >
-              All Publications
-            </button>
-            <button
-              id="tab-featured-publications"
-              onClick={() => setShowFeaturedOnly(true)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium apple-transition apple-focus-ring flex items-center gap-1 ${
-                showFeaturedOnly ? 'shadow-sm' : ''
-              }`}
-              style={{
-                backgroundColor: showFeaturedOnly ? '#FFFFFF' : 'transparent',
-                color: showFeaturedOnly ? '#1D1D1F' : '#6E6E73',
-                border: 'none',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
-              }}
-              data-testid="toggle-featured-publications"
-              role="tab"
-              aria-selected={showFeaturedOnly}
-              aria-controls="publications-tabpanel"
-            >
-              <Star className="h-4 w-4" fill={showFeaturedOnly ? '#FFD60A' : 'none'} stroke={showFeaturedOnly ? '#FFD60A' : 'currentColor'} />
-              Featured
-            </button>
-          </div>
         </div>
         
         {/* Page Last Updated */}
@@ -302,7 +264,7 @@ export default function Home() {
         </div>
         
         {/* Active Filter Chips */}
-        {(selectedResearchArea || selectedVenue || selectedYear || debouncedSearchQuery || showFeaturedOnly) && (
+        {(selectedResearchArea || selectedVenue || selectedYear || debouncedSearchQuery) && (
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-sm font-medium" style={{ color: '#1D1D1F' }}>Active filters:</span>
@@ -316,23 +278,6 @@ export default function Home() {
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {showFeaturedOnly && (
-                <div 
-                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors"
-                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
-                  data-testid="filter-chip-featured"
-                >
-                  <Star className="h-3 w-3" fill="#FFD60A" stroke="#FFD60A" />
-                  <span>Featured Publications</span>
-                  <button
-                    onClick={() => setShowFeaturedOnly(false)}
-                    className="hover:opacity-70 transition-opacity"
-                    data-testid="clear-featured-filter"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              )}
               {debouncedSearchQuery && (
                 <div 
                   className="inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors"
@@ -635,9 +580,8 @@ export default function Home() {
           {/* Main content area - Apple typography */}
           <section 
             className="flex-1" 
-            id="publications-tabpanel" 
-            role="tabpanel" 
-            aria-labelledby={showFeaturedOnly ? "tab-featured-publications" : "tab-all-publications"}
+            id="publications-section" 
+            role="main" 
             aria-label="Publications list" 
             style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
           >
@@ -676,7 +620,8 @@ export default function Home() {
                         {/* Apple-style publication entry */}
                         <div style={{ 
                           paddingTop: index === 0 ? 0 : '24px', 
-                          paddingBottom: '24px'
+                          paddingBottom: '24px',
+                          maxWidth: '800px'
                         }}>
                           {/* Horizontal separator line (except for first item) */}
                           {index > 0 && (
@@ -690,11 +635,48 @@ export default function Home() {
                             />
                           )}
                           
+                          {/* Category badges - Apple style */}
+                          {publication.categories && publication.categories.length > 0 && (
+                            <div style={{ 
+                              display: 'flex', 
+                              flexWrap: 'wrap', 
+                              gap: '8px', 
+                              marginBottom: '12px' 
+                            }}>
+                              {publication.categories.map((category: string) => {
+                                const colors = CATEGORY_COLORS[category] || { 
+                                  bg: '#F6F6F6', 
+                                  text: '#1D1D1F', 
+                                  border: '#E5E5E7' 
+                                };
+                                return (
+                                  <span
+                                    key={category}
+                                    style={{
+                                      display: 'inline-block',
+                                      padding: '4px 10px',
+                                      fontSize: '12px',
+                                      fontWeight: '500',
+                                      borderRadius: '4px',
+                                      backgroundColor: colors.bg,
+                                      color: colors.text,
+                                      border: `1px solid ${colors.border}`,
+                                      textTransform: 'capitalize'
+                                    }}
+                                    data-testid={`category-badge-${category}`}
+                                  >
+                                    {getResearchAreaDisplayName(category) || category.replace('-', ' ')}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                          
                           {/* Title - Apple's conservative typography */}
                           <h3 style={{ 
-                            fontSize: '17px', 
-                            fontWeight: '400', 
-                            lineHeight: '1.35', 
+                            fontSize: '21px', 
+                            fontWeight: '600', 
+                            lineHeight: '1.3', 
                             color: '#1D1D1F', 
                             marginBottom: '8px',
                             margin: '0 0 8px 0'
