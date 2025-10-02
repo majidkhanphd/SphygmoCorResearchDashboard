@@ -332,12 +332,8 @@ export class PubMedService {
 
     if (authorNames.length === 0) return "Unknown";
     
-    // Format as "FirstAuthor et al." if multiple authors
-    if (authorNames.length > 1) {
-      return `${authorNames[0]} et al.`;
-    }
-    
-    return authorNames[0];
+    // Return full comma-separated author list
+    return authorNames.join(', ');
   }
 
   private parseJournal(journalMeta?: any): string {
