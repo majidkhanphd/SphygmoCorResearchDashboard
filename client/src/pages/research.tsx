@@ -11,19 +11,29 @@ import { searchPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
 import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES, RESEARCH_AREAS } from "@shared/schema";
 
-// Color mapping for research area categories (Apple-style)
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  "ckd": { bg: "#E3F2FD", text: "#1565C0", border: "#90CAF9" },
-  "copd": { bg: "#F3E5F5", text: "#6A1B9A", border: "#CE93D8" },
-  "eva": { bg: "#E8F5E9", text: "#2E7D32", border: "#A5D6A7" },
-  "heart-failure": { bg: "#FCE4EC", text: "#C2185B", border: "#F48FB1" },
-  "hypertension": { bg: "#FFF3E0", text: "#E65100", border: "#FFCC80" },
-  "longevity": { bg: "#E0F2F1", text: "#00695C", border: "#80CBC4" },
-  "maternal-health": { bg: "#F1F8E9", text: "#558B2F", border: "#C5E1A5" },
-  "mens-health": { bg: "#E1F5FE", text: "#0277BD", border: "#81D4FA" },
-  "metabolic-health": { bg: "#FFF9C4", text: "#F57F17", border: "#FFF59D" },
-  "neuroscience": { bg: "#EDE7F6", text: "#4527A0", border: "#B39DDB" },
+  "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
+  "copd": { bg: "#F3E5F5", text: "#4A148C", border: "#CE93D8" },
+  "eva": { bg: "#E0F2F1", text: "#004D40", border: "#80CBC4" },
+  "heart-failure": { bg: "#FFF3E0", text: "#E65100", border: "#FFB74D" },
+  "hypertension": { bg: "#E1F5FE", text: "#01579B", border: "#81D4FA" },
+  "longevity": { bg: "#F3E5F5", text: "#6A1B9A", border: "#CE93D8" },
+  "maternal-health": { bg: "#FCE4EC", text: "#880E4F", border: "#F48FB1" },
+  "mens-health": { bg: "#E0F2F1", text: "#00695C", border: "#80CBC4" },
+  "metabolic-health": { bg: "#FFF8E1", text: "#F57F17", border: "#FFD54F" },
+  "neuroscience": { bg: "#EDE7F6", text: "#311B92", border: "#B39DDB" },
   "womens-health": { bg: "#FCE4EC", text: "#AD1457", border: "#F48FB1" }
+};
+
+const getBadgeDisplayName = (category: string): string => {
+  const displayName = getResearchAreaDisplayName(category);
+  if (!displayName) return category.replace('-', ' ');
+  
+  if (displayName.includes('(CKD)')) return 'CKD';
+  if (displayName.includes('(COPD)')) return 'COPD';
+  if (displayName.includes('(EVA)')) return 'EVA';
+  
+  return displayName;
 };
 
 export default function Home() {
@@ -316,7 +326,7 @@ export default function Home() {
                   style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
                   data-testid="filter-chip-venue"
                 >
-                  <span>Venue: {selectedVenue}</span>
+                  <span>Journal: {selectedVenue}</span>
                   <button
                     onClick={() => clearFilter('venue')}
                     className="hover:opacity-70 transition-opacity"
@@ -433,15 +443,15 @@ export default function Home() {
             {/* Thin separator */}
             <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
             
-            {/* Venues Filter */}
+            {/* Journals Filter */}
             <section className="mb-10" role="group" aria-labelledby="venues-heading">
               {/* Uppercase caption */}
               <div className="mb-3">
-                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>VENUES</span>
+                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>JOURNALS</span>
               </div>
               
               {/* Italic category label */}
-              <h3 id="venues-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Venues</h3>
+              <h3 id="venues-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Journals</h3>
               
               {/* Clear button */}
               {selectedVenue && (
@@ -450,7 +460,7 @@ export default function Home() {
                   className="text-sm mb-3 apple-transition apple-focus-ring"
                   style={{ color: '#007AFF' }}
                   data-testid="clear-venues"
-                  aria-label="Clear venue filter"
+                  aria-label="Clear journal filter"
                 >
                   Clear all
                 </button>
@@ -468,7 +478,7 @@ export default function Home() {
                   data-testid="venue-all"
                   aria-pressed={!selectedVenue}
                 >
-                  All venues
+                  All journals
                 </button>
                 {visibleVenues.map((venue) => {
                   const count = filterCounts.venues[venue] || 0;
@@ -497,7 +507,7 @@ export default function Home() {
                     style={{ color: '#007AFF' }}
                     data-testid="toggle-venues"
                     aria-expanded={showAllVenues}
-                    aria-label={showAllVenues ? "Show fewer venues" : "Show more venues"}
+                    aria-label={showAllVenues ? "Show fewer journals" : "Show more journals"}
                   >
                     {showAllVenues ? (
                       <>
@@ -607,7 +617,7 @@ export default function Home() {
             ) : (
               <>
                 {/* Apple-style Publications List using ordered list */}
-                <ol style={{ listStyle: 'none', padding: 0, margin: 0 }} data-testid="publications-list">
+                <ol style={{ listStyle: 'none', padding: 0, margin: 0, maxWidth: '800px' }} data-testid="publications-list">
                   {allPublications?.map((publication: Publication, index) => {
                     const publicationYear = new Date(publication.publicationDate).getFullYear();
                     // Transform authors: replace commas with em dashes
@@ -620,8 +630,7 @@ export default function Home() {
                         {/* Apple-style publication entry */}
                         <div style={{ 
                           paddingTop: index === 0 ? 0 : '24px', 
-                          paddingBottom: '24px',
-                          maxWidth: '800px'
+                          paddingBottom: '24px'
                         }}>
                           {/* Horizontal separator line (except for first item) */}
                           {index > 0 && (
@@ -660,12 +669,11 @@ export default function Home() {
                                       borderRadius: '4px',
                                       backgroundColor: colors.bg,
                                       color: colors.text,
-                                      border: `1px solid ${colors.border}`,
-                                      textTransform: 'capitalize'
+                                      border: `1px solid ${colors.border}`
                                     }}
                                     data-testid={`category-badge-${category}`}
                                   >
-                                    {getResearchAreaDisplayName(category) || category.replace('-', ' ')}
+                                    {getBadgeDisplayName(category)}
                                   </span>
                                 );
                               })}

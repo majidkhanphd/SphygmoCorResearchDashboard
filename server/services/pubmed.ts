@@ -502,37 +502,69 @@ export class PubMedService {
     const categories: string[] = [];
 
     // Map content to CONNEQT Health's 11 fixed research areas
+    
+    // Chronic Kidney Disease (CKD)
     if (text.includes("chronic kidney disease") || text.includes("renal") || text.includes("kidney")) {
-      categories.push("ckd"); // Chronic Kidney Disease (CKD)
+      categories.push("ckd");
     }
-    if (text.includes("copd") || text.includes("chronic obstructive pulmonary") || text.includes("respiratory")) {
-      categories.push("copd"); // Chronic Obstructive Pulmonary Disease (COPD)
+    
+    // Chronic Obstructive Pulmonary Disease (COPD)
+    if (text.includes("copd") || text.includes("chronic obstructive pulmonary") || text.includes("respiratory") || text.includes("pulmonary")) {
+      categories.push("copd");
     }
-    if (text.includes("vascular aging") || text.includes("arterial aging") || text.includes("early vascular")) {
-      categories.push("eva"); // Early Vascular Aging (EVA)
+    
+    // Early Vascular Aging (EVA)
+    if (text.includes("vascular aging") || text.includes("arterial aging") || text.includes("early vascular") || 
+        text.includes("arterial stiffness") || text.includes("pulse wave") || text.includes("vascular health")) {
+      categories.push("eva");
     }
-    if (text.includes("heart failure") || text.includes("cardiac failure")) {
+    
+    // Heart Failure
+    if (text.includes("heart failure") || text.includes("cardiac failure") || text.includes("hfpef") || text.includes("hfref")) {
       categories.push("heart-failure");
     }
-    if (text.includes("hypertension") || text.includes("blood pressure") || text.includes("hypertensive")) {
+    
+    // Hypertension - includes cardiovascular and arterial stiffness terms
+    if (text.includes("hypertension") || text.includes("blood pressure") || text.includes("hypertensive") || 
+        text.includes("arterial stiffness") || text.includes("pulse wave") || text.includes("cardiovascular") ||
+        text.includes("vascular function") || text.includes("arterial compliance") || text.includes("hemodynamic")) {
       categories.push("hypertension");
     }
-    if (text.includes("longevity") || text.includes("aging") || text.includes("lifespan")) {
+    
+    // Longevity - more flexible matching with "age", "aged", "aging"
+    if (text.includes("longevity") || text.includes("aging") || text.includes("lifespan") || 
+        text.match(/\bage\b/) || text.match(/\baged\b/) || text.includes("biological age")) {
       categories.push("longevity");
     }
-    if (text.includes("pregnancy") || text.includes("maternal") || text.includes("obstetric") || text.includes("prenatal")) {
+    
+    // Maternal Health
+    if (text.includes("pregnancy") || text.includes("maternal") || text.includes("obstetric") || 
+        text.includes("prenatal") || text.includes("gestational")) {
       categories.push("maternal-health");
     }
-    if (text.includes("men's health") || text.includes("male") || text.includes("prostate") || text.includes("testosterone")) {
+    
+    // Men's Health
+    if (text.includes("men's health") || text.match(/\bmen\b/) || text.includes("male") || 
+        text.includes("prostate") || text.includes("testosterone")) {
       categories.push("mens-health");
     }
-    if (text.includes("metabolic") || text.includes("diabetes") || text.includes("obesity") || text.includes("insulin")) {
+    
+    // Metabolic Health - includes statins and lipid management
+    if (text.includes("metabolic") || text.includes("diabetes") || text.includes("obesity") || 
+        text.includes("insulin") || text.includes("statin") || text.includes("cholesterol") || 
+        text.includes("lipid") || text.includes("glucose") || text.includes("glycemic")) {
       categories.push("metabolic-health");
     }
-    if (text.includes("neuro") || text.includes("brain") || text.includes("cognitive") || text.includes("stroke")) {
+    
+    // Neuroscience
+    if (text.includes("neuro") || text.includes("brain") || text.includes("cognitive") || 
+        text.includes("stroke") || text.includes("dementia") || text.includes("alzheimer")) {
       categories.push("neuroscience");
     }
-    if (text.includes("women's health") || text.includes("female") || text.includes("menopause") || text.includes("ovarian")) {
+    
+    // Women's Health - more flexible matching with "women", "woman"
+    if (text.includes("women's health") || text.match(/\bwomen\b/) || text.match(/\bwoman\b/) || 
+        text.includes("female") || text.includes("menopause") || text.includes("ovarian")) {
       categories.push("womens-health");
     }
 
