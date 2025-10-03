@@ -89,10 +89,21 @@ export class PubMedService {
   // Use configurable search terms from config file
   private readonly cardiovascularTerms = PUBMED_SEARCH_TERMS;
 
-  async searchPubMed(searchTerm: string, maxResults: number = 100): Promise<string[]> {
+  async searchPubMed(
+    searchTerm: string, 
+    maxResults: number = 100, 
+    minDate?: string, 
+    maxDate?: string
+  ): Promise<string[]> {
     const query = encodeURIComponent(searchTerm);
-    // Use PubMed Central (pmc) database for full-text search
-    const url = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${query}&retmax=${maxResults}&retmode=xml`;
+    
+    // Build URL with optional date filters
+    let url = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${query}&retmax=${maxResults}&retmode=xml`;
+    
+    if (minDate && maxDate) {
+      // Use pdat (publication date) instead of default entrez date
+      url += `&datetype=pdat&mindate=${minDate}&maxdate=${maxDate}`;
+    }
 
     try {
       const response = await fetch(url);
@@ -604,23 +615,42 @@ export class PubMedService {
     console.log("Starting PMC sync for SphygmoCor research...");
     const allPublications: InsertPublication[] = [];
 
+    // Search in 5-year chunks from 2000 to present to capture all historical publications
+    const currentYear = new Date().getFullYear();
+    const yearRanges: Array<{ start: number; end: number }> = [];
+    
+    for (let year = 2000; year <= currentYear; year += 5) {
+      yearRanges.push({
+        start: year,
+        end: Math.min(year + 4, currentYear)
+      });
+    }
+
     for (const term of this.cardiovascularTerms) {
-      console.log(`Searching PMC for: ${term}`);
-      const pmcIds = await this.searchPubMed(term, maxPerTerm);
-      console.log(`Found ${pmcIds.length} articles for "${term}"`);
+      console.log(`\nSearching PMC for: ${term}`);
+      
+      // Search each year range
+      for (const range of yearRanges) {
+        const minDate = `${range.start}/01/01`;
+        const maxDate = `${range.end}/12/31`;
+        
+        console.log(`  Searching ${range.start}-${range.end}...`);
+        const pmcIds = await this.searchPubMed(term, maxPerTerm, minDate, maxDate);
+        console.log(`  Found ${pmcIds.length} articles for ${range.start}-${range.end}`);
 
-      if (pmcIds.length > 0) {
-        const publications = await this.fetchArticleDetails(pmcIds);
-        allPublications.push(...publications);
+        if (pmcIds.length > 0) {
+          const publications = await this.fetchArticleDetails(pmcIds);
+          allPublications.push(...publications);
+        }
+
+        // Add delay to respect PubMed rate limits (3 requests per second)
+        await new Promise((resolve) => setTimeout(resolve, 350));
       }
-
-      // Add delay to respect PubMed rate limits (3 requests per second)
-      await new Promise((resolve) => setTimeout(resolve, 350));
     }
 
     // Remove duplicates based on PMC ID (stored in pmid field)
     const uniquePublications = this.removeDuplicates(allPublications);
-    console.log(`Sync complete. Found ${uniquePublications.length} unique publications`);
+    console.log(`\nSync complete. Found ${uniquePublications.length} unique publications`);
 
     return uniquePublications;
   }

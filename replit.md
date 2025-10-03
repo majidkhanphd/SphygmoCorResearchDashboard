@@ -24,10 +24,11 @@ Users can search, filter, and browse scientific publications related to cardiova
 **Admin Functions:**
 
 *PubMed Sync:*
-- `POST /api/admin/sync-pubmed` with `{"maxPerTerm": 100}` parameter
+- `POST /api/admin/sync-pubmed` with `{"maxPerTerm": 5000}` parameter
 - Configurable search terms in `server/config/search-terms.ts`
-- Current query: `("sphygmoCor XCEL" OR "sphygmoCor CVMS" OR "Atcor medical" OR cardiex OR "oscar 2")`
-- All synced publications start with status="pending"
+- Current query: `sphygmocor*[body]` (searches full text in PubMed Central)
+- Searches in 5-year chunks from 2000 to present to capture all historical publications
+- All synced publications auto-approved by default (status="approved")
 - Auto-categorizes by research area and extracts keywords
 - Rate-limited to respect PubMed API guidelines (350ms delay between requests)
 
