@@ -652,7 +652,7 @@ export default function Home() {
           
           {/* Main content area - Apple typography */}
           <section 
-            className="flex-1" 
+            className="flex-1 min-w-0" 
             id="publications-section" 
             role="main" 
             aria-label="Publications list" 
@@ -681,6 +681,7 @@ export default function Home() {
               <>
                 {/* Publications List - Single Column Layout */}
                 <div 
+                  className="min-w-0"
                   style={{ 
                     display: 'flex',
                     flexDirection: 'column',
@@ -700,6 +701,7 @@ export default function Home() {
                       <div 
                         key={publication.id} 
                         data-testid={`publication-${publication.id}`}
+                        className="min-w-0"
                         style={{
                           paddingTop: '24px',
                           paddingBottom: '24px',
@@ -712,11 +714,12 @@ export default function Home() {
                         }}
                       >
                         {/* Publication entry - no card styling */}
-                        <div style={{ 
-                          display: 'flex',
-                          flexDirection: 'column',
-                          minWidth: 0
-                        }}>
+                        <div 
+                          className="min-w-0 break-words"
+                          style={{ 
+                            display: 'flex',
+                            flexDirection: 'column'
+                          }}>
                           
                           {/* Category badges - Apple style */}
                           {publication.categories && publication.categories.length > 0 && (
