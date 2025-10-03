@@ -714,7 +714,8 @@ export default function Home() {
                         {/* Publication entry - no card styling */}
                         <div style={{ 
                           display: 'flex',
-                          flexDirection: 'column'
+                          flexDirection: 'column',
+                          minWidth: 0
                         }}>
                           
                           {/* Category badges - Apple style */}
