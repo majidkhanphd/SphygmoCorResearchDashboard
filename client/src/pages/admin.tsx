@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,6 +16,13 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
 import { RESEARCH_AREAS, RESEARCH_AREA_DISPLAY_NAMES } from "@shared/schema";
 import type { Publication } from "@shared/schema";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  ColumnDef,
+  ColumnResizeMode,
+} from "@tanstack/react-table";
 
 export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,6 +30,7 @@ export default function Admin() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
   const [editCategories, setEditCategories] = useState<string[]>([]);
+  const [columnResizeMode] = useState<ColumnResizeMode>("onEnd");
   const debouncedSearch = useDebounce(searchQuery, 400);
   const { toast } = useToast();
 
@@ -174,6 +181,294 @@ export default function Admin() {
 
   const stats = statsData?.stats?.totalByStatus || { pending: 0, approved: 0, rejected: 0 };
 
+  const pendingColumns = useMemo<ColumnDef<Publication>[]>(
+    () => [
+      {
+        accessorKey: "title",
+        header: "Title",
+        size: 350,
+        minSize: 200,
+        cell: ({ row }) => (
+          <div className="space-y-1">
+            <div className="line-clamp-2 text-sm" data-testid={`text-title-${row.original.id}`}>
+              {row.original.title}
+            </div>
+            <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${row.original.id}`}>
+              {row.original.authors}
+            </div>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "journal",
+        header: "Journal",
+        size: 150,
+        cell: ({ row }) => (
+          <div className="text-sm line-clamp-2" data-testid={`text-journal-${row.original.id}`}>
+            {row.original.journal}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "publicationDate",
+        header: "Date",
+        size: 120,
+        cell: ({ row }) => (
+          <div className="text-sm" data-testid={`text-date-${row.original.id}`}>
+            {new Date(row.original.publicationDate).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short' 
+            })}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "categories",
+        header: "Categories",
+        size: 100,
+        cell: ({ row }) => (
+          <div className="flex flex-wrap gap-1">
+            {row.original.categories && row.original.categories.length > 0 ? (
+              row.original.categories.map((category) => (
+                <Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-category-${row.original.id}-${category}`}>
+                  {RESEARCH_AREA_DISPLAY_NAMES[category] || category}
+                </Badge>
+              ))
+            ) : (
+              <span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        size: 280,
+        enableResizing: false,
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => row.original.pubmedUrl && window.open(row.original.pubmedUrl, '_blank')}
+              className="h-8 w-8 p-0"
+              title="View on PubMed"
+              data-testid={`button-view-${row.original.id}`}
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => openEditDialog(row.original)}
+              className="h-8 w-8 p-0"
+              title="Edit Categories"
+              data-testid={`button-edit-${row.original.id}`}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => approveMutation.mutate(row.original.id)}
+              disabled={approveMutation.isPending}
+              className="h-8 bg-green-600 hover:bg-green-700 text-white"
+              data-testid={`button-approve-${row.original.id}`}
+            >
+              <Check className="h-4 w-4 mr-1" />
+              Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => rejectMutation.mutate(row.original.id)}
+              disabled={rejectMutation.isPending}
+              className="h-8"
+              data-testid={`button-reject-${row.original.id}`}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Reject
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [approveMutation, rejectMutation]
+  );
+
+  const approvedRejectedColumns = useMemo<ColumnDef<Publication>[]>(
+    () => [
+      {
+        accessorKey: "title",
+        header: "Title",
+        size: 350,
+        minSize: 200,
+        cell: ({ row }) => (
+          <div className="space-y-1">
+            <div className="line-clamp-2 text-sm" data-testid={`text-title-${row.original.id}`}>
+              {row.original.title}
+            </div>
+            <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${row.original.id}`}>
+              {row.original.authors}
+            </div>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "journal",
+        header: "Journal",
+        size: 150,
+        cell: ({ row }) => (
+          <div className="text-sm line-clamp-2" data-testid={`text-journal-${row.original.id}`}>
+            {row.original.journal}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "publicationDate",
+        header: "Date",
+        size: 120,
+        cell: ({ row }) => (
+          <div className="text-sm" data-testid={`text-date-${row.original.id}`}>
+            {new Date(row.original.publicationDate).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short' 
+            })}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "categories",
+        header: "Categories",
+        size: 100,
+        cell: ({ row }) => (
+          <div className="flex flex-wrap gap-1">
+            {row.original.categories && row.original.categories.length > 0 ? (
+              row.original.categories.map((category) => (
+                <Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-category-${row.original.id}-${category}`}>
+                  {RESEARCH_AREA_DISPLAY_NAMES[category] || category}
+                </Badge>
+              ))
+            ) : (
+              <span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        size: 280,
+        enableResizing: false,
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => row.original.pubmedUrl && window.open(row.original.pubmedUrl, '_blank')}
+              className="h-8 w-8 p-0"
+              title="View on PubMed"
+              data-testid={`button-view-${row.original.id}`}
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => openEditDialog(row.original)}
+              className="h-8 w-8 p-0"
+              title="Edit Categories"
+              data-testid={`button-edit-${row.original.id}`}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Select
+              value={activeTab}
+              onValueChange={(value) => changeStatusMutation.mutate({ id: row.original.id, status: value as "pending" | "approved" | "rejected" })}
+              disabled={changeStatusMutation.isPending}
+            >
+              <SelectTrigger className="h-8 w-[140px]" data-testid={`select-status-${row.original.id}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="approved" data-testid="option-status-approved">Approved</SelectItem>
+                <SelectItem value="pending" data-testid="option-status-pending">Move to Pending</SelectItem>
+                <SelectItem value="rejected" data-testid="option-status-rejected">Reject</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        ),
+      },
+    ],
+    [activeTab, changeStatusMutation]
+  );
+
+  const pendingTable = useReactTable({
+    data: filteredPublications,
+    columns: pendingColumns,
+    getCoreRowModel: getCoreRowModel(),
+    columnResizeMode,
+    enableColumnResizing: true,
+  });
+
+  const approvedRejectedTable = useReactTable({
+    data: filteredPublications,
+    columns: approvedRejectedColumns,
+    getCoreRowModel: getCoreRowModel(),
+    columnResizeMode,
+    enableColumnResizing: true,
+  });
+
+  const renderTable = (table: ReturnType<typeof useReactTable<Publication>>) => (
+    <div className="overflow-x-auto">
+      <table className="w-full" style={{ tableLayout: 'fixed', width: table.getTotalSize() }}>
+        <thead className="border-b">
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <th
+                  key={header.id}
+                  className="h-12 px-4 text-left align-middle font-medium text-muted-foreground relative group"
+                  style={{ width: header.getSize() }}
+                >
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
+                  {header.column.getCanResize() && (
+                    <div
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
+                      className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none ${
+                        header.column.getIsResizing() 
+                          ? 'bg-[#007AFF] w-1' 
+                          : 'bg-transparent group-hover:bg-gray-300 dark:group-hover:bg-gray-600'
+                      }`}
+                    />
+                  )}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
+            <tr key={row.id} className="border-b transition-colors hover:bg-muted/50" data-testid={`row-publication-${row.original.id}`}>
+              {row.getVisibleCells().map((cell) => (
+                <td
+                  key={cell.id}
+                  className="p-4 align-middle"
+                  style={{ width: cell.column.getSize() }}
+                >
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-black">
       <Navigation />
@@ -242,107 +537,7 @@ export default function Admin() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[35%] resize-x overflow-auto min-w-[200px]" style={{ resize: 'horizontal' }}>Title</TableHead>
-                          <TableHead className="w-[15%]">Journal</TableHead>
-                          <TableHead className="w-[12%]">Date</TableHead>
-                          <TableHead className="w-[10%]">Categories</TableHead>
-                          <TableHead className="w-[28%] text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredPublications.map((pub) => (
-                          <TableRow key={pub.id} data-testid={`row-publication-${pub.id}`}>
-                            <TableCell className="font-medium">
-                              <div className="space-y-1">
-                                <div className="line-clamp-2 text-sm" data-testid={`text-title-${pub.id}`}>
-                                  {pub.title}
-                                </div>
-                                <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${pub.id}`}>
-                                  {pub.authors}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm line-clamp-2" data-testid={`text-journal-${pub.id}`}>
-                                {pub.journal}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm" data-testid={`text-date-${pub.id}`}>
-                                {new Date(pub.publicationDate).toLocaleDateString('en-US', { 
-                                  year: 'numeric', 
-                                  month: 'short' 
-                                })}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {pub.categories && pub.categories.length > 0 ? (
-                                  pub.categories.map((category) => (
-                                    <Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-category-${pub.id}-${category}`}>
-                                      {RESEARCH_AREA_DISPLAY_NAMES[category] || category}
-                                    </Badge>
-                                  ))
-                                ) : (
-                                  <span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => pub.pubmedUrl && window.open(pub.pubmedUrl, '_blank')}
-                                  className="h-8 w-8 p-0"
-                                  title="View on PubMed"
-                                  data-testid={`button-view-${pub.id}`}
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => openEditDialog(pub)}
-                                  className="h-8 w-8 p-0"
-                                  title="Edit Categories"
-                                  data-testid={`button-edit-${pub.id}`}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  onClick={() => approveMutation.mutate(pub.id)}
-                                  disabled={approveMutation.isPending}
-                                  className="h-8 bg-green-600 hover:bg-green-700 text-white"
-                                  data-testid={`button-approve-${pub.id}`}
-                                >
-                                  <Check className="h-4 w-4 mr-1" />
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => rejectMutation.mutate(pub.id)}
-                                  disabled={rejectMutation.isPending}
-                                  className="h-8"
-                                  data-testid={`button-reject-${pub.id}`}
-                                >
-                                  <X className="h-4 w-4 mr-1" />
-                                  Reject
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  renderTable(pendingTable)
                 )}
               </CardContent>
             </TabsContent>
@@ -360,99 +555,7 @@ export default function Admin() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[40%] resize-x overflow-auto min-w-[200px]" style={{ resize: 'horizontal' }}>Title</TableHead>
-                          <TableHead className="w-[20%]">Journal</TableHead>
-                          <TableHead className="w-[12%]">Date</TableHead>
-                          <TableHead className="w-[10%]">Categories</TableHead>
-                          <TableHead className="w-[18%] text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredPublications.map((pub) => (
-                          <TableRow key={pub.id} data-testid={`row-publication-${pub.id}`}>
-                            <TableCell className="font-medium">
-                              <div className="space-y-1">
-                                <div className="line-clamp-2 text-sm" data-testid={`text-title-${pub.id}`}>
-                                  {pub.title}
-                                </div>
-                                <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${pub.id}`}>
-                                  {pub.authors}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm line-clamp-2" data-testid={`text-journal-${pub.id}`}>
-                                {pub.journal}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm" data-testid={`text-date-${pub.id}`}>
-                                {new Date(pub.publicationDate).toLocaleDateString('en-US', { 
-                                  year: 'numeric', 
-                                  month: 'short' 
-                                })}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {pub.categories && pub.categories.length > 0 ? (
-                                  pub.categories.map((category) => (
-                                    <Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-category-${pub.id}-${category}`}>
-                                      {RESEARCH_AREA_DISPLAY_NAMES[category] || category}
-                                    </Badge>
-                                  ))
-                                ) : (
-                                  <span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => pub.pubmedUrl && window.open(pub.pubmedUrl, '_blank')}
-                                  className="h-8 w-8 p-0"
-                                  title="View on PubMed"
-                                  data-testid={`button-view-${pub.id}`}
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => openEditDialog(pub)}
-                                  className="h-8 w-8 p-0"
-                                  title="Edit Categories"
-                                  data-testid={`button-edit-${pub.id}`}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Select
-                                  value="approved"
-                                  onValueChange={(value) => changeStatusMutation.mutate({ id: pub.id, status: value as "pending" | "approved" | "rejected" })}
-                                  disabled={changeStatusMutation.isPending}
-                                >
-                                  <SelectTrigger className="h-8 w-[140px]" data-testid={`select-status-${pub.id}`}>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="approved" data-testid="option-status-approved">Approved</SelectItem>
-                                    <SelectItem value="pending" data-testid="option-status-pending">Move to Pending</SelectItem>
-                                    <SelectItem value="rejected" data-testid="option-status-rejected">Reject</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  renderTable(approvedRejectedTable)
                 )}
               </CardContent>
             </TabsContent>
@@ -470,99 +573,7 @@ export default function Admin() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[40%] resize-x overflow-auto min-w-[200px]" style={{ resize: 'horizontal' }}>Title</TableHead>
-                          <TableHead className="w-[20%]">Journal</TableHead>
-                          <TableHead className="w-[12%]">Date</TableHead>
-                          <TableHead className="w-[10%]">Categories</TableHead>
-                          <TableHead className="w-[18%] text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredPublications.map((pub) => (
-                          <TableRow key={pub.id} data-testid={`row-publication-${pub.id}`}>
-                            <TableCell className="font-medium">
-                              <div className="space-y-1">
-                                <div className="line-clamp-2 text-sm" data-testid={`text-title-${pub.id}`}>
-                                  {pub.title}
-                                </div>
-                                <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${pub.id}`}>
-                                  {pub.authors}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm line-clamp-2" data-testid={`text-journal-${pub.id}`}>
-                                {pub.journal}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm" data-testid={`text-date-${pub.id}`}>
-                                {new Date(pub.publicationDate).toLocaleDateString('en-US', { 
-                                  year: 'numeric', 
-                                  month: 'short' 
-                                })}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {pub.categories && pub.categories.length > 0 ? (
-                                  pub.categories.map((category) => (
-                                    <Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-category-${pub.id}-${category}`}>
-                                      {RESEARCH_AREA_DISPLAY_NAMES[category] || category}
-                                    </Badge>
-                                  ))
-                                ) : (
-                                  <span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => pub.pubmedUrl && window.open(pub.pubmedUrl, '_blank')}
-                                  className="h-8 w-8 p-0"
-                                  title="View on PubMed"
-                                  data-testid={`button-view-${pub.id}`}
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => openEditDialog(pub)}
-                                  className="h-8 w-8 p-0"
-                                  title="Edit Categories"
-                                  data-testid={`button-edit-${pub.id}`}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Select
-                                  value="rejected"
-                                  onValueChange={(value) => changeStatusMutation.mutate({ id: pub.id, status: value as "pending" | "approved" | "rejected" })}
-                                  disabled={changeStatusMutation.isPending}
-                                >
-                                  <SelectTrigger className="h-8 w-[140px]" data-testid={`select-status-${pub.id}`}>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="rejected" data-testid="option-status-rejected">Rejected</SelectItem>
-                                    <SelectItem value="pending" data-testid="option-status-pending">Move to Pending</SelectItem>
-                                    <SelectItem value="approved" data-testid="option-status-approved">Approve</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  renderTable(approvedRejectedTable)
                 )}
               </CardContent>
             </TabsContent>
@@ -571,52 +582,45 @@ export default function Admin() {
       </main>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]" data-testid="dialog-edit-categories">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Edit Publication Categories</DialogTitle>
+            <DialogTitle>Edit Categories</DialogTitle>
             <DialogDescription>
-              Select one or more research areas for this publication.
+              Select the research areas that apply to this publication
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid gap-3">
-              <Label>Research Areas</Label>
-              <div className="grid grid-cols-2 gap-3">
-                {RESEARCH_AREAS.map((area) => (
-                  <div key={area} className="flex items-start space-x-2">
-                    <Checkbox
-                      id={`category-${area}`}
-                      checked={editCategories.includes(area)}
-                      onCheckedChange={() => toggleCategory(area)}
-                      data-testid={`checkbox-category-${area}`}
-                    />
-                    <label
-                      htmlFor={`category-${area}`}
-                      className="text-sm leading-tight cursor-pointer"
-                    >
-                      {area}
-                    </label>
-                  </div>
-                ))}
-              </div>
+            <div className="space-y-3">
+              {RESEARCH_AREAS.map((area) => (
+                <div key={area} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={area}
+                    checked={editCategories.includes(area)}
+                    onCheckedChange={() => toggleCategory(area)}
+                    data-testid={`checkbox-category-${area}`}
+                  />
+                  <Label
+                    htmlFor={area}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    {RESEARCH_AREA_DISPLAY_NAMES[area]}
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setEditDialogOpen(false)}
-              data-testid="button-cancel-edit"
-            >
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} data-testid="button-cancel-edit">
               Cancel
             </Button>
-            <Button
-              onClick={handleSaveCategories}
+            <Button 
+              onClick={handleSaveCategories} 
               disabled={updateCategoriesMutation.isPending}
               data-testid="button-save-categories"
             >
               {updateCategoriesMutation.isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
                 </>
               ) : (
@@ -626,7 +630,6 @@ export default function Admin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }
