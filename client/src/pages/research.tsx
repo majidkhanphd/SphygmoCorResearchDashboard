@@ -705,7 +705,10 @@ export default function Home() {
                           paddingBottom: '24px',
                           borderBottom: '1px solid #E5E5E7',
                           display: 'flex',
-                          flexDirection: 'column'
+                          flexDirection: 'column',
+                          width: '100%',
+                          maxWidth: '100%',
+                          overflow: 'hidden'
                         }}
                       >
                         {/* Publication entry - no card styling */}
@@ -757,7 +760,9 @@ export default function Home() {
                             lineHeight: '1.3', 
                             color: '#1D1D1F', 
                             marginBottom: '8px',
-                            margin: '0 0 8px 0'
+                            margin: '0 0 8px 0',
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word'
                           }}>
                             <a 
                               href={publication.pubmedUrl || publication.doi || '#'}
@@ -783,7 +788,9 @@ export default function Home() {
                             display: 'flex',
                             alignItems: 'center',
                             flexWrap: 'wrap',
-                            gap: '8px'
+                            gap: '8px',
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word'
                           }}>
                             {/* Venue (italicized) and year */}
                             <span data-testid="publication-venue">
@@ -845,7 +852,9 @@ export default function Home() {
                             fontWeight: '400', 
                             lineHeight: '1.4', 
                             color: '#6E6E73',
-                            marginTop: '4px'
+                            marginTop: '4px',
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word'
                           }} data-testid="publication-authors">
                             {formattedAuthors}
                           </div>
