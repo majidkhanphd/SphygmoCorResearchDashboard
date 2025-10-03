@@ -10,6 +10,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { searchPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
 import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES, RESEARCH_AREAS } from "@shared/schema";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
@@ -375,9 +376,10 @@ export default function Home() {
         )}
 
         {/* Main content with sidebar and publications */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 280px) minmax(0, 1fr)', gap: '64px' }}>
-          {/* Left sidebar - Apple ML Research Style */}
-          <aside className="min-w-0" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
+        <ResizablePanelGroup direction="horizontal" className="min-h-screen">
+          <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
+            {/* Left sidebar - Apple ML Research Style */}
+            <aside className="min-w-0 pr-8" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
             {/* Research Areas Filter */}
             <section className="mb-10 min-w-0" role="group" aria-labelledby="research-areas-heading">
               {/* Uppercase caption */}
@@ -624,15 +626,19 @@ export default function Home() {
               </div>
             </section>
           </aside>
+          </ResizablePanel>
           
-          {/* Main content area - Apple typography */}
-          <section 
-            className="flex-1 min-w-0" 
-            id="publications-section" 
-            role="main" 
-            aria-label="Publications list" 
-            style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
-          >
+          <ResizableHandle withHandle />
+          
+          <ResizablePanel defaultSize={80}>
+            {/* Main content area - Apple typography */}
+            <section 
+              className="flex-1 min-w-0 pl-8" 
+              id="publications-section" 
+              role="main" 
+              aria-label="Publications list" 
+              style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
+            >
             {isLoading ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                 {Array.from({ length: 10 }).map((_, i) => (
@@ -881,7 +887,8 @@ export default function Home() {
               </>
             )}
           </section>
-        </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
       
       {/* Apple-style Footer */}
