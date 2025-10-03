@@ -47,6 +47,7 @@ export default function Home() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [showAllAreas, setShowAllAreas] = useState(false);
   const [showAllVenues, setShowAllVenues] = useState(false);
+  const [showAllYears, setShowAllYears] = useState(false);
   const limit = 50;
 
   const { 
@@ -164,6 +165,7 @@ export default function Home() {
     { length: currentYear - 2000 + 1 }, 
     (_, i) => currentYear - i
   );
+  const visibleYears = showAllYears ? availableYears : availableYears.slice(0, 5);
   
   // Calculate total count for all years
   const totalYearCount = Object.values(filterCounts.years).reduce((sum, count) => sum + (count as number), 0);
@@ -579,7 +581,7 @@ export default function Home() {
                 >
                   All years {totalYearCount > 0 && `(${totalYearCount})`}
                 </button>
-                {availableYears.map((year) => {
+                {visibleYears.map((year) => {
                   const count = filterCounts.years[year] || 0;
                   return (
                     <button
@@ -599,6 +601,26 @@ export default function Home() {
                     </button>
                   );
                 })}
+                {availableYears.length > 5 && (
+                  <button
+                    onClick={() => setShowAllYears(!showAllYears)}
+                    className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
+                    style={{ color: '#007AFF' }}
+                    data-testid="toggle-years"
+                    aria-expanded={showAllYears}
+                    aria-label={showAllYears ? "Show fewer years" : "Show more years"}
+                  >
+                    {showAllYears ? (
+                      <>
+                        Less <ChevronUp className="ml-1 h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        More <ChevronDown className="ml-1 h-4 w-4" />
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </section>
           </aside>
