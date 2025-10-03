@@ -423,20 +423,20 @@ export default function Home() {
           {!isMobile && (
             <aside className="w-full lg:w-64 flex-shrink-0 min-w-0 break-words" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} role="complementary" aria-label="Research filters">
             {/* Research Areas Filter */}
-            <section className="mb-10" role="group" aria-labelledby="research-areas-heading">
+            <section className="mb-10 min-w-0" role="group" aria-labelledby="research-areas-heading">
               {/* Uppercase caption */}
-              <div className="mb-3">
-                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>RESEARCH AREAS</span>
+              <div className="mb-3 min-w-0">
+                <span className="text-xs font-medium tracking-wider uppercase break-words" style={{ color: '#6E6E73' }}>RESEARCH AREAS</span>
               </div>
               
               {/* Italic category label */}
-              <h3 id="research-areas-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Research areas</h3>
+              <h3 id="research-areas-heading" className="text-base font-medium italic mb-4 min-w-0 break-words" style={{ color: '#1D1D1F' }}>Research areas</h3>
               
               {/* Clear button */}
               {selectedResearchArea && (
                 <button
                   onClick={() => handleResearchAreaChange(null)}
-                  className="text-sm mb-3 apple-transition apple-focus-ring"
+                  className="text-sm mb-3 apple-transition apple-focus-ring break-words"
                   style={{ color: '#007AFF' }}
                   data-testid="clear-research-areas"
                   aria-label="Clear research area filter"
@@ -445,7 +445,7 @@ export default function Home() {
                 </button>
               )}
               
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
                 <button
                   onClick={() => handleResearchAreaChange(null)}
                   className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
@@ -506,20 +506,20 @@ export default function Home() {
             <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
             
             {/* Journals Filter */}
-            <section className="mb-10" role="group" aria-labelledby="venues-heading">
+            <section className="mb-10 min-w-0" role="group" aria-labelledby="venues-heading">
               {/* Uppercase caption */}
-              <div className="mb-3">
-                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>JOURNALS</span>
+              <div className="mb-3 min-w-0">
+                <span className="text-xs font-medium tracking-wider uppercase break-words" style={{ color: '#6E6E73' }}>JOURNALS</span>
               </div>
               
               {/* Italic category label */}
-              <h3 id="venues-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Journals</h3>
+              <h3 id="venues-heading" className="text-base font-medium italic mb-4 min-w-0 break-words" style={{ color: '#1D1D1F' }}>Journals</h3>
               
               {/* Clear button */}
               {selectedVenue && (
                 <button
                   onClick={() => handleVenueChange(null)}
-                  className="text-sm mb-3 apple-transition apple-focus-ring"
+                  className="text-sm mb-3 apple-transition apple-focus-ring break-words"
                   style={{ color: '#007AFF' }}
                   data-testid="clear-venues"
                   aria-label="Clear journal filter"
@@ -528,7 +528,7 @@ export default function Home() {
                 </button>
               )}
               
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
                 <button
                   onClick={() => handleVenueChange(null)}
                   className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
@@ -589,20 +589,20 @@ export default function Home() {
             <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
             
             {/* Published Year Filter */}
-            <section className="mb-10" role="group" aria-labelledby="years-heading">
+            <section className="mb-10 min-w-0" role="group" aria-labelledby="years-heading">
               {/* Uppercase caption */}
-              <div className="mb-3">
-                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>YEARS</span>
+              <div className="mb-3 min-w-0">
+                <span className="text-xs font-medium tracking-wider uppercase break-words" style={{ color: '#6E6E73' }}>YEARS</span>
               </div>
               
               {/* Italic category label */}
-              <h3 id="years-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Years</h3>
+              <h3 id="years-heading" className="text-base font-medium italic mb-4 min-w-0 break-words" style={{ color: '#1D1D1F' }}>Years</h3>
               
               {/* Clear button */}
               {selectedYear && (
                 <button
                   onClick={() => handleYearChange(null)}
-                  className="text-sm mb-3 apple-transition apple-focus-ring"
+                  className="text-sm mb-3 apple-transition apple-focus-ring break-words"
                   style={{ color: '#007AFF' }}
                   data-testid="clear-years"
                   aria-label="Clear year filter"
@@ -611,7 +611,7 @@ export default function Home() {
                 </button>
               )}
               
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
                 <button
                   onClick={() => handleYearChange(null)}
                   className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
