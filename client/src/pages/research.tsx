@@ -61,7 +61,7 @@ export default function Home() {
   // Add responsive state management
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 640);
     };
     
     // Check on mount
@@ -421,7 +421,7 @@ export default function Home() {
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-16">
           {/* Left sidebar - Apple ML Research Style - Only show when not mobile */}
           {!isMobile && (
-            <aside className="w-full lg:w-64 flex-shrink-0" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} role="complementary" aria-label="Research filters">
+            <aside className="w-full lg:w-64 flex-shrink-0 min-w-0 break-words" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} role="complementary" aria-label="Research filters">
             {/* Research Areas Filter */}
             <section className="mb-10" role="group" aria-labelledby="research-areas-heading">
               {/* Uppercase caption */}
