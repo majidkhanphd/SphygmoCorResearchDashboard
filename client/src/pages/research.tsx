@@ -61,7 +61,7 @@ export default function Home() {
   // Add responsive state management
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 640);
+      setIsMobile(window.innerWidth < 768);
     };
     
     // Check on mount
@@ -448,7 +448,7 @@ export default function Home() {
               <div className="space-y-1">
                 <button
                   onClick={() => handleResearchAreaChange(null)}
-                  className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring ${
+                  className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                     !selectedResearchArea 
                       ? "font-medium" 
                       : "hover:opacity-80"
@@ -465,7 +465,7 @@ export default function Home() {
                     <button
                       key={slug}
                       onClick={() => handleResearchAreaChange(slug)}
-                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring ${
+                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                         selectedResearchArea === slug
                           ? "font-medium"
                           : "hover:opacity-80"
@@ -531,7 +531,7 @@ export default function Home() {
               <div className="space-y-1">
                 <button
                   onClick={() => handleVenueChange(null)}
-                  className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring ${
+                  className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                     !selectedVenue
                       ? "font-medium"
                       : "hover:opacity-80"
@@ -548,7 +548,7 @@ export default function Home() {
                     <button
                       key={venue}
                       onClick={() => handleVenueChange(venue)}
-                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring ${
+                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                         selectedVenue === venue
                           ? "font-medium"
                           : "hover:opacity-80"
@@ -614,7 +614,7 @@ export default function Home() {
               <div className="space-y-1">
                 <button
                   onClick={() => handleYearChange(null)}
-                  className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring ${
+                  className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                     !selectedYear
                       ? "font-medium"
                       : "hover:opacity-80"
@@ -631,7 +631,7 @@ export default function Home() {
                     <button
                       key={year}
                       onClick={() => handleYearChange(year)}
-                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring ${
+                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                         selectedYear === year
                           ? "font-medium"
                           : "hover:opacity-80"
