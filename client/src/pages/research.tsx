@@ -54,25 +54,7 @@ export default function Home() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [showAllAreas, setShowAllAreas] = useState(false);
   const [showAllVenues, setShowAllVenues] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const limit = 50;
-
-  // Add responsive state management
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    // Check on mount
-    checkIsMobile();
-    
-    // Add resize listener
-    window.addEventListener('resize', checkIsMobile);
-    
-    // Cleanup
-    return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
 
   const { 
     data, 
@@ -309,29 +291,6 @@ export default function Home() {
               </Select>
             </div>
           </div>
-          
-          {/* Mobile Filters | Reset button */}
-          {isMobile && (
-            <div className="flex items-center justify-center gap-0 mt-4">
-              <button
-                onClick={() => setIsFilterModalOpen(true)}
-                className="px-4 py-2 text-sm font-normal transition-colors"
-                style={{ color: '#007AFF' }}
-                data-testid="mobile-filters-button"
-              >
-                Filters
-              </button>
-              <span className="px-2" style={{ color: '#E5E5E7' }}>|</span>
-              <button
-                onClick={clearAllFilters}
-                className="px-4 py-2 text-sm font-normal transition-colors"
-                style={{ color: '#007AFF' }}
-                data-testid="mobile-reset-button"
-              >
-                Reset
-              </button>
-            </div>
-          )}
         </div>
         
         {/* Active Filter Chips */}
@@ -418,10 +377,9 @@ export default function Home() {
         )}
 
         {/* Main content with sidebar and publications */}
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-16">
-          {/* Left sidebar - Apple ML Research Style - Only show when not mobile */}
-          {!isMobile && (
-            <aside className="w-64 max-w-64 min-w-0 break-words overflow-hidden" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} role="complementary" aria-label="Research filters">
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 280px) minmax(0, 1fr)', gap: '64px' }}>
+          {/* Left sidebar - Apple ML Research Style */}
+          <aside className="min-w-0" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
             {/* Research Areas Filter */}
             <section className="mb-10 min-w-0" role="group" aria-labelledby="research-areas-heading">
               {/* Uppercase caption */}
@@ -648,7 +606,6 @@ export default function Home() {
               </div>
             </section>
           </aside>
-          )}
           
           {/* Main content area - Apple typography */}
           <section 
@@ -986,200 +943,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-      
-      {/* Filter Modal for Mobile */}
-      <Dialog open={isFilterModalOpen} onOpenChange={setIsFilterModalOpen}>
-        <DialogContent 
-          className="h-full w-full max-w-none rounded-none sm:rounded-none"
-          style={{
-            backgroundColor: '#FFFFFF',
-            padding: 0,
-            margin: 0,
-            maxHeight: '100vh',
-            height: '100vh',
-            overflowY: 'auto'
-          }}
-        >
-          <div style={{ padding: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
-            {/* Header with Done button */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold" style={{ color: '#1D1D1F' }}>Filters</h2>
-              <button
-                onClick={() => setIsFilterModalOpen(false)}
-                className="px-4 py-2 text-base font-medium"
-                style={{ color: '#007AFF' }}
-                data-testid="modal-done-button"
-              >
-                Done
-              </button>
-            </div>
-            
-            {/* Filter Sections - Same as sidebar */}
-            {/* Research Areas Filter */}
-            <section className="mb-10" role="group" aria-labelledby="modal-research-areas-heading">
-              <div className="mb-3">
-                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>RESEARCH AREAS</span>
-              </div>
-              
-              <h3 id="modal-research-areas-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Research areas</h3>
-              
-              {selectedResearchArea && (
-                <button
-                  onClick={() => handleResearchAreaChange(null)}
-                  className="text-sm mb-3"
-                  style={{ color: '#007AFF' }}
-                  data-testid="modal-clear-research-areas"
-                >
-                  Clear all
-                </button>
-              )}
-              
-              <div className="space-y-2">
-                <button
-                  onClick={() => handleResearchAreaChange(null)}
-                  className={`block text-base w-full text-left py-2 ${
-                    !selectedResearchArea 
-                      ? "font-medium" 
-                      : ""
-                  }`}
-                  style={{ color: !selectedResearchArea ? '#1D1D1F' : '#6E6E73' }}
-                  data-testid="modal-area-all"
-                >
-                  All
-                </button>
-                {researchAreas.map(([slug, displayName]) => {
-                  const count = filterCounts.areas[slug] || 0;
-                  return (
-                    <button
-                      key={slug}
-                      onClick={() => handleResearchAreaChange(slug)}
-                      className={`block text-base w-full text-left py-2 ${
-                        selectedResearchArea === slug
-                          ? "font-medium"
-                          : ""
-                      }`}
-                      style={{ color: selectedResearchArea === slug ? '#1D1D1F' : '#6E6E73' }}
-                      data-testid={`modal-area-${slug}`}
-                    >
-                      {displayName} {count > 0 && `(${count})`}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-            
-            <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
-            
-            {/* Journals Filter */}
-            <section className="mb-10" role="group" aria-labelledby="modal-venues-heading">
-              <div className="mb-3">
-                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>JOURNALS</span>
-              </div>
-              
-              <h3 id="modal-venues-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Journals</h3>
-              
-              {selectedVenue && (
-                <button
-                  onClick={() => handleVenueChange(null)}
-                  className="text-sm mb-3"
-                  style={{ color: '#007AFF' }}
-                  data-testid="modal-clear-venues"
-                >
-                  Clear all
-                </button>
-              )}
-              
-              <div className="space-y-2">
-                <button
-                  onClick={() => handleVenueChange(null)}
-                  className={`block text-base w-full text-left py-2 ${
-                    !selectedVenue
-                      ? "font-medium"
-                      : ""
-                  }`}
-                  style={{ color: !selectedVenue ? '#1D1D1F' : '#6E6E73' }}
-                  data-testid="modal-venue-all"
-                >
-                  All journals
-                </button>
-                {venues.map((venue) => {
-                  const count = filterCounts.venues[venue] || 0;
-                  return (
-                    <button
-                      key={venue}
-                      onClick={() => handleVenueChange(venue)}
-                      className={`block text-base w-full text-left py-2 ${
-                        selectedVenue === venue
-                          ? "font-medium"
-                          : ""
-                      }`}
-                      style={{ color: selectedVenue === venue ? '#1D1D1F' : '#6E6E73' }}
-                      data-testid={`modal-venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
-                    >
-                      {venue} {count > 0 && `(${count})`}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-            
-            <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
-            
-            {/* Published Year Filter */}
-            <section className="mb-10" role="group" aria-labelledby="modal-years-heading">
-              <div className="mb-3">
-                <span className="text-xs font-medium tracking-wider uppercase" style={{ color: '#6E6E73' }}>YEARS</span>
-              </div>
-              
-              <h3 id="modal-years-heading" className="text-base font-medium italic mb-4" style={{ color: '#1D1D1F' }}>Years</h3>
-              
-              {selectedYear && (
-                <button
-                  onClick={() => handleYearChange(null)}
-                  className="text-sm mb-3"
-                  style={{ color: '#007AFF' }}
-                  data-testid="modal-clear-years"
-                >
-                  Clear all
-                </button>
-              )}
-              
-              <div className="space-y-2">
-                <button
-                  onClick={() => handleYearChange(null)}
-                  className={`block text-base w-full text-left py-2 ${
-                    !selectedYear
-                      ? "font-medium"
-                      : ""
-                  }`}
-                  style={{ color: !selectedYear ? '#1D1D1F' : '#6E6E73' }}
-                  data-testid="modal-year-all"
-                >
-                  All years {totalYearCount > 0 && `(${totalYearCount})`}
-                </button>
-                {availableYears.map((year) => {
-                  const count = filterCounts.years[year] || 0;
-                  return (
-                    <button
-                      key={year}
-                      onClick={() => handleYearChange(year)}
-                      className={`block text-base w-full text-left py-2 ${
-                        selectedYear === year
-                          ? "font-medium"
-                          : ""
-                      }`}
-                      style={{ color: selectedYear === year ? '#1D1D1F' : '#6E6E73' }}
-                      data-testid={`modal-year-${year}`}
-                    >
-                      {year} {count > 0 && `(${count})`}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

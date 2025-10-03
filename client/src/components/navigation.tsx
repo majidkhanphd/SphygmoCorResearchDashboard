@@ -16,10 +16,13 @@ export default function Navigation() {
       <div className="mx-auto max-w-[980px] px-4 sm:px-6">
         {/* Header title - clickable to home */}
         <div className="flex h-14 items-center">
-          <Link href="/">
-            <a className="text-2xl font-semibold text-gray-900 tracking-tight leading-tight hover:opacity-70 transition-opacity cursor-pointer" data-testid="ml-title" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', letterSpacing: '-0.02em' }}>
-              CONNEQT Health Research
-            </a>
+          <Link 
+            href="/"
+            className="text-2xl font-semibold text-gray-900 tracking-tight leading-tight hover:opacity-70 transition-opacity cursor-pointer" 
+            data-testid="ml-title" 
+            style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', letterSpacing: '-0.02em' }}
+          >
+            CONNEQT Health Research
           </Link>
         </div>
         {/* Apple's specific gold accent */}
@@ -32,27 +35,26 @@ export default function Navigation() {
               const isActive = location === item.path;
               return (
                 <li key={item.path}>
-                  <Link href={item.path}>
-                    <a
-                      className={`relative inline-block text-sm py-3 apple-transition apple-focus-ring ${
-                        isActive ? "font-medium" : "hover:opacity-70"
-                      }`}
-                      style={{
-                        color: isActive ? "#1D1D1F" : "#6E6E73",
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
-                      }}
-                      data-testid={`nav-${item.path.slice(1) || 'overview'}`}
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      {item.label}
-                      {isActive && (
-                        <div 
-                          className="absolute bottom-0 left-0 right-0 h-0.5" 
-                          style={{ backgroundColor: "#FF9500" }}
-                          aria-hidden="true"
-                        />
-                      )}
-                    </a>
+                  <Link 
+                    href={item.path}
+                    className={`relative inline-block text-sm py-3 apple-transition apple-focus-ring ${
+                      isActive ? "font-medium" : "hover:opacity-70"
+                    }`}
+                    style={{
+                      color: isActive ? "#1D1D1F" : "#6E6E73",
+                      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
+                    }}
+                    data-testid={`nav-${item.path.slice(1) || 'overview'}`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    {item.label}
+                    {isActive && (
+                      <div 
+                        className="absolute bottom-0 left-0 right-0 h-0.5" 
+                        style={{ backgroundColor: "#FF9500" }}
+                        aria-hidden="true"
+                      />
+                    )}
                   </Link>
                 </li>
               );
