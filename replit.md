@@ -40,9 +40,10 @@ Users can search, filter, and browse scientific publications related to cardiova
 - Backend-only workflow (no frontend UI for admin)
 
 **Database Status:**
-- 2,616 SphygmoCor-specific publications synced from PubMed Central
+- 2,862 SphygmoCor-specific publications synced from PubMed Central (2000-2025)
 - Auto-approval enabled by default for all imported publications
 - 96.5% auto-categorization success rate across 11 research areas
+- Historical coverage: 145 publications from 2000-2010, 2,717 from 2011-2025
 
 **Recent Changes (October 2025):**
 - Removed JavaScript-driven responsive breakpoint logic (isMobile state and useEffect resize listener)
