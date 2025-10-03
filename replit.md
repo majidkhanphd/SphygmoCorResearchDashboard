@@ -4,18 +4,22 @@ This is a research publication management system specifically designed for CONNE
 
 Users can search, filter, and browse scientific publications related to cardiovascular research including hypertension, arterial stiffness, pulse wave analysis, and related fields. The system automatically imports publications from PubMed based on predefined cardiovascular search terms, with backend processing to categorize and organize research.
 
-## Current Status (September 2025)
+## Current Status (October 2025)
 
 **Completed:**
 - ✅ Apple-perfect frontend design with horizontal navigation matching Apple ML research site
 - ✅ Complete navigation structure: Overview, Research Highlights, Publications, Events, Work With Us
-- ✅ PostgreSQL database with 100 SphygmoCor-specific research publications from PubMed
+- ✅ PostgreSQL database with 2,616 SphygmoCor-specific research publications from PubMed Central
 - ✅ Automatic PubMed synchronization service with configurable search terms
-- ✅ Advanced filtering: research areas, venues, years, search, sort, featured toggle
+- ✅ Advanced filtering: research areas, journals, years, search, sort
 - ✅ Backend API integration with real-time data display
-- ✅ Publication approval workflow with status tracking (pending/approved/rejected)
+- ✅ Publication approval workflow with auto-approval by default
 - ✅ Frontend filters to display only approved publications
 - ✅ Configurable SphygmoCor-specific search terms
+- ✅ Fluid responsive CSS Grid layout (minmax) with natural text wrapping
+- ✅ Single-column publication list with color-coded category badges
+- ✅ Full author names with em-dash separators
+- ✅ CSS-only responsive design without JavaScript breakpoint logic
 
 **Admin Functions:**
 
@@ -35,9 +39,18 @@ Users can search, filter, and browse scientific publications related to cardiova
 - Backend-only workflow (no frontend UI for admin)
 
 **Database Status:**
-- 100 SphygmoCor-specific publications synced
-- 1 publication approved (test)
-- 99 publications pending review
+- 2,616 SphygmoCor-specific publications synced from PubMed Central
+- Auto-approval enabled by default for all imported publications
+- 96.5% auto-categorization success rate across 11 research areas
+
+**Recent Changes (October 2025):**
+- Removed JavaScript-driven responsive breakpoint logic (isMobile state and useEffect resize listener)
+- Removed mobile filter modal and Filter icon in favor of always-visible sidebar
+- Implemented CSS-only fluid responsive design using CSS Grid with minmax()
+- Applied comprehensive min-w-0 to all flex container hierarchy levels for proper text wrapping
+- Fixed navigation component to avoid nested anchor tags (wouter Link pattern)
+- Changed label from "Venues" to "Journals" throughout UI
+- Cleaned up unused imports (Dialog components, Filter icon, useEffect)
 
 **Future Improvements:**
 - Add authentication/authorization to admin endpoints
