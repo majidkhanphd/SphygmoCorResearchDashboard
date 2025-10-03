@@ -679,12 +679,11 @@ export default function Home() {
               </div>
             ) : (
               <>
-                {/* Publications Grid Layout */}
+                {/* Publications List - Single Column Layout */}
                 <div 
                   style={{ 
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                    gap: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
                     padding: 0, 
                     margin: 0 
                   }} 
@@ -702,20 +701,17 @@ export default function Home() {
                         key={publication.id} 
                         data-testid={`publication-${publication.id}`}
                         style={{
-                          padding: '20px',
-                          backgroundColor: '#FAFAFA',
-                          borderRadius: '12px',
-                          border: '1px solid #E5E5E7',
+                          paddingTop: '24px',
+                          paddingBottom: '24px',
+                          borderBottom: '1px solid #E5E5E7',
                           display: 'flex',
-                          flexDirection: 'column',
-                          height: '100%'
+                          flexDirection: 'column'
                         }}
                       >
-                        {/* Apple-style publication entry card */}
+                        {/* Publication entry - no card styling */}
                         <div style={{ 
                           display: 'flex',
-                          flexDirection: 'column',
-                          height: '100%'
+                          flexDirection: 'column'
                         }}>
                           
                           {/* Category badges - Apple style */}
@@ -843,14 +839,13 @@ export default function Home() {
                             )}
                           </div>
                           
-                          {/* Authors with em dash separators - positioned at bottom */}
+                          {/* Authors with em dash separators */}
                           <div style={{ 
                             fontSize: '14px', 
                             fontWeight: '400', 
                             lineHeight: '1.4', 
                             color: '#6E6E73',
-                            marginTop: 'auto',
-                            paddingTop: '12px'
+                            marginTop: '4px'
                           }} data-testid="publication-authors">
                             {formattedAuthors}
                           </div>
