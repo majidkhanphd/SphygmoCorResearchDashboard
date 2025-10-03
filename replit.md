@@ -52,6 +52,8 @@ Users can search, filter, and browse scientific publications related to cardiova
 - Fixed navigation component to avoid nested anchor tags (wouter Link pattern)
 - Changed label from "Venues" to "Journals" throughout UI
 - Cleaned up unused imports (Dialog components, Filter icon, useEffect)
+- Updated PubMed sync to search by publication date (datetype=pdat) from 2000-present
+- Extended year filter sidebar to show all years from 2000 to present (26 years)
 
 **Future Improvements:**
 - Add authentication/authorization to admin endpoints

@@ -158,9 +158,12 @@ export default function Home() {
   });
   const visibleAreas = showAllAreas ? researchAreas : researchAreas.slice(0, 5);
 
-  // Get years from publications
+  // Get years from 2000 to present
   const currentYear = new Date().getFullYear();
-  const availableYears = Array.from({ length: 10 }, (_, i) => currentYear - i);
+  const availableYears = Array.from(
+    { length: currentYear - 2000 + 1 }, 
+    (_, i) => currentYear - i
+  );
   
   // Calculate total count for all years
   const totalYearCount = Object.values(filterCounts.years).reduce((sum, count) => sum + (count as number), 0);
