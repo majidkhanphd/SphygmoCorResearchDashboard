@@ -178,7 +178,7 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '64px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Breadcrumb - Apple style */}
         <nav className="text-center" style={{ marginBottom: '32px' }} data-testid="breadcrumb">
-          <span className="text-sm font-normal tracking-widest uppercase" style={{ color: '#6E6E73' }}>CARDIOVASCULAR RESEARCH</span>
+          <span className="font-normal tracking-widest uppercase text-[16px]" style={{ color: '#6E6E73' }}>ARTERIAL INTELLIGENCE</span>
         </nav>
         
         {/* Main title - Apple's exact typography */}
