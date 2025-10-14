@@ -61,6 +61,7 @@ Users can search, filter, and browse scientific publications related to cardiova
 - Achieved perfect 0px alignment between header and content across all pages (verified via e2e testing)
 - Unified typography across all pages: Applied light, refined styling from Research Highlights and Events pages (48px light H1s, 18px subtitles, 28px light section headings) to Overview, Work With Us, and Publications pages for complete visual consistency
 - Improved text proportions: Widened subtitle max-width from 640px to 820px and tightened title-to-subtitle spacing from 16px to 12px across all pages for better visual balance relative to 1152px page width
+- Reordered Publications page sidebar filters: Years section now appears before Journals section (Research Areas → Years → Journals)
 
 **Future Improvements:**
 - Add authentication/authorization to admin endpoints
