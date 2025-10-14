@@ -5,24 +5,20 @@ export default function WorkWithUs() {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '56px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '64px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Page Title */}
-        <h1 className="font-semibold leading-tight tracking-tight" style={{ fontSize: '80px', color: '#1D1D1F', marginBottom: '32px', lineHeight: '1.05' }} data-testid="work-title">
-          Work With Us
-        </h1>
-        
-        <div className="max-w-4xl" style={{ marginBottom: '80px' }}>
-          <p className="leading-relaxed" style={{ fontSize: '22px', color: '#1D1D1F', marginBottom: '24px', lineHeight: '1.4' }}>
+        <div className="text-center" style={{ marginBottom: '64px' }}>
+          <h1 style={{ fontSize: '48px', fontWeight: '300', letterSpacing: '-0.02em', color: '#1D1D1F', marginBottom: '16px', lineHeight: '1.1' }} data-testid="work-title">
+            Work With Us
+          </h1>
+          <p style={{ fontSize: '18px', color: '#6E6E73', maxWidth: '640px', margin: '0 auto', lineHeight: '1.4' }}>
             Join our team and contribute to advancing cardiovascular research through innovative technology and clinical evidence.
-          </p>
-          <p className="leading-relaxed" style={{ fontSize: '22px', color: '#6E6E73', lineHeight: '1.4' }}>
-            We are always looking for talented researchers, engineers, and clinicians passionate about improving cardiovascular health outcomes.
           </p>
         </div>
 
         {/* Opportunities Section */}
         <section style={{ marginBottom: '80px' }}>
-          <h2 className="text-2xl font-semibold mb-8" style={{ color: '#1D1D1F' }}>Research Opportunities</h2>
+          <h2 style={{ fontSize: '28px', fontWeight: '300', color: '#1D1D1F', marginBottom: '32px', textAlign: 'center', lineHeight: '1.2' }}>Research Opportunities</h2>
           <div className="space-y-8">
             <div className="border-b border-gray-200 pb-8">
               <h3 className="text-xl font-medium mb-3" style={{ color: '#1D1D1F' }}>Clinical Research</h3>
@@ -49,7 +45,7 @@ export default function WorkWithUs() {
 
         {/* Contact Section */}
         <section style={{ marginBottom: '80px' }}>
-          <h2 className="text-2xl font-semibold mb-8" style={{ color: '#1D1D1F' }}>Get in Touch</h2>
+          <h2 style={{ fontSize: '28px', fontWeight: '300', color: '#1D1D1F', marginBottom: '32px', textAlign: 'center', lineHeight: '1.2' }}>Get in Touch</h2>
           <div className="bg-gray-50 rounded-2xl p-8">
             <p className="text-lg mb-6" style={{ color: '#1D1D1F', lineHeight: '1.5' }}>
               For research collaboration inquiries, please contact our team.

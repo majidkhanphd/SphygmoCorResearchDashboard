@@ -6,24 +6,20 @@ export default function Overview() {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '56px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '64px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Main Hero */}
-        <h1 className="font-semibold leading-tight tracking-tight" style={{ fontSize: '80px', color: '#1D1D1F', marginBottom: '32px', lineHeight: '1.05' }} data-testid="overview-title">
-          CONNEQT Health Research
-        </h1>
-        
-        <div className="max-w-4xl" style={{ marginBottom: '80px' }}>
-          <p className="leading-relaxed" style={{ fontSize: '22px', color: '#1D1D1F', marginBottom: '24px', lineHeight: '1.4' }}>
+        <div className="text-center" style={{ marginBottom: '64px' }}>
+          <h1 style={{ fontSize: '48px', fontWeight: '300', letterSpacing: '-0.02em', color: '#1D1D1F', marginBottom: '16px', lineHeight: '1.1' }} data-testid="overview-title">
+            CONNEQT Health Research
+          </h1>
+          <p style={{ fontSize: '18px', color: '#6E6E73', maxWidth: '640px', margin: '0 auto', lineHeight: '1.4' }}>
             We advance non-invasive cardiovascular assessment through innovative technology, measuring central blood pressure, arterial stiffness, and hemodynamic parameters to improve clinical outcomes across hypertension, chronic kidney disease, and heart failure.
-          </p>
-          <p className="leading-relaxed" style={{ fontSize: '22px', color: '#6E6E73', lineHeight: '1.4' }}>
-            Our publications span pulse wave analysis, carotid-femoral pulse wave velocity, vascular aging, device validation, and clinical evidence across diverse populations.
           </p>
         </div>
 
         {/* Research Highlights Section */}
         <section style={{ marginBottom: '80px' }}>
-          <h2 className="text-xl font-semibold mb-8" style={{ color: '#1D1D1F' }}>Featured Research Highlights</h2>
+          <h2 style={{ fontSize: '28px', fontWeight: '300', color: '#1D1D1F', marginBottom: '32px', textAlign: 'center', lineHeight: '1.2' }}>Featured Research Highlights</h2>
           <div className="space-y-8">
             <div className="border-b border-gray-200 pb-8">
               <p className="text-sm mb-2" style={{ color: '#6E6E73' }}>Coming soon</p>
@@ -41,7 +37,7 @@ export default function Overview() {
 
         {/* Recent Publications Section */}
         <section style={{ marginBottom: '80px' }}>
-          <h2 className="text-xl font-semibold mb-8" style={{ color: '#1D1D1F' }}>Recent Publications</h2>
+          <h2 style={{ fontSize: '28px', fontWeight: '300', color: '#1D1D1F', marginBottom: '32px', textAlign: 'center', lineHeight: '1.2' }}>Recent Publications</h2>
           <div className="space-y-8">
             <div className="border-b border-gray-200 pb-8">
               <p className="text-sm mb-2" style={{ color: '#6E6E73' }}>No publications yet</p>
@@ -59,7 +55,7 @@ export default function Overview() {
 
         {/* Events Section */}
         <section style={{ marginBottom: '80px' }}>
-          <h2 className="text-xl font-semibold mb-8" style={{ color: '#1D1D1F' }}>Upcoming Events</h2>
+          <h2 style={{ fontSize: '28px', fontWeight: '300', color: '#1D1D1F', marginBottom: '32px', textAlign: 'center', lineHeight: '1.2' }}>Upcoming Events</h2>
           <div className="space-y-8">
             <div className="border-b border-gray-200 pb-8">
               <p className="text-sm mb-2" style={{ color: '#6E6E73' }}>Coming soon</p>
@@ -78,7 +74,7 @@ export default function Overview() {
         {/* Bottom CTA Banner */}
         <section className="py-16 mb-16">
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-12 text-center">
-            <h2 className="text-3xl font-semibold mb-4" style={{ color: '#1D1D1F' }}>
+            <h2 style={{ fontSize: '28px', fontWeight: '300', color: '#1D1D1F', marginBottom: '16px', lineHeight: '1.2' }}>
               Discover opportunities in Cardiovascular Research
             </h2>
             <p className="text-lg mb-8" style={{ color: '#6E6E73' }}>
