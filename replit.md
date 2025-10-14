@@ -55,6 +55,10 @@ Users can search, filter, and browse scientific publications related to cardiova
 - Cleaned up unused imports (Dialog components, Filter icon, useEffect)
 - Updated PubMed sync to search by publication date (datetype=pdat) from 2000-present
 - Extended year filter sidebar to show all years from 2000 to present (26 years)
+- Unified page width across all pages: Updated Overview, Work With Us, and Research Highlights to use max-w-6xl (1152px) to match Publications and Events
+- Standardized responsive padding across all pages: px-4 sm:px-6 lg:px-8
+- Fixed navigation header alignment: Updated from max-w-[980px] to max-w-6xl to match page content
+- Achieved perfect 0px alignment between header and content across all pages (verified via e2e testing)
 
 **Future Improvements:**
 - Add authentication/authorization to admin endpoints
