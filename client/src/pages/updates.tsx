@@ -43,7 +43,7 @@ export default function Updates() {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="max-w-6xl mx-auto px-6 py-16">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-16">
           <h1 className="text-4xl font-light tracking-tight text-foreground mb-4">
             Research Updates

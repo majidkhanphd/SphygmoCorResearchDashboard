@@ -5,7 +5,7 @@ export default function WorkWithUs() {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="max-w-[980px] mx-auto px-6" style={{ paddingTop: '56px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '56px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Page Title */}
         <h1 className="font-semibold leading-tight tracking-tight" style={{ fontSize: '80px', color: '#1D1D1F', marginBottom: '32px', lineHeight: '1.05' }} data-testid="work-title">
           Work With Us
@@ -67,7 +67,7 @@ export default function WorkWithUs() {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 py-8 mt-16">
-        <div className="max-w-[980px] mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center text-sm" style={{ color: '#6E6E73' }}>
             <p>© 2025 CONNEQT Health. All rights reserved.</p>
             <div className="flex gap-6">
