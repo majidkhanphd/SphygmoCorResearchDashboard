@@ -59,7 +59,7 @@ Users can search, filter, and browse scientific publications related to cardiova
 - Standardized responsive padding across all pages: px-4 sm:px-6 lg:px-8
 - Fixed navigation header alignment: Updated from max-w-[980px] to max-w-6xl to match page content
 - Achieved perfect 0px alignment between header and content across all pages (verified via e2e testing)
-- Unified typography across all pages: Applied light, refined styling from Research Highlights and Events pages (48px light H1s, 18px subtitles, 28px light section headings) to Overview and Work With Us pages for visual consistency
+- Unified typography across all pages: Applied light, refined styling from Research Highlights and Events pages (48px light H1s, 18px subtitles, 28px light section headings) to Overview, Work With Us, and Publications pages for complete visual consistency
 
 **Future Improvements:**
 - Add authentication/authorization to admin endpoints
