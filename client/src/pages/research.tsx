@@ -176,29 +176,24 @@ export default function Home() {
       <Navigation />
       
       {/* Apple's exact hero section */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '56px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '64px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Breadcrumb - Apple style */}
-        <nav style={{ marginBottom: '32px' }} data-testid="breadcrumb">
+        <nav className="text-center" style={{ marginBottom: '32px' }} data-testid="breadcrumb">
           <span className="text-sm font-normal tracking-widest uppercase" style={{ color: '#6E6E73' }}>CARDIOVASCULAR RESEARCH</span>
         </nav>
         
         {/* Main title - Apple's exact typography */}
-        <h1 className="font-semibold leading-tight tracking-tight" style={{ fontSize: '80px', color: '#1D1D1F', marginBottom: '32px', lineHeight: '1.05' }} data-testid="main-title">
-          Research
-        </h1>
-        
-        {/* Hero description - Apple's exact content and styling */}
-        <div className="max-w-4xl" style={{ marginBottom: '56px' }} data-testid="hero-description">
-          <p className="leading-relaxed" style={{ fontSize: '22px', color: '#1D1D1F', marginBottom: '24px', lineHeight: '1.4' }}>
-            We advance non-invasive cardiovascular assessment through innovative SphygmoCor technology, measuring central blood pressure, arterial stiffness, and hemodynamic parameters to improve clinical outcomes across hypertension, chronic kidney disease, and heart failure.
-          </p>
-          <p className="leading-relaxed" style={{ fontSize: '22px', color: '#6E6E73', lineHeight: '1.4' }}>
-            Our publications span pulse wave analysis, carotid-femoral pulse wave velocity, vascular aging, device validation, and clinical evidence across diverse populations.
+        <div className="text-center" style={{ marginBottom: '64px' }}>
+          <h1 style={{ fontSize: '48px', fontWeight: '300', letterSpacing: '-0.02em', color: '#1D1D1F', marginBottom: '16px', lineHeight: '1.1' }} data-testid="main-title">
+            Research
+          </h1>
+          <p style={{ fontSize: '18px', color: '#6E6E73', maxWidth: '640px', margin: '0 auto', lineHeight: '1.4' }}>
+            We advance non-invasive cardiovascular assessment through innovative SphygmoCor technology, measuring central blood pressure, arterial stiffness, and hemodynamic parameters to improve clinical outcomes.
           </p>
         </div>
         
         {/* Page Last Updated */}
-        <div style={{ marginBottom: '32px' }}>
+        <div className="text-center" style={{ marginBottom: '32px' }}>
           <p className="text-sm" style={{ color: '#6E6E73', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} data-testid="last-updated">
             Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
