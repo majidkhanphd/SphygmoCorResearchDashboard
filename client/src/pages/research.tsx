@@ -174,7 +174,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
       {/* Apple's exact hero section */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '64px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Breadcrumb - Apple style */}
@@ -187,7 +186,9 @@ export default function Home() {
           <h1 style={{ fontSize: '48px', fontWeight: '300', letterSpacing: '-0.02em', color: '#1D1D1F', marginBottom: '16px', lineHeight: '1.1' }} data-testid="main-title">
             Research
           </h1>
-          <p style={{ fontSize: '18px', color: '#6E6E73', maxWidth: '640px', margin: '0 auto', lineHeight: '1.4' }}>
+          <p
+            style={{ fontSize: '18px', color: '#6E6E73', maxWidth: '640px', margin: '0 auto', lineHeight: '1.4' }}
+            className="ml-[90px] mr-[90px]">
             We advance non-invasive cardiovascular assessment through innovative SphygmoCor technology, measuring central blood pressure, arterial stiffness, and hemodynamic parameters to improve clinical outcomes.
           </p>
         </div>
@@ -885,7 +886,6 @@ export default function Home() {
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
-      
       {/* Apple-style Footer */}
       <footer className="border-t" style={{ 
         backgroundColor: '#F6F6F6', 
