@@ -459,89 +459,6 @@ export default function Home() {
             {/* Thin separator */}
             <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
             
-            {/* Journals Filter */}
-            <section className="mb-10 min-w-0" role="group" aria-labelledby="venues-heading">
-              {/* Uppercase caption */}
-              <div className="mb-3 min-w-0">
-                <span className="text-xs font-medium tracking-wider uppercase break-words" style={{ color: '#6E6E73' }}>JOURNALS</span>
-              </div>
-              
-              {/* Italic category label */}
-              <h3 id="venues-heading" className="text-base font-medium italic mb-4 min-w-0 break-words" style={{ color: '#1D1D1F' }}>Journals</h3>
-              
-              {/* Clear button */}
-              {selectedVenue && (
-                <button
-                  onClick={() => handleVenueChange(null)}
-                  className="text-sm mb-3 apple-transition apple-focus-ring break-words"
-                  style={{ color: '#007AFF' }}
-                  data-testid="clear-venues"
-                  aria-label="Clear journal filter"
-                >
-                  Clear all
-                </button>
-              )}
-              
-              <div className="space-y-1 min-w-0">
-                <button
-                  onClick={() => handleVenueChange(null)}
-                  className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
-                    !selectedVenue
-                      ? "font-medium"
-                      : "hover:opacity-80"
-                  }`}
-                  style={{ color: !selectedVenue ? '#1D1D1F' : '#6E6E73' }}
-                  data-testid="venue-all"
-                  aria-pressed={!selectedVenue}
-                >
-                  All journals
-                </button>
-                {visibleVenues.map((venue) => {
-                  const count = filterCounts.venues[venue] || 0;
-                  return (
-                    <button
-                      key={venue}
-                      onClick={() => handleVenueChange(venue)}
-                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
-                        selectedVenue === venue
-                          ? "font-medium"
-                          : "hover:opacity-80"
-                      }`}
-                      style={{ color: selectedVenue === venue ? '#1D1D1F' : '#6E6E73' }}
-                      data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
-                      aria-pressed={selectedVenue === venue}
-                      aria-label={`Filter by ${venue}${count > 0 ? ` (${count} publications)` : ''}`}
-                    >
-                      {venue} {count > 0 && `(${count})`}
-                    </button>
-                  );
-                })}
-                {venues.length > 5 && (
-                  <button
-                    onClick={() => setShowAllVenues(!showAllVenues)}
-                    className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
-                    style={{ color: '#007AFF' }}
-                    data-testid="toggle-venues"
-                    aria-expanded={showAllVenues}
-                    aria-label={showAllVenues ? "Show fewer journals" : "Show more journals"}
-                  >
-                    {showAllVenues ? (
-                      <>
-                        Less <ChevronUp className="ml-1 h-4 w-4" />
-                      </>
-                    ) : (
-                      <>
-                        More <ChevronDown className="ml-1 h-4 w-4" />
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            </section>
-            
-            {/* Thin separator */}
-            <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
-            
             {/* Published Year Filter */}
             <section className="mb-10 min-w-0" role="group" aria-labelledby="years-heading">
               {/* Uppercase caption */}
@@ -609,6 +526,89 @@ export default function Home() {
                     aria-label={showAllYears ? "Show fewer years" : "Show more years"}
                   >
                     {showAllYears ? (
+                      <>
+                        Less <ChevronUp className="ml-1 h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        More <ChevronDown className="ml-1 h-4 w-4" />
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </section>
+            
+            {/* Thin separator */}
+            <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
+            
+            {/* Journals Filter */}
+            <section className="mb-10 min-w-0" role="group" aria-labelledby="venues-heading">
+              {/* Uppercase caption */}
+              <div className="mb-3 min-w-0">
+                <span className="text-xs font-medium tracking-wider uppercase break-words" style={{ color: '#6E6E73' }}>JOURNALS</span>
+              </div>
+              
+              {/* Italic category label */}
+              <h3 id="venues-heading" className="text-base font-medium italic mb-4 min-w-0 break-words" style={{ color: '#1D1D1F' }}>Journals</h3>
+              
+              {/* Clear button */}
+              {selectedVenue && (
+                <button
+                  onClick={() => handleVenueChange(null)}
+                  className="text-sm mb-3 apple-transition apple-focus-ring break-words"
+                  style={{ color: '#007AFF' }}
+                  data-testid="clear-venues"
+                  aria-label="Clear journal filter"
+                >
+                  Clear all
+                </button>
+              )}
+              
+              <div className="space-y-1 min-w-0">
+                <button
+                  onClick={() => handleVenueChange(null)}
+                  className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
+                    !selectedVenue
+                      ? "font-medium"
+                      : "hover:opacity-80"
+                  }`}
+                  style={{ color: !selectedVenue ? '#1D1D1F' : '#6E6E73' }}
+                  data-testid="venue-all"
+                  aria-pressed={!selectedVenue}
+                >
+                  All journals
+                </button>
+                {visibleVenues.map((venue) => {
+                  const count = filterCounts.venues[venue] || 0;
+                  return (
+                    <button
+                      key={venue}
+                      onClick={() => handleVenueChange(venue)}
+                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
+                        selectedVenue === venue
+                          ? "font-medium"
+                          : "hover:opacity-80"
+                      }`}
+                      style={{ color: selectedVenue === venue ? '#1D1D1F' : '#6E6E73' }}
+                      data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
+                      aria-pressed={selectedVenue === venue}
+                      aria-label={`Filter by ${venue}${count > 0 ? ` (${count} publications)` : ''}`}
+                    >
+                      {venue} {count > 0 && `(${count})`}
+                    </button>
+                  );
+                })}
+                {venues.length > 5 && (
+                  <button
+                    onClick={() => setShowAllVenues(!showAllVenues)}
+                    className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
+                    style={{ color: '#007AFF' }}
+                    data-testid="toggle-venues"
+                    aria-expanded={showAllVenues}
+                    aria-label={showAllVenues ? "Show fewer journals" : "Show more journals"}
+                  >
+                    {showAllVenues ? (
                       <>
                         Less <ChevronUp className="ml-1 h-4 w-4" />
                       </>
