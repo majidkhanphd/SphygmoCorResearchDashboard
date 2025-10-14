@@ -188,7 +188,7 @@ export default function Home() {
           </h1>
           <p
             style={{ fontSize: '18px', color: '#6E6E73', maxWidth: '640px', margin: '0 auto', lineHeight: '1.4' }}
-            className="ml-[50px] mr-[50px]">
+            className="ml-[20px] mr-[20px]">
             We advance non-invasive cardiovascular assessment through innovative SphygmoCor technology, measuring central blood pressure, arterial stiffness, and hemodynamic parameters to improve clinical outcomes.
           </p>
         </div>
