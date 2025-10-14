@@ -183,11 +183,11 @@ export default function Home() {
         
         {/* Main title - Apple's exact typography */}
         <div className="text-center" style={{ marginBottom: '64px' }}>
-          <h1 style={{ fontSize: '48px', fontWeight: '300', letterSpacing: '-0.02em', color: '#1D1D1F', marginBottom: '16px', lineHeight: '1.1' }} data-testid="main-title">
+          <h1 style={{ fontSize: '48px', fontWeight: '300', letterSpacing: '-0.02em', color: '#1D1D1F', marginBottom: '12px', lineHeight: '1.1' }} data-testid="main-title">
             Research
           </h1>
           <p
-            style={{ fontSize: '18px', color: '#6E6E73', maxWidth: '640px', margin: '0 auto', lineHeight: '1.4' }}
+            style={{ fontSize: '18px', color: '#6E6E73', maxWidth: '820px', margin: '0 auto', lineHeight: '1.4' }}
             className="ml-[50px] mr-[50px] text-center pl-[30px] pr-[30px]">
             We advance non-invasive cardiovascular assessment through innovative SphygmoCor technology, measuring central blood pressure, arterial stiffness, and hemodynamic parameters to improve clinical outcomes.
           </p>
