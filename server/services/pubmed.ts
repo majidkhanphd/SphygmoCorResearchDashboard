@@ -662,6 +662,71 @@ export class PubMedService {
     return uniquePublications;
   }
 
+  // Progressive sync that saves articles in batches as they're fetched
+  async syncCardiovascularResearchProgressive(
+    maxPerTerm: number = MAX_RESULTS_PER_TERM,
+    onBatchFetched?: (batch: InsertPublication[]) => Promise<void>
+  ): Promise<{ totalFetched: number; totalUnique: number }> {
+    console.log("Starting PMC sync for SphygmoCor research (progressive mode)...");
+    const seenIds = new Set<string>();
+    let totalFetched = 0;
+
+    // Search in 5-year chunks from 2000 to present to capture all historical publications
+    const currentYear = new Date().getFullYear();
+    const yearRanges: Array<{ start: number; end: number }> = [];
+    
+    for (let year = 2000; year <= currentYear; year += 5) {
+      yearRanges.push({
+        start: year,
+        end: Math.min(year + 4, currentYear)
+      });
+    }
+
+    for (const term of this.cardiovascularTerms) {
+      console.log(`\nSearching PMC for: ${term}`);
+      
+      // Search each year range
+      for (const range of yearRanges) {
+        const minDate = `${range.start}/01/01`;
+        const maxDate = `${range.end}/12/31`;
+        
+        console.log(`  Searching ${range.start}-${range.end}...`);
+        const pmcIds = await this.searchPubMed(term, maxPerTerm, minDate, maxDate);
+        console.log(`  Found ${pmcIds.length} articles for ${range.start}-${range.end}`);
+
+        if (pmcIds.length > 0) {
+          const publications = await this.fetchArticleDetails(pmcIds);
+          
+          // Remove duplicates within this batch
+          const uniqueBatch: InsertPublication[] = [];
+          for (const pub of publications) {
+            if (pub.pmid && !seenIds.has(pub.pmid)) {
+              seenIds.add(pub.pmid);
+              uniqueBatch.push(pub);
+            }
+          }
+          
+          totalFetched += uniqueBatch.length;
+          
+          // Call the batch callback to save immediately if provided
+          if (onBatchFetched && uniqueBatch.length > 0) {
+            await onBatchFetched(uniqueBatch);
+          }
+        }
+
+        // Add delay to respect PubMed rate limits (3 requests per second)
+        await new Promise((resolve) => setTimeout(resolve, 350));
+      }
+    }
+
+    console.log(`\nProgressive sync complete. Fetched ${seenIds.size} unique publications`);
+
+    return {
+      totalFetched,
+      totalUnique: seenIds.size
+    };
+  }
+
   async syncIncrementalResearch(fromDate: Date, maxPerTerm: number = MAX_RESULTS_PER_TERM): Promise<InsertPublication[]> {
     console.log(`Starting incremental PMC sync from ${fromDate.toLocaleDateString()}...`);
     const allPublications: InsertPublication[] = [];

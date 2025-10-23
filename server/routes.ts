@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPublicationSchema, searchPublicationsSchema } from "@shared/schema";
+import { insertPublicationSchema, searchPublicationsSchema, type InsertPublication } from "@shared/schema";
 import { z } from "zod";
 import { XMLParser } from "fast-xml-parser";
 import { pubmedService } from "./services/pubmed";
@@ -364,54 +364,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { maxPerTerm = 50 } = req.body;
       
-      console.log("Starting PubMed sync (synchronous mode)...");
-      
-      // Run sync synchronously to completion (prevents dev mode restarts from interrupting)
-      const publications = await pubmedService.syncCardiovascularResearch(maxPerTerm);
+      console.log("Starting PubMed sync (progressive mode - saves in batches)...");
       
       let imported = 0;
       let skipped = 0;
       let approved = 0;
       let pending = 0;
       
-      console.log(`Fetched ${publications.length} publications, starting import...`);
-      
-      for (const pub of publications) {
-        try {
-          // Check if publication already exists
-          const existing = await storage.getPublicationByPmid(pub.pmid || "");
-          if (existing) {
-            skipped++;
-            continue;
+      // Progressive sync: save articles to database as each batch is fetched
+      const result = await pubmedService.syncCardiovascularResearchProgressive(
+        maxPerTerm,
+        async (batch: InsertPublication[]) => {
+          // This callback is called after each batch (year range) is fetched
+          console.log(`  Processing batch of ${batch.length} articles...`);
+          
+          for (const pub of batch) {
+            try {
+              // Check if publication already exists
+              const existing = await storage.getPublicationByPmid(pub.pmid || "");
+              if (existing) {
+                skipped++;
+                continue;
+              }
+              
+              await storage.createPublication(pub);
+              imported++;
+              
+              // Track status breakdown
+              if (pub.status === "approved") {
+                approved++;
+              } else {
+                pending++;
+              }
+            } catch (error) {
+              console.error(`Error importing publication ${pub.pmid}:`, error);
+            }
           }
           
-          await storage.createPublication(pub);
-          imported++;
-          
-          // Track status breakdown
-          if (pub.status === "approved") {
-            approved++;
-          } else {
-            pending++;
-          }
-          
-          // Log progress every 100 articles
-          if (imported % 100 === 0) {
-            console.log(`Import progress: ${imported} imported (${approved} approved, ${pending} pending), ${skipped} skipped...`);
-          }
-        } catch (error) {
-          console.error(`Error importing publication ${pub.pmid}:`, error);
+          console.log(`  Batch complete: ${imported} total imported (${approved} approved, ${pending} pending), ${skipped} skipped`);
         }
-      }
+      );
       
-      console.log(`Sync complete: ${imported} imported (${approved} approved, ${pending} pending for review), ${skipped} skipped out of ${publications.length} total`);
+      console.log(`\nSync complete: ${imported} imported (${approved} approved, ${pending} pending for review), ${skipped} skipped out of ${result.totalUnique} unique fetched`);
       
       // Respond with detailed results after completion
       res.json({
         success: true,
         message: `PubMed sync complete.`,
         stats: {
-          fetched: publications.length,
+          fetched: result.totalUnique,
           imported,
           skipped,
           approved,

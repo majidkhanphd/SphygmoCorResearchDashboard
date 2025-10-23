@@ -50,10 +50,12 @@ Users can search, filter, and browse scientific publications related to cardiova
 - Backend-only workflow (no frontend UI for admin)
 
 **Database Status:**
-- 2,862 SphygmoCor-specific publications synced from PubMed Central (2000-2025)
-- Auto-approval enabled by default for all imported publications
+- 2,887 SphygmoCor-specific publications synced from PubMed Central (2000-2025)
+- Intelligent approval workflow: auto-approve complete articles, mark incomplete articles as "pending"
+  - Complete metadata (title + authors): status="approved" (2,860 publications, 99.07%)
+  - Incomplete metadata (missing title or authors): status="pending" for manual review (27 publications, 0.93%)
 - 96.5% auto-categorization success rate across 11 research areas
-- Historical coverage: 145 publications from 2000-2010, 2,717 from 2011-2025
+- Historical coverage: 145 publications from 2000-2010, 2,742 from 2011-2025
 
 **Recent Changes (October 2025):**
 - Removed JavaScript-driven responsive breakpoint logic (isMobile state and useEffect resize listener)
@@ -75,6 +77,17 @@ Users can search, filter, and browse scientific publications related to cardiova
 - Implemented incremental PubMed sync feature with getMostRecentPublicationDate() storage method and syncIncrementalResearch() service method
 - Added /api/admin/sync-pubmed-incremental endpoint that fetches only new publications since the most recent stored paper
 - Updated admin page with PubMed Sync card featuring both Full Sync and Incremental Sync buttons with loading states and toast notifications
+- Implemented progressive import with syncCardiovascularResearchProgressive method that saves articles in batches as they're fetched
+  - Prevents data loss from dev mode server restarts during sync
+  - Articles saved to database immediately after each year range is fetched
+  - Survives server interruptions by preserving progress made before restart
+- Enhanced PubMed parser to accept articles with minimal data (just PMID or DOI required)
+  - Gracefully handles incomplete metadata using placeholders ("Untitled Publication", "Unknown")
+  - Enables import of ALL articles from PubMed for later manual review
+- Added intelligent status assignment based on metadata completeness
+  - Articles with complete metadata (title + authors): auto-approved
+  - Articles with incomplete metadata: marked as "pending" for manual review
+  - Frontend filters ensure only approved publications appear on website
 
 **Future Improvements:**
 - Add authentication/authorization to admin endpoints
