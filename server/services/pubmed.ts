@@ -179,32 +179,30 @@ export class PubMedService {
 
       // Parse PMC ID
       const pmcId = this.parsePmcId(articleMeta["article-id"], article["@_id"]);
-      if (!pmcId) {
-        console.error("No PMC ID found for article");
+      
+      // Parse DOI
+      const doi = this.parseDoi(articleMeta["article-id"]);
+      
+      // Require at least PMID or DOI
+      if (!pmcId && !doi) {
+        console.error("Article has neither PMC ID nor DOI - skipping");
         return null;
       }
 
-      // Parse title
-      const title = this.parseTitle(articleMeta["title-group"]);
-      if (!title) {
-        console.error("No title found for article");
-        return null;
-      }
+      // Parse title (use placeholder if missing)
+      const title = this.parseTitle(articleMeta["title-group"]) || "Untitled Publication";
 
-      // Parse authors
+      // Parse authors (use placeholder if missing)
       const authors = this.parseAuthors(articleMeta["contrib-group"]);
 
-      // Parse journal
+      // Parse journal (use placeholder if missing)
       const journal = this.parseJournal(journalMeta);
 
-      // Parse abstract
+      // Parse abstract (can be null)
       const abstract = this.parseAbstract(articleMeta.abstract);
 
       // Parse publication date
       const publicationDate = this.parsePublicationDate(articleMeta["pub-date"]);
-
-      // Parse DOI
-      const doi = this.parseDoi(articleMeta["article-id"]);
 
       // Determine categories based on title/abstract
       const categoriesFromText = this.categorizeToCONNEQTAreas(title, abstract);
@@ -212,8 +210,17 @@ export class PubMedService {
       // Extract keywords from title and abstract
       const keywords = this.extractKeywords(title, abstract);
 
+      // Determine if article is complete for auto-approval
+      // Mark as pending if missing title OR authors (user needs to review)
+      const isComplete = title !== "Untitled Publication" && authors !== "Unknown";
+      const status = isComplete ? "approved" : "pending";
+
+      if (!isComplete) {
+        console.log(`Article ${pmcId || doi} marked as pending (missing: ${title === "Untitled Publication" ? "title" : ""} ${authors === "Unknown" ? "authors" : ""})`);
+      }
+
       return {
-        pmid: pmcId, // Store PMC ID in the pmid field
+        pmid: pmcId || doi!, // Store PMC ID or DOI in the pmid field
         title,
         authors,
         journal,
@@ -224,9 +231,9 @@ export class PubMedService {
         keywords,
         citationCount: 0,
         isFeatured: 0,
-        pubmedUrl: `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${pmcId}/`,
+        pubmedUrl: pmcId ? `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${pmcId}/` : `https://doi.org/${doi}`,
         journalImpactFactor: null,
-        status: "approved", // Auto-approve all imported articles
+        status,
       };
     } catch (error) {
       console.error("Error parsing PMC article:", error);

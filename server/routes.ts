@@ -364,51 +364,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { maxPerTerm = 50 } = req.body;
       
-      console.log("Starting PubMed sync...");
+      console.log("Starting PubMed sync (synchronous mode)...");
       
-      // Start the sync and respond immediately
-      pubmedService.syncCardiovascularResearch(maxPerTerm).then(async (publications) => {
-        let imported = 0;
-        let skipped = 0;
-        
-        console.log(`Fetched ${publications.length} publications, starting import...`);
-        
-        for (const pub of publications) {
-          try {
-            // Check if publication already exists
-            const existing = await storage.getPublicationByPmid(pub.pmid || "");
-            if (existing) {
-              skipped++;
-              continue;
-            }
-            
-            await storage.createPublication(pub);
-            imported++;
-            
-            // Log progress every 100 articles
-            if (imported % 100 === 0) {
-              console.log(`Import progress: ${imported} imported, ${skipped} skipped...`);
-            }
-          } catch (error) {
-            console.error(`Error importing publication ${pub.pmid}:`, error);
+      // Run sync synchronously to completion (prevents dev mode restarts from interrupting)
+      const publications = await pubmedService.syncCardiovascularResearch(maxPerTerm);
+      
+      let imported = 0;
+      let skipped = 0;
+      let approved = 0;
+      let pending = 0;
+      
+      console.log(`Fetched ${publications.length} publications, starting import...`);
+      
+      for (const pub of publications) {
+        try {
+          // Check if publication already exists
+          const existing = await storage.getPublicationByPmid(pub.pmid || "");
+          if (existing) {
+            skipped++;
+            continue;
           }
+          
+          await storage.createPublication(pub);
+          imported++;
+          
+          // Track status breakdown
+          if (pub.status === "approved") {
+            approved++;
+          } else {
+            pending++;
+          }
+          
+          // Log progress every 100 articles
+          if (imported % 100 === 0) {
+            console.log(`Import progress: ${imported} imported (${approved} approved, ${pending} pending), ${skipped} skipped...`);
+          }
+        } catch (error) {
+          console.error(`Error importing publication ${pub.pmid}:`, error);
         }
-        
-        console.log(`Sync complete: ${imported} imported, ${skipped} skipped out of ${publications.length} total`);
-      }).catch((error) => {
-        console.error("Background sync error:", error);
-      });
+      }
       
-      // Respond immediately
+      console.log(`Sync complete: ${imported} imported (${approved} approved, ${pending} pending for review), ${skipped} skipped out of ${publications.length} total`);
+      
+      // Respond with detailed results after completion
       res.json({
         success: true,
-        message: `PubMed sync started in background. Check logs for progress.`
+        message: `PubMed sync complete.`,
+        stats: {
+          fetched: publications.length,
+          imported,
+          skipped,
+          approved,
+          pending,
+        }
       });
     } catch (error: any) {
       console.error("PubMed sync error:", error);
       res.status(500).json({ 
         success: false,
-        message: "Failed to start sync from PubMed", 
+        message: "Failed to sync from PubMed", 
         error: error.message 
       });
     }
