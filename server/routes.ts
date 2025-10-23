@@ -414,6 +414,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to incrementally sync new publications from PubMed (since last sync)
+  app.post("/api/admin/sync-pubmed-incremental", async (req, res) => {
+    try {
+      const { maxPerTerm = 50 } = req.body;
+      
+      console.log("Starting incremental PubMed sync...");
+      
+      // Get the most recent publication date from the database
+      const mostRecentDate = await storage.getMostRecentPublicationDate();
+      
+      if (!mostRecentDate) {
+        return res.status(400).json({
+          success: false,
+          message: "No existing publications found. Please run a full sync first."
+        });
+      }
+      
+      console.log(`Most recent publication date: ${mostRecentDate.toLocaleDateString()}`);
+      
+      // Start the incremental sync and respond immediately
+      pubmedService.syncIncrementalResearch(mostRecentDate, maxPerTerm).then(async (publications) => {
+        let imported = 0;
+        let skipped = 0;
+        
+        console.log(`Fetched ${publications.length} publications since ${mostRecentDate.toLocaleDateString()}, starting import...`);
+        
+        for (const pub of publications) {
+          try {
+            // Check if publication already exists
+            const existing = await storage.getPublicationByPmid(pub.pmid || "");
+            if (existing) {
+              skipped++;
+              continue;
+            }
+            
+            await storage.createPublication(pub);
+            imported++;
+            
+            // Log progress every 50 articles
+            if (imported % 50 === 0) {
+              console.log(`Import progress: ${imported} imported, ${skipped} skipped...`);
+            }
+          } catch (error) {
+            console.error(`Error importing publication ${pub.pmid}:`, error);
+          }
+        }
+        
+        console.log(`Incremental sync complete: ${imported} imported, ${skipped} skipped out of ${publications.length} total`);
+      }).catch((error) => {
+        console.error("Background incremental sync error:", error);
+      });
+      
+      // Respond immediately
+      res.json({
+        success: true,
+        message: `Incremental sync started in background from ${mostRecentDate.toLocaleDateString()}. Check logs for progress.`,
+        fromDate: mostRecentDate.toISOString()
+      });
+    } catch (error: any) {
+      console.error("Incremental sync error:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to start incremental sync from PubMed", 
+        error: error.message 
+      });
+    }
+  });
+
   // Admin endpoint to approve a publication
   app.post("/api/admin/publications/:id/approve", async (req, res) => {
     try {

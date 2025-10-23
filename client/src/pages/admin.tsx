@@ -31,6 +31,8 @@ export default function Admin() {
   const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
   const [editCategories, setEditCategories] = useState<string[]>([]);
   const [columnResizeMode] = useState<ColumnResizeMode>("onEnd");
+  const [isSyncingFull, setIsSyncingFull] = useState(false);
+  const [isSyncingIncremental, setIsSyncingIncremental] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 400);
   const { toast } = useToast();
 
@@ -145,6 +147,48 @@ export default function Admin() {
       });
     },
   });
+
+  const handleFullSync = async () => {
+    setIsSyncingFull(true);
+    try {
+      const response: any = await apiRequest("POST", "/api/admin/sync-pubmed", {
+        maxPerTerm: 5000,
+      });
+      toast({
+        title: "Full Sync Started",
+        description: response.message || "PubMed full sync started in background. Check logs for progress.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to start full sync",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingFull(false);
+    }
+  };
+
+  const handleIncrementalSync = async () => {
+    setIsSyncingIncremental(true);
+    try {
+      const response: any = await apiRequest("POST", "/api/admin/sync-pubmed-incremental", {
+        maxPerTerm: 5000,
+      });
+      toast({
+        title: "Incremental Sync Started",
+        description: response.message || "Incremental sync started. Fetching new publications since last sync.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to start incremental sync",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingIncremental(false);
+    }
+  };
 
   const openEditDialog = (publication: Publication) => {
     setEditingPublication(publication);
@@ -482,6 +526,60 @@ export default function Admin() {
             Review and manage publications
           </p>
         </div>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>PubMed Sync</CardTitle>
+            <CardDescription>Sync publications from PubMed Central</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <h3 className="font-medium mb-2 text-sm text-[#1d1d1f] dark:text-white">Full Sync</h3>
+                <p className="text-sm text-[#6e6e73] dark:text-gray-400 mb-3">
+                  Run a complete sync from 2000 to present. This will fetch all SphygmoCor publications from PubMed Central.
+                </p>
+                <Button 
+                  onClick={handleFullSync} 
+                  disabled={isSyncingFull || isSyncingIncremental}
+                  className="w-full sm:w-auto"
+                  data-testid="button-full-sync"
+                >
+                  {isSyncingFull ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Syncing...
+                    </>
+                  ) : (
+                    "Start Full Sync"
+                  )}
+                </Button>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium mb-2 text-sm text-[#1d1d1f] dark:text-white">Incremental Sync</h3>
+                <p className="text-sm text-[#6e6e73] dark:text-gray-400 mb-3">
+                  Sync only new publications since the most recent one in your database. Faster and more efficient.
+                </p>
+                <Button 
+                  onClick={handleIncrementalSync} 
+                  disabled={isSyncingFull || isSyncingIncremental}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  data-testid="button-incremental-sync"
+                >
+                  {isSyncingIncremental ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Syncing...
+                    </>
+                  ) : (
+                    "Sync New Publications"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="mb-8">
           <CardHeader>

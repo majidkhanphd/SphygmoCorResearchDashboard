@@ -14,6 +14,7 @@ export interface IStorage {
   getFilterCounts(params: SearchPublicationsParams): Promise<FilterCounts>;
   getFeaturedPublications(): Promise<Publication[]>;
   getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number, totalByStatus?: Record<string, number>}>;
+  getMostRecentPublicationDate(): Promise<Date | null>;
 
   // Category methods
   getCategories(): Promise<Category[]>;
@@ -269,6 +270,18 @@ export class DatabaseStorage implements IStorage {
       institutionsCount: 500, // Mock data
       totalByStatus
     };
+  }
+
+  async getMostRecentPublicationDate(): Promise<Date | null> {
+    const [result] = await db
+      .select({
+        publicationDate: publications.publicationDate
+      })
+      .from(publications)
+      .orderBy(desc(publications.publicationDate))
+      .limit(1);
+    
+    return result?.publicationDate || null;
   }
 
   // Category methods

@@ -655,6 +655,39 @@ export class PubMedService {
     return uniquePublications;
   }
 
+  async syncIncrementalResearch(fromDate: Date, maxPerTerm: number = MAX_RESULTS_PER_TERM): Promise<InsertPublication[]> {
+    console.log(`Starting incremental PMC sync from ${fromDate.toLocaleDateString()}...`);
+    const allPublications: InsertPublication[] = [];
+
+    // Format dates for PubMed API (YYYY/MM/DD)
+    const minDate = `${fromDate.getFullYear()}/${String(fromDate.getMonth() + 1).padStart(2, '0')}/${String(fromDate.getDate()).padStart(2, '0')}`;
+    const today = new Date();
+    const maxDate = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+
+    console.log(`Date range: ${minDate} to ${maxDate}`);
+
+    for (const term of this.cardiovascularTerms) {
+      console.log(`\nSearching PMC for: ${term}`);
+      
+      const pmcIds = await this.searchPubMed(term, maxPerTerm, minDate, maxDate);
+      console.log(`  Found ${pmcIds.length} articles`);
+
+      if (pmcIds.length > 0) {
+        const publications = await this.fetchArticleDetails(pmcIds);
+        allPublications.push(...publications);
+      }
+
+      // Add delay to respect PubMed rate limits
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+
+    // Remove duplicates based on PMC ID
+    const uniquePublications = this.removeDuplicates(allPublications);
+    console.log(`\nIncremental sync complete. Found ${uniquePublications.length} unique new publications`);
+
+    return uniquePublications;
+  }
+
   private removeDuplicates(publications: InsertPublication[]): InsertPublication[] {
     const seen = new Set<string>();
     const unique: InsertPublication[] = [];
