@@ -11,6 +11,8 @@ Users can search, filter, and browse scientific publications related to cardiova
 - ✅ Complete navigation structure: Overview, Research Highlights, Publications, Events, Work With Us
 - ✅ PostgreSQL database with 2,616 SphygmoCor-specific research publications from PubMed Central
 - ✅ Automatic PubMed synchronization service with configurable search terms
+- ✅ Incremental PubMed sync feature to fetch only new publications since last sync
+- ✅ Admin page with PubMed Sync card featuring Full Sync and Incremental Sync buttons
 - ✅ Advanced filtering: research areas, journals, years, search, sort
 - ✅ Backend API integration with real-time data display
 - ✅ Publication approval workflow with auto-approval by default
@@ -24,13 +26,21 @@ Users can search, filter, and browse scientific publications related to cardiova
 **Admin Functions:**
 
 *PubMed Sync:*
-- `POST /api/admin/sync-pubmed` with `{"maxPerTerm": 5000}` parameter
-- Configurable search terms in `server/config/search-terms.ts`
-- Current query: `sphygmocor*[body]` (searches full text in PubMed Central)
-- Searches in 5-year chunks from 2000 to present to capture all historical publications
-- All synced publications auto-approved by default (status="approved")
-- Auto-categorizes by research area and extracts keywords
-- Rate-limited to respect PubMed API guidelines (350ms delay between requests)
+- **Full Sync**: `POST /api/admin/sync-pubmed` with `{"maxPerTerm": 5000}` parameter
+  - Configurable search terms in `server/config/search-terms.ts`
+  - Current query: `sphygmocor*[body]` (searches full text in PubMed Central)
+  - Searches in 5-year chunks from 2000 to present to capture all historical publications
+  - All synced publications auto-approved by default (status="approved")
+  - Auto-categorizes by research area and extracts keywords
+  - Rate-limited to respect PubMed API guidelines (350ms delay between requests)
+- **Incremental Sync**: `POST /api/admin/sync-pubmed-incremental` with `{"maxPerTerm": 5000}` parameter
+  - Fetches only new publications since the most recent publication in database
+  - Queries database for most recent publication date using `getMostRecentPublicationDate()`
+  - Searches PubMed from that date to today using `mindate` and `maxdate` parameters
+  - Returns 400 error if no publications exist (requires full sync first)
+  - Skips duplicates via `getPublicationByPmid` check
+  - Runs asynchronously in background with immediate response
+  - More efficient than full sync for routine updates
 
 *Publication Approval:*
 - `GET /api/admin/publications/pending` - View all pending publications
@@ -62,6 +72,9 @@ Users can search, filter, and browse scientific publications related to cardiova
 - Unified typography across all pages: Applied light, refined styling from Research Highlights and Events pages (48px light H1s, 18px subtitles, 28px light section headings) to Overview, Work With Us, and Publications pages for complete visual consistency
 - Improved text proportions: Widened subtitle max-width from 640px to 820px and tightened title-to-subtitle spacing from 16px to 12px across all pages for better visual balance relative to 1152px page width
 - Reordered Publications page sidebar filters: Years section now appears before Journals section (Research Areas → Years → Journals)
+- Implemented incremental PubMed sync feature with getMostRecentPublicationDate() storage method and syncIncrementalResearch() service method
+- Added /api/admin/sync-pubmed-incremental endpoint that fetches only new publications since the most recent stored paper
+- Updated admin page with PubMed Sync card featuring both Full Sync and Incremental Sync buttons with loading states and toast notifications
 
 **Future Improvements:**
 - Add authentication/authorization to admin endpoints
