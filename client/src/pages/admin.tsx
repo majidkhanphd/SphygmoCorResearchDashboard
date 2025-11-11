@@ -171,7 +171,6 @@ export default function Admin() {
     try {
       const response = await apiRequest("GET", "/api/admin/sync-status");
       const data = await response.json();
-      console.log("[Admin] Fetched sync status:", data);
       
       // Extract status fields from response (API returns {success, status, type, ...})
       const newStatus: SyncStatus = {
@@ -187,7 +186,6 @@ export default function Admin() {
         error: data.error,
       };
       
-      console.log("[Admin] Setting sync status:", newStatus);
       setSyncStatus(newStatus);
       return newStatus;
     } catch (error) {

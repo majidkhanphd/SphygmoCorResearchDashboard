@@ -57,7 +57,23 @@ Users can search, filter, and browse scientific publications related to cardiova
 - 96.5% auto-categorization success rate across 11 research areas
 - Historical coverage: 145 publications from 2000-2010, 2,742 from 2011-2025
 
-**Recent Changes (October 2025):**
+**Recent Changes (November 2025):**
+- **Async PubMed Sync with Real-Time Progress Tracking** (November 11, 2025)
+  - Made both Full Sync and Incremental Sync fully asynchronous - endpoints return immediately (202) while sync runs in background
+  - Implemented SyncTracker singleton (`server/sync-tracker.ts`) for in-memory progress tracking across sync operations
+  - Added GET /api/admin/sync-status endpoint to poll current sync state, phase, and progress counters
+  - Frontend polls sync status every 2 seconds during active sync, displays real-time progress card with:
+    - Live phase text (e.g., "Syncing 2010-2014")
+    - Progress bar showing batch completion (processed/total)
+    - Running counters: imported, skipped, approved, pending
+    - Animated spinner and blue card UI
+  - Auto-refresh: publication stats and lists refresh automatically when sync completes
+  - Toast notifications on sync start and completion with import summary
+  - Buttons disabled during sync to prevent duplicate requests
+  - Fixed completion timeout bug: stored in ref, cleared on new sync start and unmount to prevent race conditions
+  - Critical bug fix: fetchSyncStatus now properly parses JSON from Response object before setting state
+  - Verified via e2e testing: Full Sync processed 6 batches (imported 11 publications), Incremental Sync completed successfully
+  - UX improvement: no more frozen app during sync operations, real-time feedback for user confidence
 - Removed JavaScript-driven responsive breakpoint logic (isMobile state and useEffect resize listener)
 - Removed mobile filter modal and Filter icon in favor of always-visible sidebar
 - Implemented CSS-only fluid responsive design using CSS Grid with minmax()
