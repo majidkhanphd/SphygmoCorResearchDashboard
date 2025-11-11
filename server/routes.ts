@@ -5,6 +5,7 @@ import { insertPublicationSchema, searchPublicationsSchema, type InsertPublicati
 import { z } from "zod";
 import { XMLParser } from "fast-xml-parser";
 import { pubmedService } from "./services/pubmed";
+import { syncTracker } from "./sync-tracker";
 
 // Helper to normalize XML text from fast-xml-parser
 function normalizeXmlText(value: any): string {
@@ -364,66 +365,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { maxPerTerm = 50 } = req.body;
       
-      console.log("Starting PubMed sync (progressive mode - saves in batches)...");
+      // Check if sync is already running
+      if (syncTracker.isRunning()) {
+        return res.status(409).json({
+          success: false,
+          message: "Sync is already running. Please wait for it to complete.",
+        });
+      }
       
-      let imported = 0;
-      let skipped = 0;
-      let approved = 0;
-      let pending = 0;
+      // Start tracking
+      syncTracker.start("full");
+      console.log("Starting PubMed full sync (progressive mode - saves in batches)...");
       
-      // Progressive sync: save articles to database as each batch is fetched
-      const result = await pubmedService.syncCardiovascularResearchProgressive(
-        maxPerTerm,
-        async (batch: InsertPublication[]) => {
-          // This callback is called after each batch (year range) is fetched
-          console.log(`  Processing batch of ${batch.length} articles...`);
-          
-          for (const pub of batch) {
-            try {
-              // Check if publication already exists
-              const existing = await storage.getPublicationByPmid(pub.pmid || "");
-              if (existing) {
-                skipped++;
-                continue;
-              }
-              
-              await storage.createPublication(pub);
-              imported++;
-              
-              // Track status breakdown
-              if (pub.status === "approved") {
-                approved++;
-              } else {
-                pending++;
-              }
-            } catch (error) {
-              console.error(`Error importing publication ${pub.pmid}:`, error);
-            }
-          }
-          
-          console.log(`  Batch complete: ${imported} total imported (${approved} approved, ${pending} pending), ${skipped} skipped`);
-        }
-      );
-      
-      console.log(`\nSync complete: ${imported} imported (${approved} approved, ${pending} pending for review), ${skipped} skipped out of ${result.totalUnique} unique fetched`);
-      
-      // Respond with detailed results after completion
+      // Respond immediately
       res.json({
         success: true,
-        message: `PubMed sync complete.`,
-        stats: {
-          fetched: result.totalUnique,
-          imported,
-          skipped,
-          approved,
-          pending,
+        message: "Full sync started. Poll /api/admin/sync-status for progress.",
+      });
+      
+      // Run sync in background
+      (async () => {
+        let imported = 0;
+        let skipped = 0;
+        let approved = 0;
+        let pending = 0;
+        
+        try {
+          // Progressive sync: save articles to database as each batch is fetched
+          const result = await pubmedService.syncCardiovascularResearchProgressive(
+            maxPerTerm,
+            async (batch: InsertPublication[], phase: string, batchIndex: number, totalBatches: number) => {
+              // Update phase and progress
+              syncTracker.updatePhase(phase);
+              syncTracker.updateProgress(batchIndex, totalBatches);
+              
+              // This callback is called after each batch (year range) is fetched
+              console.log(`  Processing batch ${batchIndex}/${totalBatches}: ${batch.length} articles...`);
+              
+              for (const pub of batch) {
+                try {
+                  // Check if publication already exists
+                  const existing = await storage.getPublicationByPmid(pub.pmid || "");
+                  if (existing) {
+                    skipped++;
+                    continue;
+                  }
+                  
+                  await storage.createPublication(pub);
+                  imported++;
+                  
+                  // Track status breakdown
+                  if (pub.status === "approved") {
+                    approved++;
+                  } else {
+                    pending++;
+                  }
+                } catch (error) {
+                  console.error(`Error importing publication ${pub.pmid}:`, error);
+                }
+              }
+              
+              // Update tracker stats
+              syncTracker.updateStats(imported, skipped, approved, pending);
+              
+              console.log(`  Batch complete: ${imported} total imported (${approved} approved, ${pending} pending), ${skipped} skipped`);
+            }
+          );
+          
+          console.log(`\nSync complete: ${imported} imported (${approved} approved, ${pending} pending for review), ${skipped} skipped out of ${result.totalUnique} unique fetched`);
+          
+          // Mark as complete
+          syncTracker.complete();
+        } catch (error: any) {
+          console.error("PubMed sync error:", error);
+          syncTracker.error(error.message || "Unknown error");
         }
+      })().catch((error) => {
+        console.error("Fatal sync error:", error);
+        syncTracker.error(error.message || "Unknown error");
       });
     } catch (error: any) {
       console.error("PubMed sync error:", error);
+      syncTracker.error(error.message || "Unknown error");
       res.status(500).json({ 
         success: false,
-        message: "Failed to sync from PubMed", 
+        message: "Failed to start full sync from PubMed", 
         error: error.message 
       });
     }
@@ -433,6 +459,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/sync-pubmed-incremental", async (req, res) => {
     try {
       const { maxPerTerm = 50 } = req.body;
+      
+      // Check if sync is already running
+      if (syncTracker.isRunning()) {
+        return res.status(409).json({
+          success: false,
+          message: "Sync is already running. Please wait for it to complete.",
+        });
+      }
       
       console.log("Starting incremental PubMed sync...");
       
@@ -446,52 +480,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log(`Most recent publication date: ${mostRecentDate.toLocaleDateString()}`);
+      // Start tracking
+      syncTracker.start("incremental");
+      syncTracker.updatePhase(`Syncing from ${mostRecentDate.toLocaleDateString()}...`);
       
-      // Start the incremental sync and respond immediately
-      pubmedService.syncIncrementalResearch(mostRecentDate, maxPerTerm).then(async (publications) => {
-        let imported = 0;
-        let skipped = 0;
-        
-        console.log(`Fetched ${publications.length} publications since ${mostRecentDate.toLocaleDateString()}, starting import...`);
-        
-        for (const pub of publications) {
-          try {
-            // Check if publication already exists
-            const existing = await storage.getPublicationByPmid(pub.pmid || "");
-            if (existing) {
-              skipped++;
-              continue;
-            }
-            
-            await storage.createPublication(pub);
-            imported++;
-            
-            // Log progress every 50 articles
-            if (imported % 50 === 0) {
-              console.log(`Import progress: ${imported} imported, ${skipped} skipped...`);
-            }
-          } catch (error) {
-            console.error(`Error importing publication ${pub.pmid}:`, error);
-          }
-        }
-        
-        console.log(`Incremental sync complete: ${imported} imported, ${skipped} skipped out of ${publications.length} total`);
-      }).catch((error) => {
-        console.error("Background incremental sync error:", error);
-      });
+      console.log(`Most recent publication date: ${mostRecentDate.toLocaleDateString()}`);
       
       // Respond immediately
       res.json({
         success: true,
-        message: `Incremental sync started in background from ${mostRecentDate.toLocaleDateString()}. Check logs for progress.`,
+        message: `Incremental sync started. Poll /api/admin/sync-status for progress.`,
         fromDate: mostRecentDate.toISOString()
+      });
+      
+      // Run sync in background
+      (async () => {
+        let imported = 0;
+        let skipped = 0;
+        let approved = 0;
+        let pending = 0;
+        
+        try {
+          const publications = await pubmedService.syncIncrementalResearch(mostRecentDate, maxPerTerm);
+          
+          console.log(`Fetched ${publications.length} publications since ${mostRecentDate.toLocaleDateString()}, starting import...`);
+          syncTracker.updatePhase("Importing publications...");
+          syncTracker.updateProgress(0, publications.length);
+          
+          for (let i = 0; i < publications.length; i++) {
+            const pub = publications[i];
+            
+            try {
+              // Check if publication already exists
+              const existing = await storage.getPublicationByPmid(pub.pmid || "");
+              if (existing) {
+                skipped++;
+              } else {
+                await storage.createPublication(pub);
+                imported++;
+                
+                // Track status breakdown
+                if (pub.status === "approved") {
+                  approved++;
+                } else {
+                  pending++;
+                }
+              }
+              
+              // Update progress EVERY iteration (not just on import)
+              syncTracker.updateProgress(i + 1, publications.length);
+              syncTracker.updateStats(imported, skipped, approved, pending);
+              
+              // Log progress every 50 articles
+              if ((i + 1) % 50 === 0) {
+                console.log(`Import progress: ${i + 1}/${publications.length} processed (${imported} imported, ${skipped} skipped)...`);
+              }
+            } catch (error) {
+              console.error(`Error importing publication ${pub.pmid}:`, error);
+            }
+          }
+          
+          console.log(`Incremental sync complete: ${imported} imported (${approved} approved, ${pending} pending), ${skipped} skipped out of ${publications.length} total`);
+          
+          // Mark as complete
+          syncTracker.complete();
+        } catch (error: any) {
+          console.error("Incremental sync error:", error);
+          syncTracker.error(error.message || "Unknown error");
+        }
+      })().catch((error) => {
+        console.error("Fatal incremental sync error:", error);
+        syncTracker.error(error.message || "Unknown error");
       });
     } catch (error: any) {
       console.error("Incremental sync error:", error);
+      syncTracker.error(error.message || "Unknown error");
       res.status(500).json({ 
         success: false,
         message: "Failed to start incremental sync from PubMed", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Admin endpoint to get sync status
+  app.get("/api/admin/sync-status", async (req, res) => {
+    try {
+      const status = syncTracker.getStatus();
+      res.json({
+        success: true,
+        ...status,
+      });
+    } catch (error: any) {
+      console.error("Error getting sync status:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to get sync status", 
         error: error.message 
       });
     }

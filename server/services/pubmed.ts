@@ -665,7 +665,7 @@ export class PubMedService {
   // Progressive sync that saves articles in batches as they're fetched
   async syncCardiovascularResearchProgressive(
     maxPerTerm: number = MAX_RESULTS_PER_TERM,
-    onBatchFetched?: (batch: InsertPublication[]) => Promise<void>
+    onBatchFetched?: (batch: InsertPublication[], phase: string, batchIndex: number, totalBatches: number) => Promise<void>
   ): Promise<{ totalFetched: number; totalUnique: number }> {
     console.log("Starting PMC sync for SphygmoCor research (progressive mode)...");
     const seenIds = new Set<string>();
@@ -682,13 +682,18 @@ export class PubMedService {
       });
     }
 
+    const totalBatches = yearRanges.length * this.cardiovascularTerms.length;
+    let batchIndex = 0;
+
     for (const term of this.cardiovascularTerms) {
       console.log(`\nSearching PMC for: ${term}`);
       
       // Search each year range
       for (const range of yearRanges) {
+        batchIndex++;
         const minDate = `${range.start}/01/01`;
         const maxDate = `${range.end}/12/31`;
+        const phase = `Syncing ${range.start}-${range.end}`;
         
         console.log(`  Searching ${range.start}-${range.end}...`);
         const pmcIds = await this.searchPubMed(term, maxPerTerm, minDate, maxDate);
@@ -709,9 +714,12 @@ export class PubMedService {
           totalFetched += uniqueBatch.length;
           
           // Call the batch callback to save immediately if provided
-          if (onBatchFetched && uniqueBatch.length > 0) {
-            await onBatchFetched(uniqueBatch);
+          if (onBatchFetched) {
+            await onBatchFetched(uniqueBatch, phase, batchIndex, totalBatches);
           }
+        } else if (onBatchFetched) {
+          // Call callback even with empty batch to update progress
+          await onBatchFetched([], phase, batchIndex, totalBatches);
         }
 
         // Add delay to respect PubMed rate limits (3 requests per second)
