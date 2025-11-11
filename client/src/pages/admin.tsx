@@ -169,9 +169,27 @@ export default function Admin() {
   // Poll sync status
   const fetchSyncStatus = async () => {
     try {
-      const status: any = await apiRequest("GET", "/api/admin/sync-status");
-      setSyncStatus(status);
-      return status;
+      const response = await apiRequest("GET", "/api/admin/sync-status");
+      const data = await response.json();
+      console.log("[Admin] Fetched sync status:", data);
+      
+      // Extract status fields from response (API returns {success, status, type, ...})
+      const newStatus: SyncStatus = {
+        status: data.status,
+        type: data.type,
+        phase: data.phase,
+        processed: data.processed,
+        total: data.total,
+        imported: data.imported,
+        skipped: data.skipped,
+        approved: data.approved,
+        pending: data.pending,
+        error: data.error,
+      };
+      
+      console.log("[Admin] Setting sync status:", newStatus);
+      setSyncStatus(newStatus);
+      return newStatus;
     } catch (error) {
       console.error("Failed to fetch sync status:", error);
       return null;
