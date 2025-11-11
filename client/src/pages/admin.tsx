@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import { Search, Check, X, ExternalLink, Loader2, Pencil } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +25,22 @@ import {
   ColumnResizeMode,
 } from "@tanstack/react-table";
 
+interface SyncStatus {
+  status: "idle" | "running" | "completed" | "error";
+  type: "full" | "incremental" | null;
+  phase: string;
+  processed: number;
+  total: number;
+  imported: number;
+  skipped: number;
+  approved: number;
+  pending: number;
+  startTime: number | null;
+  endTime: number | null;
+  error: string | null;
+  lastSuccessTime: number | null;
+}
+
 export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected">("pending");
@@ -31,8 +48,9 @@ export default function Admin() {
   const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
   const [editCategories, setEditCategories] = useState<string[]>([]);
   const [columnResizeMode] = useState<ColumnResizeMode>("onEnd");
-  const [isSyncingFull, setIsSyncingFull] = useState(false);
-  const [isSyncingIncremental, setIsSyncingIncremental] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
+  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
+  const completionTimeout = useRef<NodeJS.Timeout | null>(null);
   const debouncedSearch = useDebounce(searchQuery, 400);
   const { toast } = useToast();
 
@@ -148,45 +166,130 @@ export default function Admin() {
     },
   });
 
-  const handleFullSync = async () => {
-    setIsSyncingFull(true);
+  // Poll sync status
+  const fetchSyncStatus = async () => {
     try {
-      const response: any = await apiRequest("POST", "/api/admin/sync-pubmed", {
+      const status: any = await apiRequest("GET", "/api/admin/sync-status");
+      setSyncStatus(status);
+      return status;
+    } catch (error) {
+      console.error("Failed to fetch sync status:", error);
+      return null;
+    }
+  };
+
+  // Start polling when sync is running
+  useEffect(() => {
+    if (syncStatus?.status === "running") {
+      // Clear any completion timeout from previous sync
+      if (completionTimeout.current) {
+        clearTimeout(completionTimeout.current);
+        completionTimeout.current = null;
+      }
+      
+      // Poll every 2 seconds
+      pollingInterval.current = setInterval(fetchSyncStatus, 2000);
+    } else {
+      // Stop polling if sync is not running
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
+        pollingInterval.current = null;
+      }
+
+      // If sync just completed, refresh stats
+      if (syncStatus?.status === "completed") {
+        queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
+
+        toast({
+          title: "Sync Complete",
+          description: `Imported ${syncStatus.imported} publications (${syncStatus.approved} approved, ${syncStatus.pending} pending)`,
+        });
+
+        // Clear any existing completion timeout
+        if (completionTimeout.current) {
+          clearTimeout(completionTimeout.current);
+        }
+        
+        // Reset status after showing completion (only if still completed)
+        completionTimeout.current = setTimeout(() => {
+          setSyncStatus((current) => {
+            // Only clear if still completed (not if a new sync started)
+            if (current?.status === "completed") {
+              return null;
+            }
+            return current;
+          });
+        }, 5000);
+      } else if (syncStatus?.status === "error") {
+        toast({
+          title: "Sync Failed",
+          description: syncStatus.error || "An error occurred during sync",
+          variant: "destructive",
+        });
+        
+        // Clear any existing completion timeout
+        if (completionTimeout.current) {
+          clearTimeout(completionTimeout.current);
+          completionTimeout.current = null;
+        }
+      }
+    }
+
+    return () => {
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
+      }
+      if (completionTimeout.current) {
+        clearTimeout(completionTimeout.current);
+      }
+    };
+  }, [syncStatus?.status]);
+
+  // Fetch status on mount
+  useEffect(() => {
+    fetchSyncStatus();
+  }, []);
+
+  const handleFullSync = async () => {
+    try {
+      await apiRequest("POST", "/api/admin/sync-pubmed", {
         maxPerTerm: 5000,
       });
       toast({
         title: "Full Sync Started",
-        description: response.message || "PubMed full sync started in background. Check logs for progress.",
+        description: "Syncing all publications from PubMed. Progress will update automatically.",
       });
+      // Start polling immediately
+      fetchSyncStatus();
     } catch (error: any) {
       toast({
         title: "Sync Failed",
         description: error.message || "Failed to start full sync",
         variant: "destructive",
       });
-    } finally {
-      setIsSyncingFull(false);
     }
   };
 
   const handleIncrementalSync = async () => {
-    setIsSyncingIncremental(true);
     try {
-      const response: any = await apiRequest("POST", "/api/admin/sync-pubmed-incremental", {
+      await apiRequest("POST", "/api/admin/sync-pubmed-incremental", {
         maxPerTerm: 5000,
       });
       toast({
         title: "Incremental Sync Started",
-        description: response.message || "Incremental sync started. Fetching new publications since last sync.",
+        description: "Fetching new publications since last sync. Progress will update automatically.",
       });
+      // Start polling immediately
+      fetchSyncStatus();
     } catch (error: any) {
       toast({
         title: "Sync Failed",
         description: error.message || "Failed to start incremental sync",
         variant: "destructive",
       });
-    } finally {
-      setIsSyncingIncremental(false);
     }
   };
 
@@ -541,11 +644,11 @@ export default function Admin() {
                 </p>
                 <Button 
                   onClick={handleFullSync} 
-                  disabled={isSyncingFull || isSyncingIncremental}
+                  disabled={syncStatus?.status === "running"}
                   className="w-full sm:w-auto"
                   data-testid="button-full-sync"
                 >
-                  {isSyncingFull ? (
+                  {syncStatus?.status === "running" && syncStatus.type === "full" ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Syncing...
@@ -562,12 +665,12 @@ export default function Admin() {
                 </p>
                 <Button 
                   onClick={handleIncrementalSync} 
-                  disabled={isSyncingFull || isSyncingIncremental}
+                  disabled={syncStatus?.status === "running"}
                   variant="outline"
                   className="w-full sm:w-auto"
                   data-testid="button-incremental-sync"
                 >
-                  {isSyncingIncremental ? (
+                  {syncStatus?.status === "running" && syncStatus.type === "incremental" ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Syncing...
@@ -578,6 +681,31 @@ export default function Admin() {
                 </Button>
               </div>
             </div>
+            
+            {/* Progress Display */}
+            {syncStatus?.status === "running" && (
+              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                    <span className="font-medium text-sm text-blue-900 dark:text-blue-100">{syncStatus.phase}</span>
+                  </div>
+                  <span className="text-sm text-blue-700 dark:text-blue-300">
+                    {syncStatus.processed}/{syncStatus.total} batches
+                  </span>
+                </div>
+                <Progress 
+                  value={syncStatus.total > 0 ? (syncStatus.processed / syncStatus.total) * 100 : 0} 
+                  className="h-2 mb-2"
+                />
+                <div className="flex gap-4 text-xs text-blue-700 dark:text-blue-300">
+                  <span>Imported: {syncStatus.imported}</span>
+                  <span>Skipped: {syncStatus.skipped}</span>
+                  <span>Approved: {syncStatus.approved}</span>
+                  <span>Pending: {syncStatus.pending}</span>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
