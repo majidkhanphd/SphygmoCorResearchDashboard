@@ -58,6 +58,19 @@ Users can search, filter, and browse scientific publications related to cardiova
 - Historical coverage: 145 publications from 2000-2010, 2,742 from 2011-2025
 
 **Recent Changes (November 2025):**
+- **Server-Side Pagination System** (November 13, 2025)
+  - Replaced infinite scroll "Load More" button with traditional page-based navigation
+  - Backend now returns pagination metadata (totalPages, currentPage) in search responses
+  - Frontend refactored from useInfiniteQuery to useQuery with page state management
+  - Clean numbered pagination controls (1, 2, 3...) with Previous/Next buttons
+  - Shows up to 7 page numbers with smart windowing algorithm (current page ±3)
+  - Results count display: "Showing 1-50 of 2,860 publications"
+  - Auto-reset to page 1 when any filter/search/sort changes
+  - Smooth scroll-to-top behavior when navigating between pages
+  - Apple-inspired pagination styling matching site aesthetic
+  - Supports all existing filters: research areas, journals, years, search, sort
+  - Improved UX: clearer navigation, better performance, scalable for growing dataset
+  - Default page size: 50 publications per page
 - **Async PubMed Sync with Real-Time Progress Tracking** (November 11, 2025)
   - Made both Full Sync and Incremental Sync fully asynchronous - endpoints return immediately (202) while sync runs in background
   - Implemented SyncTracker singleton (`server/sync-tracker.ts`) for in-memory progress tracking across sync operations
