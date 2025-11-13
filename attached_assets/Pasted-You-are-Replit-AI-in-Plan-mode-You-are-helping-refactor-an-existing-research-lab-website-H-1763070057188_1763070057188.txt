@@ -1,0 +1,164 @@
+You are Replit AI in **Plan mode**. You are helping refactor an existing research lab website.
+
+## High-level goal
+
+Restructure the site so that there is essentially **one primary website experience** centered on the **Publications page**, and deprecate/remove several other sections — **without breaking existing functionality**.
+
+We want:
+- A single main entry experience focused on Publications.
+- Some former “Research Highlights” content moved into the Publications page header area.
+- A **hero/animated banner placeholder** (for a future pulse-wave animation) similar in spirit to the Apple Machine Learning page hero.
+- All of this done carefully so existing routes, components, and data fetching for Publications remain stable.
+
+---
+
+## Current situation (assumptions)
+
+- The site currently has multiple top-level pages/sections, including:
+  - **Overview**
+  - **Research Highlights**
+  - **Events**
+  - **Work With Us**
+  - **Publications** (this is the main publications experience we want to keep and enhance)
+- These pages are likely exposed in:
+  - Navigation (header/footer links, menus)
+  - Routing (framework-specific routes, e.g., Next.js/React Router/etc.)
+  - Possibly shared layout components.
+
+You should:
+- Infer the exact structure from the codebase.
+- Explicitly call out where you are making assumptions and how you would verify them in Work mode.
+
+---
+
+## Required changes
+
+### 1. Deprecate/remove extra pages safely
+
+We want to **remove or retire** the following pages as separate destinations:
+
+- Overview
+- Research Highlights (as a standalone page)
+- Events
+- Work With Us
+
+**Requirements:**
+
+- Update navigation so these pages **no longer appear as top-level links**.
+- Ensure there are **no broken links** (404s) or orphaned routes:
+  - If other parts of the site link to these pages, either:
+    - Update links to point to the new main Publications experience, **or**
+    - Implement safe redirects (route-level) to the Publications page.
+- Confirm that any shared layout or navigation components do not assume the existence of these pages.
+- Document exactly **which files, routes, and components** are changed or removed.
+
+### 2. Make Publications the main landing experience
+
+We want the user to effectively land on the **Publications page** as the main site.
+
+**Requirements:**
+
+- If there is a traditional “home” or “overview” route, adjust routing so:
+  - The main landing path (e.g., `/` or the primary entry point) either:
+    - Shows the Publications page directly, **or**
+    - Renders a new wrapper that is effectively the Publications experience plus the new header content (see below).
+- Do **not** break:
+  - Existing publication filters, pagination, and data loading.
+  - Any query parameters or APIs currently used by Publications.
+- If you need to refactor the Publications page layout to add new blocks at the top, do so in a way that:
+  - Keeps the core list/table/grid of publications intact.
+  - Preserves existing components where possible (avoid rewriting the entire page).
+
+### 3. Integrate “Research Highlights” into the Publications page header
+
+We want some of the **former Research Highlights content** to appear at the top of the Publications page.
+
+**Requirements:**
+
+- Identify key pieces of “Research Highlights” content that make sense as:
+  - A featured section (e.g., “Research Highlights”)
+  - Or a “Recent Breakthroughs” strip/cards at the top.
+- Design a **top-of-page section** on the Publications page that can include:
+  - A short title and description (e.g., “Research Highlights” / “Recent Breakthroughs”).
+  - One or more highlight items (cards or tiles) with:
+    - Title
+    - Very short description
+    - Optional link to relevant publications or external resources.
+- Make this section configurable/data-driven where reasonable (e.g., driven by JSON/config or CMS data if present), so that future updates do not require code changes.
+
+### 4. Add a hero/banner section with placeholder animation
+
+We eventually want a **pulse-wave style animated hero banner**, visually somewhat inspired by Apple’s Machine Learning page. For now:
+
+**Requirements (for this phase):**
+
+- Implement a **hero/banner component** at the very top of the Publications experience that:
+  - Spans the width of the page (full-width section).
+  - Has a visually clean, modern layout suitable for a future animation.
+  - Includes **placeholder content** for now (e.g., a subtle gradient background, static SVG or simple CSS animation placeholder).
+  - Contains text fields like:
+    - Main heading (e.g., “Cardiovascular Research & Publications”)
+    - Subheading/short description.
+- Architect the hero so that:
+  - Swapping the placeholder with a future pulse-wave animation will be straightforward.
+  - The hero component is isolated (e.g., `HeroBanner` or similar component).
+- Do **not** copy Apple’s design exactly — use it only as high-level inspiration (full-width hero, modern, minimal).
+
+---
+
+## Constraints & safety checks
+
+- **Do not break the Publications page:**
+  - Existing filters, pagination, and search must remain fully functional.
+  - APIs and data fetch logic must not be disrupted.
+- **No broken navigation:**
+  - Before and after changes, list all routes that previously existed and their new behavior (e.g., redirect target, removed, or repurposed).
+- Respect existing design system and component patterns:
+  - Reuse existing layout/grid/typography components where possible.
+  - Keep the visual style consistent with the current site.
+
+---
+
+## What I want from you in Plan mode
+
+1. **Codebase analysis**
+   - Identify:
+     - The files, routes, and components for:
+       - Overview
+       - Research Highlights
+       - Events
+       - Work With Us
+       - Publications
+     - Where navigation items are defined (header, footer, sidebars).
+   - Summarize the current structure and how Publications is currently used.
+
+2. **Step-by-step implementation plan**
+   - Break the work into logical tasks/steps, such as:
+     1. Map routes and navigation.
+     2. Create/adjust main entry route to Publications.
+     3. Implement hero/banner component and integrate at top.
+     4. Extract and integrate Research Highlights into new top section.
+     5. Safely deprecate/remove Overview/Research Highlights/Events/Work With Us pages.
+     6. Add redirects or link updates to avoid broken paths.
+     7. Run and describe testing/QA steps.
+   - For each step, describe:
+     - **What** will be done.
+     - **Which files/components** are likely involved.
+     - Any **risks** and how to mitigate them.
+
+3. **Acceptance criteria**
+
+Define clear acceptance criteria, including but not limited to:
+
+- Visiting the main URL (e.g., `/`) shows the Publications experience with:
+  - Hero/banner at the top.
+  - Research Highlights/Recent Breakthroughs section under the hero.
+  - Existing Publications listing and filtering intact.
+- No navigation links point to the old Overview/Research Highlights/Events/Work With Us pages.
+- Any direct visits to deprecated routes behave gracefully (redirect or handled page).
+- No console errors or obvious layout regressions on the Publications page.
+- The hero/banner is implemented as a reusable, easily upgradable component.
+
+---
+
+Please now produce a **detailed, actionable plan** following these instructions, optimized for execution in Work mode.
