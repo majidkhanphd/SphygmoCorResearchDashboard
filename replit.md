@@ -1,128 +1,6 @@
 # Overview
 
-This is a research publication management system specifically designed for CONNEQT Health's cardiovascular research. The application is a 1:1 clone of Apple's Machine Learning research page, adapted for cardiovascular/SphygmoCor research domain. 
-
-Users can search, filter, and browse scientific publications related to cardiovascular research including hypertension, arterial stiffness, pulse wave analysis, and related fields. The system automatically imports publications from PubMed based on predefined cardiovascular search terms, with backend processing to categorize and organize research.
-
-## Current Status (October 2025)
-
-**Completed:**
-- ✅ Apple-perfect frontend design with horizontal navigation matching Apple ML research site
-- ✅ Complete navigation structure: Overview, Research Highlights, Publications, Events, Work With Us
-- ✅ PostgreSQL database with 2,616 SphygmoCor-specific research publications from PubMed Central
-- ✅ Automatic PubMed synchronization service with configurable search terms
-- ✅ Incremental PubMed sync feature to fetch only new publications since last sync
-- ✅ Admin page with PubMed Sync card featuring Full Sync and Incremental Sync buttons
-- ✅ Advanced filtering: research areas, journals, years, search, sort
-- ✅ Backend API integration with real-time data display
-- ✅ Publication approval workflow with auto-approval by default
-- ✅ Frontend filters to display only approved publications
-- ✅ Configurable SphygmoCor-specific search terms
-- ✅ Fluid responsive CSS Grid layout (minmax) with natural text wrapping
-- ✅ Single-column publication list with color-coded category badges
-- ✅ Full author names with em-dash separators
-- ✅ CSS-only responsive design without JavaScript breakpoint logic
-
-**Admin Functions:**
-
-*PubMed Sync:*
-- **Full Sync**: `POST /api/admin/sync-pubmed` with `{"maxPerTerm": 5000}` parameter
-  - Configurable search terms in `server/config/search-terms.ts`
-  - Current query: `sphygmocor*[body]` (searches full text in PubMed Central)
-  - Searches in 5-year chunks from 2000 to present to capture all historical publications
-  - All synced publications auto-approved by default (status="approved")
-  - Auto-categorizes by research area and extracts keywords
-  - Rate-limited to respect PubMed API guidelines (350ms delay between requests)
-- **Incremental Sync**: `POST /api/admin/sync-pubmed-incremental` with `{"maxPerTerm": 5000}` parameter
-  - Fetches only new publications since the most recent publication in database
-  - Queries database for most recent publication date using `getMostRecentPublicationDate()`
-  - Searches PubMed from that date to today using `mindate` and `maxdate` parameters
-  - Returns 400 error if no publications exist (requires full sync first)
-  - Skips duplicates via `getPublicationByPmid` check
-  - Runs asynchronously in background with immediate response
-  - More efficient than full sync for routine updates
-
-*Publication Approval:*
-- `GET /api/admin/publications/pending` - View all pending publications
-- `POST /api/admin/publications/:id/approve` - Approve a publication for public display
-- `POST /api/admin/publications/:id/reject` - Reject a publication
-- Only approved publications appear on the website
-- Backend-only workflow (no frontend UI for admin)
-
-**Database Status:**
-- 2,887 SphygmoCor-specific publications synced from PubMed Central (2000-2025)
-- Intelligent approval workflow: auto-approve complete articles, mark incomplete articles as "pending"
-  - Complete metadata (title + authors): status="approved" (2,860 publications, 99.07%)
-  - Incomplete metadata (missing title or authors): status="pending" for manual review (27 publications, 0.93%)
-- 96.5% auto-categorization success rate across 11 research areas
-- Historical coverage: 145 publications from 2000-2010, 2,742 from 2011-2025
-
-**Recent Changes (November 2025):**
-- **Server-Side Pagination System** (November 13, 2025)
-  - Replaced infinite scroll "Load More" button with traditional page-based navigation
-  - Backend now returns pagination metadata (totalPages, currentPage) in search responses
-  - Frontend refactored from useInfiniteQuery to useQuery with page state management
-  - Clean numbered pagination controls (1, 2, 3...) with Previous/Next buttons
-  - Shows up to 7 page numbers with smart windowing algorithm (current page ±3)
-  - Results count display: "Showing 1-50 of 2,860 publications"
-  - Auto-reset to page 1 when any filter/search/sort changes
-  - Smooth scroll-to-top behavior when navigating between pages
-  - Apple-inspired pagination styling matching site aesthetic
-  - Supports all existing filters: research areas, journals, years, search, sort
-  - Improved UX: clearer navigation, better performance, scalable for growing dataset
-  - Default page size: 50 publications per page
-- **Async PubMed Sync with Real-Time Progress Tracking** (November 11, 2025)
-  - Made both Full Sync and Incremental Sync fully asynchronous - endpoints return immediately (202) while sync runs in background
-  - Implemented SyncTracker singleton (`server/sync-tracker.ts`) for in-memory progress tracking across sync operations
-  - Added GET /api/admin/sync-status endpoint to poll current sync state, phase, and progress counters
-  - Frontend polls sync status every 2 seconds during active sync, displays real-time progress card with:
-    - Live phase text (e.g., "Syncing 2010-2014")
-    - Progress bar showing batch completion (processed/total)
-    - Running counters: imported, skipped, approved, pending
-    - Animated spinner and blue card UI
-  - Auto-refresh: publication stats and lists refresh automatically when sync completes
-  - Toast notifications on sync start and completion with import summary
-  - Buttons disabled during sync to prevent duplicate requests
-  - Fixed completion timeout bug: stored in ref, cleared on new sync start and unmount to prevent race conditions
-  - Critical bug fix: fetchSyncStatus now properly parses JSON from Response object before setting state
-  - Verified via e2e testing: Full Sync processed 6 batches (imported 11 publications), Incremental Sync completed successfully
-  - UX improvement: no more frozen app during sync operations, real-time feedback for user confidence
-- Removed JavaScript-driven responsive breakpoint logic (isMobile state and useEffect resize listener)
-- Removed mobile filter modal and Filter icon in favor of always-visible sidebar
-- Implemented CSS-only fluid responsive design using CSS Grid with minmax()
-- Applied comprehensive min-w-0 to all flex container hierarchy levels for proper text wrapping
-- Fixed navigation component to avoid nested anchor tags (wouter Link pattern)
-- Changed label from "Venues" to "Journals" throughout UI
-- Cleaned up unused imports (Dialog components, Filter icon, useEffect)
-- Updated PubMed sync to search by publication date (datetype=pdat) from 2000-present
-- Extended year filter sidebar to show all years from 2000 to present (26 years)
-- Unified page width across all pages: Updated Overview, Work With Us, and Research Highlights to use max-w-6xl (1152px) to match Publications and Events
-- Standardized responsive padding across all pages: px-4 sm:px-6 lg:px-8
-- Fixed navigation header alignment: Updated from max-w-[980px] to max-w-6xl to match page content
-- Achieved perfect 0px alignment between header and content across all pages (verified via e2e testing)
-- Unified typography across all pages: Applied light, refined styling from Research Highlights and Events pages (48px light H1s, 18px subtitles, 28px light section headings) to Overview, Work With Us, and Publications pages for complete visual consistency
-- Improved text proportions: Widened subtitle max-width from 640px to 820px and tightened title-to-subtitle spacing from 16px to 12px across all pages for better visual balance relative to 1152px page width
-- Reordered Publications page sidebar filters: Years section now appears before Journals section (Research Areas → Years → Journals)
-- Implemented incremental PubMed sync feature with getMostRecentPublicationDate() storage method and syncIncrementalResearch() service method
-- Added /api/admin/sync-pubmed-incremental endpoint that fetches only new publications since the most recent stored paper
-- Updated admin page with PubMed Sync card featuring both Full Sync and Incremental Sync buttons with loading states and toast notifications
-- Implemented progressive import with syncCardiovascularResearchProgressive method that saves articles in batches as they're fetched
-  - Prevents data loss from dev mode server restarts during sync
-  - Articles saved to database immediately after each year range is fetched
-  - Survives server interruptions by preserving progress made before restart
-- Enhanced PubMed parser to accept articles with minimal data (just PMID or DOI required)
-  - Gracefully handles incomplete metadata using placeholders ("Untitled Publication", "Unknown")
-  - Enables import of ALL articles from PubMed for later manual review
-- Added intelligent status assignment based on metadata completeness
-  - Articles with complete metadata (title + authors): auto-approved
-  - Articles with incomplete metadata: marked as "pending" for manual review
-  - Frontend filters ensure only approved publications appear on website
-
-**Future Improvements:**
-- Add authentication/authorization to admin endpoints
-- Implement scheduled monthly automatic sync
-- Add automated testing for approval workflow
-- Category management interface
+This project is a research publication management system for CONNEQT Health, focused on cardiovascular research. It's a 1:1 clone of Apple's Machine Learning research page, adapted for the cardiovascular/SphygmoCor domain. The system allows users to search, filter, and browse scientific publications related to cardiovascular research. It automatically imports, categorizes, and organizes publications from PubMed based on predefined search terms, ensuring a comprehensive and up-to-date repository. The project's ambition is to provide a dedicated, user-friendly platform for accessing critical cardiovascular research, enhancing knowledge dissemination and supporting research efforts.
 
 # User Preferences
 
@@ -131,59 +9,39 @@ Preferred communication style: Simple, everyday language.
 # System Architecture
 
 ## Frontend Architecture
-The frontend is built with **React 18** using **TypeScript** and **Vite** as the build tool. The application follows a modern component-based architecture with:
-
-- **Routing**: Uses Wouter for lightweight client-side routing
-- **State Management**: TanStack React Query for server state management and caching
-- **UI Framework**: shadcn/ui components built on Radix UI primitives with Tailwind CSS for styling
-- **Component Structure**: Organized into reusable components with clear separation between UI components, page components, and business logic
-- **Styling**: Tailwind CSS with CSS variables for theming, supporting both light and dark modes
+The frontend is built with React 18, TypeScript, and Vite. It features a component-based architecture using Wouter for routing, TanStack React Query for server state management, and shadcn/ui components (built on Radix UI primitives) with Tailwind CSS for styling. The design emphasizes a fluid responsive CSS Grid layout without JavaScript breakpoint logic, ensuring an Apple-perfect aesthetic with horizontal navigation and consistent typography. Key features include advanced filtering (research areas, journals, years), a single-column publication list with color-coded categories, and a robust pagination system with configurable results per page.
 
 ## Backend Architecture
-The backend uses **Express.js** with **TypeScript** running on Node.js:
-
-- **API Design**: RESTful API endpoints for publications, categories, and PubMed integration
-- **Route Organization**: Centralized route registration with clean separation of concerns
-- **Middleware**: Custom logging middleware for API request tracking
-- **Error Handling**: Centralized error handling with proper HTTP status codes
-- **Development Setup**: Vite middleware integration for development with HMR support
+The backend uses Express.js with TypeScript running on Node.js, offering RESTful API endpoints for publications, categories, and PubMed integration. It includes centralized route organization, custom logging middleware, and comprehensive error handling. A key feature is the asynchronous PubMed synchronization service, which supports both full and incremental syncs, with real-time progress tracking via a `SyncTracker` singleton. An intelligent approval workflow auto-approves complete publications and marks incomplete ones for manual review.
 
 ## Data Storage
-The application uses **Drizzle ORM** with **PostgreSQL** as the primary database:
+The application uses Drizzle ORM with PostgreSQL. The schema includes publications and categories with JSON fields for flexible data storage. Drizzle migrations manage schema changes.
 
-- **Database**: PostgreSQL configured for production deployment
-- **ORM**: Drizzle ORM for type-safe database operations
-- **Schema Design**: Two main entities - publications and categories with JSON fields for flexible data storage
-- **Migrations**: Drizzle migrations for database schema management
-- **Development Storage**: In-memory storage implementation for development/testing with the same interface as production storage
+## System Design Choices
+The system prioritizes type safety, developer experience, and scalable data management. UI/UX decisions are heavily inspired by Apple's design language, including SF Pro Display font and #007AFF blue accents, consistent spacing, and a unified visual style across all pages. Responsiveness is achieved through CSS-only techniques.
 
-## External Dependencies
+# External Dependencies
 
-### Database Integration
-- **Neon Database**: PostgreSQL hosting service via `@neondatabase/serverless`
-- **Drizzle ORM**: Database toolkit with PostgreSQL dialect
-- **Connection Pooling**: Built-in connection management through Neon serverless driver
+## Database Integration
+- **Neon Database**: PostgreSQL hosting service.
+- **Drizzle ORM**: Database toolkit for type-safe operations.
 
-### PubMed API Integration
-- **External API**: Direct integration with NCBI PubMed eUtils API for publication data
-- **Data Processing**: XML parsing using `fast-xml-parser` for PubMed XML responses
-- **Search Capabilities**: Publication search, retrieval, and automatic import functionality
-- **Rate Limiting**: Built-in respect for PubMed API guidelines and rate limits
+## PubMed API Integration
+- **NCBI PubMed eUtils API**: For publication data retrieval.
+- **fast-xml-parser**: For parsing PubMed XML responses.
 
-### UI Component Libraries
-- **Radix UI**: Comprehensive set of accessible UI primitives including dialogs, dropdowns, navigation, and form controls
-- **Lucide React**: Icon library for consistent iconography
-- **TanStack React Query**: Server state management with caching, background updates, and optimistic updates
+## UI Component Libraries
+- **Radix UI**: Accessible UI primitives.
+- **Lucide React**: Icon library.
+- **TanStack React Query**: Server state management.
 
-### Development and Build Tools
-- **Replit Integration**: Custom plugins for Replit development environment including cartographer and dev banner
-- **TypeScript**: Full type safety across frontend and backend
-- **ESBuild**: Fast bundling for production builds
-- **PostCSS**: CSS processing with Tailwind CSS and Autoprefixer
+## Development and Build Tools
+- **TypeScript**: For full type safety.
+- **Vite**: Frontend build tool.
+- **ESBuild**: Fast bundling.
+- **PostCSS**: CSS processing with Tailwind CSS and Autoprefixer.
 
-### Form and Validation
-- **React Hook Form**: Form state management with performance optimization
-- **Zod**: Runtime type validation and schema definition
-- **Drizzle Zod**: Integration between Drizzle ORM and Zod for consistent validation
-
-The architecture prioritizes type safety, developer experience, and scalable data management while providing a smooth user interface for browsing cardiovascular research publications.
+## Form and Validation
+- **React Hook Form**: Form state management.
+- **Zod**: Runtime type validation.
+- **Drizzle Zod**: Integration for consistent validation.
