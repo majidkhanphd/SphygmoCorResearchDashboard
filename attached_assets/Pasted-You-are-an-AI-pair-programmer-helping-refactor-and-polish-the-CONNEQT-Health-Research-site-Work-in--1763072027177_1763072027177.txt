@@ -1,0 +1,87 @@
+You are an AI pair programmer helping refactor and polish the CONNEQT Health Research site.
+Work in plan mode first: inspect the existing codebase, propose concrete file-level changes, and only then proceed to implementation.
+
+High-level goals
+	1.	Simplify and clean up the research highlights / featured research / recent breakthroughs section to reduce visual clutter and dead space.
+	2.	Update the hero/banner copy to a single concise line, and move the existing descriptive text below the banner.
+	3.	Adjust publications pagination so the default items per page is 25 instead of 50.
+	4.	Ensure all changes preserve existing functionality, responsiveness, and styling consistency with the rest of the site.
+
+⸻
+
+Specific tasks
+
+1. Remove “Connect Health Research” button
+	•	Locate the component(s) that render the “Connect Health Research” button on the main research / publications page (likely in the hero/banner or header section).
+	•	Remove this button from the UI and any unused handlers/props associated with it.
+	•	Confirm there are no broken references (e.g., click handlers, imports, or styles that depend on this button).
+
+Acceptance criteria:
+	•	The “Connect Health Research” button no longer appears on the page.
+	•	There are no console errors or unused imports related to this button.
+	•	Layout remains visually balanced without the button.
+
+⸻
+
+2. Remove the orange line and tighten vertical spacing
+	•	Identify the orange line that visually separates/relates to the sections:
+	•	Research Highlights
+	•	Featured Research
+	•	Recent Breakthroughs
+	•	Remove this orange line from the layout (likely a styled <hr>, border, or decorative div).
+	•	After removing, adjust the vertical spacing between these sections so the layout is more compact and avoids large dead areas:
+	•	Reduce excessive top/bottom margins and padding.
+	•	Ensure headings and cards still have enough whitespace to remain readable.
+	•	Keep the visual hierarchy clear (section headings should still stand out).
+
+Acceptance criteria:
+	•	The previous orange line is no longer visible on the page.
+	•	The vertical whitespace between research-related sections feels tighter and more concise (no large empty gaps).
+	•	Layout remains responsive and visually consistent across desktop and mobile breakpoints.
+
+⸻
+
+3. Update the banner text
+	•	Find the banner/hero section for the research page (the area currently containing multiple lines of text).
+	•	Replace the main banner heading text with exactly:
+CONNEQT Health Arterial Intelligence Research
+	•	Any other descriptive text that currently appears in the banner should be moved:
+	•	Place it below the banner and above the “Research Highlights” section (or equivalent first content section).
+	•	Maintain appropriate typography (e.g., body text style) and spacing so it reads as an introductory paragraph for the research content.
+
+Acceptance criteria:
+	•	The hero/banner now has a single, clear heading: “CONNEQT Health Arterial Intelligence Research”.
+	•	The previous banner descriptive text appears as a paragraph (or paragraphs) below the banner and above Research Highlights.
+	•	The overall page still looks clean and consistent with existing design (no duplicate text).
+
+⸻
+
+4. Change default publications per page from 50 to 25
+	•	Locate the pagination logic and configuration for the publications listing:
+	•	This may be in a publications list component, API query parameter, or pagination hook.
+	•	Change the default page size from 50 to 25 items per page.
+	•	If there is a UI control for changing page size, ensure:
+	•	It defaults to 25.
+	•	All options and labels remain accurate.
+	•	Make sure this change correctly propagates to:
+	•	The query or data-fetching logic.
+	•	The displayed results.
+	•	The pagination controls (total pages, current page, etc.).
+
+Acceptance criteria:
+	•	When first loading the publications page with no filters, exactly 25 publications are displayed per page by default.
+	•	Pagination still works correctly for navigating through all publications.
+	•	No errors or inconsistencies in total counts or page numbers.
+
+⸻
+
+Implementation details & constraints
+	•	Do not break existing filtering, sorting, or search behavior on the publications page.
+	•	Preserve existing responsive behavior (desktop, tablet, mobile). If you adjust spacing, ensure it still behaves well on smaller screens.
+	•	Reuse existing design tokens, CSS classes, or style utilities where possible instead of introducing new, inconsistent styles.
+	•	Provide a clear summary of:
+	•	Which files will be changed.
+	•	What modifications will be made in each file.
+	•	Any new props, components, or helpers introduced or removed.
+
+After planning, execute the changes you propose and ensure the updated UI matches the acceptance criteria above.

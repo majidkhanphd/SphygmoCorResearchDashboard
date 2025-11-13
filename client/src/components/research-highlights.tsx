@@ -4,12 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function ResearchHighlights() {
   return (
     <section 
-      className="w-full bg-background py-20 sm:py-24"
+      className="w-full bg-background py-12 sm:py-16"
       data-testid="research-highlights-section"
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section heading */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-10">
           <h2 
             className="text-4xl sm:text-5xl font-light tracking-tight text-foreground mb-4"
             data-testid="highlights-heading"
@@ -22,7 +22,7 @@ export default function ResearchHighlights() {
         </div>
 
         {/* Featured Research - reuse existing component */}
-        <div className="mb-20">
+        <div className="mb-12">
           <FeaturedResearch />
         </div>
 

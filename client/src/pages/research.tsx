@@ -55,7 +55,7 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState<number>(() => {
     const saved = localStorage.getItem('publicationsPerPage');
-    return saved ? parseInt(saved) : 50;
+    return saved ? parseInt(saved) : 25;
   });
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -190,6 +190,18 @@ export default function Home() {
       <HeroBanner />
       
       <Navigation />
+      
+      {/* Introduction Text Section */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <p 
+          className="text-center text-lg text-muted-foreground leading-relaxed"
+          data-testid="intro-text"
+        >
+          Advancing non-invasive cardiovascular assessment through innovative SphygmoCor technology. 
+          Explore our comprehensive collection of peer-reviewed research spanning arterial stiffness, 
+          central blood pressure, and hemodynamic parameters.
+        </p>
+      </div>
       
       {/* Research Highlights Section */}
       <ResearchHighlights />

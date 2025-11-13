@@ -1,0 +1,111 @@
+You are an AI pair programmer helping refactor and polish the CONNEQT Health Research site.
+Work in plan mode first: inspect the existing codebase, propose concrete file-level changes, and only then proceed to implementation.
+
+High-level goals
+	1.	Keep the banner/hero at the very top of the research page and treat it as a future hub for navigation.
+	2.	Replace the existing “CONNEQT Health Research” text in the top-left area with the actual company logo.
+	3.	Simplify and tighten the research highlights / featured research / recent breakthroughs section to reduce visual clutter and dead space.
+	4.	Update the banner text to a single concise line, moving other descriptive text below the banner.
+	5.	Change the publications listing so the default items per page is 25 instead of 50.
+	6.	Preserve existing functionality, responsiveness, and styling consistency across the site.
+
+⸻
+
+Specific tasks
+
+1. Keep the banner up top and prepare it for future navigation
+	•	Locate the banner/hero section at the top of the research page.
+	•	Ensure this banner remains at the very top of the page and continues to span the full width.
+	•	Within the banner layout, make sure there is a clear structure (e.g., a flex container) that can later hold:
+	•	The logo (top left).
+	•	Potential future navigation links or buttons (e.g., a right-aligned area that can remain empty for now or contain a small placeholder).
+	•	Do not remove the banner; just refine its layout to support future additions.
+
+Acceptance criteria:
+	•	The banner remains at the top of the page.
+	•	The internal layout of the banner clearly supports adding navigation items later (e.g., left-aligned logo and reserved space to the right).
+	•	No visual regressions on desktop and mobile.
+
+⸻
+
+2. Replace “CONNEQT Health Research” with the actual company logo
+	•	Find the element in the banner/header that currently displays the text label (e.g., “CONNEQT Health Research” / “Connect Health Research”) in the top-left region.
+	•	Replace that text element with the company logo image:
+	•	Use the existing logo asset in the project if available (e.g. /assets/logo.svg or similar).
+	•	If multiple versions exist, choose the one already used in other parts of the site for consistency.
+	•	Add appropriate alt text (e.g., "CONNEQT Health logo").
+	•	If appropriate, make the logo clickable and link it to the site’s main home or research home route.
+	•	Remove any styles or props that are only relevant to the old text label.
+
+Acceptance criteria:
+	•	The top-left area of the banner shows the actual company logo instead of the text.
+	•	The layout remains visually balanced and consistent with the site’s design language.
+	•	(Optional but preferred) The logo acts as a link back to the home/research root.
+	•	No console errors or unused imports related to the removed text element.
+
+⸻
+
+3. Update banner heading text and move description below the banner
+	•	In the same banner/hero section, set the main heading text to exactly:
+CONNEQT Health Arterial Intelligence Research
+	•	Any additional descriptive text currently inside the banner (subheadings, paragraphs, explanatory text) should be moved:
+	•	Out of the banner container.
+	•	Placed below the banner and above the “Research Highlights” section (or the first main content section).
+	•	Style this moved text as an introductory body paragraph (or paragraphs) to the research content:
+	•	Maintain typography consistent with other body text on the site.
+	•	Ensure spacing between the banner, the intro text, and the “Research Highlights” heading is visually clean but not too loose.
+
+Acceptance criteria:
+	•	The banner displays a single, clear heading: “CONNEQT Health Arterial Intelligence Research”.
+	•	Introductory descriptive text appears below the banner and above “Research Highlights”.
+	•	The flow from banner → intro text → highlights feels natural and uncluttered.
+
+⸻
+
+4. Remove the orange line and tighten vertical spacing in research sections
+	•	Identify the orange line associated with:
+	•	Research Highlights
+	•	Featured Research
+	•	Recent Breakthroughs
+	•	Remove this orange line from the layout (likely a styled <hr>, border, or decorative div).
+	•	After removal, adjust vertical spacing between headings and content:
+	•	Reduce excessive top/bottom margins and padding in these sections.
+	•	Keep enough whitespace for readability and clear section separation.
+	•	Verify spacing at common breakpoints (desktop, tablet, mobile).
+
+Acceptance criteria:
+	•	The orange line no longer appears.
+	•	The vertical whitespace between research sections is more compact with no large dead spaces.
+	•	The page remains responsive and visually coherent.
+
+⸻
+
+5. Change default publications per page from 50 to 25
+	•	Locate the pagination logic for the publications listing (component, hook, or API call).
+	•	Change the default page size from 50 to 25:
+	•	This may be a constant, a default parameter, or initial state value.
+	•	If a UI control exists for page size:
+	•	Ensure its default selected value is 25.
+	•	Verify other options, if any, are labeled and functioning correctly.
+	•	Confirm this change flows through:
+	•	The data fetching / query parameters.
+	•	The rendered list of publications.
+	•	The pagination controls (total page count, current page tracking, etc.).
+
+Acceptance criteria:
+	•	On initial load of the publications page (no filters applied), exactly 25 publications are shown by default.
+	•	Pagination behaves correctly when navigating between pages.
+	•	No inconsistencies in total counts or page numbers.
+
+⸻
+
+Implementation details & constraints
+	•	Do not break existing filtering, sorting, or searching behavior on the publications page.
+	•	Preserve responsiveness across all breakpoints.
+	•	Reuse existing design tokens, CSS utilities, and components where possible instead of introducing ad hoc styles.
+	•	In the plan phase, clearly list:
+	•	Which files and components you will modify.
+	•	What changes will be made in each file (e.g., “replace text header with logo component”, “update pageSize constant from 50 to 25”).
+	•	Any props, components, or helpers added or removed.
+
+After planning, implement the proposed changes and verify that the updated UI satisfies all acceptance criteria above.

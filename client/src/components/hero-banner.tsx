@@ -18,7 +18,7 @@ export default function HeroBanner() {
         <div className="text-center">
           {/* Main heading - using clamp for responsive sizing */}
           <h1 
-            className="text-foreground mb-6 font-light tracking-tight"
+            className="text-foreground font-light tracking-tight"
             style={{ 
               fontSize: 'clamp(36px, 5vw, 64px)', 
               letterSpacing: '-0.03em',
@@ -26,22 +26,8 @@ export default function HeroBanner() {
             }}
             data-testid="hero-title"
           >
-            Cardiovascular Research & Publications
+            CONNEQT Health Arterial Intelligence Research
           </h1>
-          
-          {/* Subheading */}
-          <p
-            className="text-muted-foreground mx-auto max-w-4xl"
-            style={{ 
-              fontSize: 'clamp(16px, 2.5vw, 21px)',
-              lineHeight: '1.5'
-            }}
-            data-testid="hero-subtitle"
-          >
-            Advancing non-invasive cardiovascular assessment through innovative SphygmoCor technology. 
-            Explore our comprehensive collection of peer-reviewed research spanning arterial stiffness, 
-            central blood pressure, and hemodynamic parameters.
-          </p>
         </div>
       </div>
     </section>
