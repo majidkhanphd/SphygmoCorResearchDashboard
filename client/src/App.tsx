@@ -3,23 +3,28 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Overview from "@/pages/overview";
-import Highlights from "@/pages/highlights";
 import Research from "@/pages/research";
-import Updates from "@/pages/updates";
-import WorkWithUs from "@/pages/work-with-us";
+import RedirectToHome from "@/components/redirect-to-home";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Overview} />
-      <Route path="/highlights" component={Highlights} />
+      {/* Main route - Publications page */}
+      <Route path="/" component={Research} />
+      
+      {/* Deprecated routes - redirect to main page */}
+      <Route path="/overview" component={RedirectToHome} />
+      <Route path="/highlights" component={RedirectToHome} />
       <Route path="/research" component={Research} />
-      <Route path="/updates" component={Updates} />
-      <Route path="/work-with-us" component={WorkWithUs} />
+      <Route path="/updates" component={RedirectToHome} />
+      <Route path="/work-with-us" component={RedirectToHome} />
+      
+      {/* Admin route - keep for backend functionality */}
       <Route path="/admin" component={Admin} />
+      
+      {/* 404 fallback */}
       <Route component={NotFound} />
     </Switch>
   );

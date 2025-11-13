@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/navigation";
+import HeroBanner from "@/components/hero-banner";
+import ResearchHighlights from "@/components/research-highlights";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -184,8 +186,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Hero Banner - Full width */}
+      <HeroBanner />
+      
       <Navigation />
-      {/* Apple's exact hero section */}
+      
+      {/* Research Highlights Section */}
+      <ResearchHighlights />
+      
+      {/* Publications Section */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '64px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Breadcrumb - Apple style */}
         <nav className="text-center" style={{ marginBottom: '32px' }} data-testid="breadcrumb">
@@ -195,12 +204,12 @@ export default function Home() {
         {/* Main title - Apple's exact typography */}
         <div className="text-center" style={{ marginBottom: '64px' }}>
           <h1 style={{ fontSize: '48px', fontWeight: '300', letterSpacing: '-0.02em', color: '#1D1D1F', marginBottom: '12px', lineHeight: '1.1' }} data-testid="main-title">
-            Research
+            Publications
           </h1>
           <p
             style={{ fontSize: '18px', color: '#6E6E73', maxWidth: '820px', margin: '0 auto', lineHeight: '1.4' }}
             className="ml-[50px] mr-[50px] text-center pl-[30px] pr-[30px]">
-            We advance non-invasive cardiovascular assessment through innovative SphygmoCor technology, measuring central blood pressure, arterial stiffness, and hemodynamic parameters to improve clinical outcomes.
+            Browse our comprehensive collection of peer-reviewed cardiovascular research.
           </p>
         </div>
         
