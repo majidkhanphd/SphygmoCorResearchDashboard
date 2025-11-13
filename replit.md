@@ -26,7 +26,7 @@ This project is a research publication management system for CONNEQT Health, foc
 - Navigation simplified to Apple ML style (logo only, no horizontal menu tabs)
 - Deprecated routes now redirect to main page: `/overview`, `/highlights`, `/updates`, `/work-with-us`
 - Admin panel remains accessible at `/admin`
-- Layout flow: HeroBanner → Navigation → Intro Text → ResearchHighlights → Publications Hero → Search/Filters → Publications List
+- Layout flow: Navigation → HeroBanner → Intro Text → ResearchHighlights → Publications Hero → Search/Filters → Publications List
 
 # User Preferences
 
