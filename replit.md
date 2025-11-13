@@ -2,6 +2,19 @@
 
 This project is a research publication management system for CONNEQT Health, focused on cardiovascular research. It's a 1:1 clone of Apple's Machine Learning research page, adapted for the cardiovascular/SphygmoCor domain. The system allows users to search, filter, and browse scientific publications related to cardiovascular research. It automatically imports, categorizes, and organizes publications from PubMed based on predefined search terms, ensuring a comprehensive and up-to-date repository. The project's ambition is to provide a dedicated, user-friendly platform for accessing critical cardiovascular research, enhancing knowledge dissemination and supporting research efforts.
 
+## Recent Updates (November 2025)
+
+**Site Restructure - Publications as Main Landing Page:**
+- Publications is now the primary landing page at `/` (root route)
+- New full-width HeroBanner component with gradient background and pulse-wave animation placeholder
+- New ResearchHighlights section featuring:
+  - Featured Research (data-driven from `/api/publications/featured`)
+  - Recent Breakthroughs cards (Early Detection, Precision Medicine)
+- Navigation simplified to Apple ML style (logo + gold accent only, no horizontal menu)
+- Deprecated routes now redirect to main page: `/overview`, `/highlights`, `/updates`, `/work-with-us`
+- Admin panel remains accessible at `/admin`
+- Layout flow: HeroBanner → Navigation → ResearchHighlights → Publications Hero → Search/Filters → Publications List
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
