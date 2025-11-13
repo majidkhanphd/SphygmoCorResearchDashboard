@@ -51,13 +51,21 @@ export default function Home() {
   const [showAllVenues, setShowAllVenues] = useState(false);
   const [showAllYears, setShowAllYears] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const limit = 50;
+  const [perPage, setPerPage] = useState<number>(() => {
+    const saved = localStorage.getItem('publicationsPerPage');
+    return saved ? parseInt(saved) : 50;
+  });
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters or perPage changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchQuery, selectedResearchArea, selectedVenue, selectedYear, sortBy]);
+  }, [debouncedSearchQuery, selectedResearchArea, selectedVenue, selectedYear, sortBy, perPage]);
+  
+  // Persist perPage to localStorage
+  useEffect(() => {
+    localStorage.setItem('publicationsPerPage', perPage.toString());
+  }, [perPage]);
 
   const { 
     data, 
@@ -69,7 +77,7 @@ export default function Home() {
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy,
-      limit,
+      limit: perPage,
       page: currentPage
     }],
     queryFn: () => searchPublications({
@@ -78,8 +86,8 @@ export default function Home() {
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy,
-      limit,
-      offset: (currentPage - 1) * limit
+      limit: perPage,
+      offset: (currentPage - 1) * perPage
     })
   });
 
@@ -853,9 +861,9 @@ export default function Home() {
                 <PaginationControls
                   total={totalResults}
                   currentPage={currentPage}
-                  perPage={limit}
+                  perPage={perPage}
                   onPageChange={handlePageChange}
-                  onPerPageChange={() => {}}
+                  onPerPageChange={setPerPage}
                 />
               </>
             )}
