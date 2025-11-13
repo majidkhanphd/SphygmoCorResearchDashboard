@@ -168,3 +168,19 @@ select:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
 }
+
+/* Hero banner pulse animation */
+@keyframes hero-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}
+
+.hero-pulse-animation {
+  animation: hero-pulse 8s ease-in-out infinite;
+}
