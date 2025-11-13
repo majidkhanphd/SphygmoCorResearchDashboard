@@ -64,10 +64,12 @@ export interface FilterCounts {
   years: Record<number, number>;
 }
 
-// Search response interface with filter counts
+// Search response interface with filter counts and pagination
 export interface SearchPublicationsResponse {
   publications: Publication[];
   total: number;
+  totalPages: number;
+  currentPage: number;
   filterCounts: FilterCounts;
 }
 

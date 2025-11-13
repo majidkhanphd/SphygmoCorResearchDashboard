@@ -133,8 +133,18 @@ export class DatabaseStorage implements IStorage {
 
     const total = countResult?.count || 0;
     const filterCounts = await this.getFilterCounts(params);
+    
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / params.limit);
+    const currentPage = Math.floor(params.offset / params.limit) + 1;
 
-    return { publications: results, total, filterCounts };
+    return { 
+      publications: results, 
+      total, 
+      totalPages,
+      currentPage,
+      filterCounts 
+    };
   }
 
   async getFilterCounts(params: SearchPublicationsParams): Promise<FilterCounts> {
