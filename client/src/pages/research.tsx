@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,15 @@ import { searchPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
 import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES, RESEARCH_AREAS } from "@shared/schema";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
@@ -49,39 +58,37 @@ export default function Home() {
   const [showAllAreas, setShowAllAreas] = useState(false);
   const [showAllVenues, setShowAllVenues] = useState(false);
   const [showAllYears, setShowAllYears] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const limit = 50;
+  const resultsRef = useRef<HTMLDivElement>(null);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery, selectedResearchArea, selectedVenue, selectedYear, sortBy]);
 
   const { 
     data, 
-    isLoading, 
-    fetchNextPage, 
-    hasNextPage, 
-    isFetchingNextPage 
-  } = useInfiniteQuery({
+    isLoading
+  } = useQuery({
     queryKey: ["/api/publications/search", { 
       query: debouncedSearchQuery || undefined, 
       categories: selectedResearchArea ? [selectedResearchArea] : undefined,
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy,
-      limit
+      limit,
+      page: currentPage
     }],
-    queryFn: ({ pageParam = 0 }) => searchPublications({
+    queryFn: () => searchPublications({
       query: debouncedSearchQuery || undefined,
       categories: selectedResearchArea ? [selectedResearchArea] : undefined,
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy,
       limit,
-      offset: pageParam * limit
-    }),
-    getNextPageParam: (lastPage, allPages) => {
-      if (!lastPage.publications || lastPage.publications.length < limit) {
-        return undefined;
-      }
-      return allPages.length;
-    },
-    initialPageParam: 0
+      offset: (currentPage - 1) * limit
+    })
   });
 
   const handleReset = () => {
@@ -121,17 +128,17 @@ export default function Home() {
     setSelectedYear(year);
   };
 
-  const loadMore = () => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top of results
+    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // Flatten all publications from all pages
-  const allPublications = data?.pages.flatMap(page => page.publications) || [];
+  // Get publications from current page
+  const allPublications = data?.publications || [];
   
-  // Get authoritative filter counts from the backend (same across all pages)
-  const backendFilterCounts = data?.pages[0]?.filterCounts || {
+  // Get authoritative filter counts from the backend
+  const backendFilterCounts = data?.filterCounts || {
     categories: {},
     venues: {},
     years: {}
@@ -143,6 +150,10 @@ export default function Home() {
     venues: backendFilterCounts.venues, 
     years: backendFilterCounts.years
   };
+  
+  // Get pagination data
+  const totalPages = data?.totalPages || 0;
+  const totalResults = data?.total || 0;
 
   // Get venues from backend filter counts for authoritative list - sorted by count (descending)
   const venues = Object.keys(backendFilterCounts.venues).sort((a, b) => {
@@ -629,6 +640,7 @@ export default function Home() {
           <ResizablePanel defaultSize={80}>
             {/* Main content area - Apple typography */}
             <section 
+              ref={resultsRef}
               className="flex-1 min-w-0 pl-8" 
               id="publications-section" 
               role="main" 
@@ -845,39 +857,98 @@ export default function Home() {
                   })}
                 </div>
                 
-                {/* Load more button - Apple style */}
-                {hasNextPage && (
-                  <div style={{ paddingTop: '32px', borderTop: '1px solid #E5E5E7', marginTop: '32px' }}>
-                    <button
-                      onClick={loadMore}
-                      disabled={isFetchingNextPage}
-                      className="inline-flex items-center justify-center rounded-xl transition-all duration-200"
-                      style={{
-                        paddingLeft: '24px',
-                        paddingRight: '24px',
-                        paddingTop: '12px',
-                        paddingBottom: '12px',
-                        fontSize: '16px',
-                        fontWeight: '500',
-                        color: '#007AFF',
-                        backgroundColor: 'transparent',
-                        border: '1px solid #007AFF',
-                        outline: 'none',
-                        cursor: isFetchingNextPage ? 'not-allowed' : 'pointer',
-                        opacity: isFetchingNextPage ? 0.6 : 1
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isFetchingNextPage) {
-                          e.currentTarget.style.backgroundColor = '#F0F7FF';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
-                      data-testid="load-more-button"
-                    >
-                      {isFetchingNextPage ? "Loading..." : "Load more"}
-                    </button>
+                {/* Pagination controls - Apple style */}
+                {totalPages > 1 && (
+                  <div style={{ paddingTop: '48px', borderTop: '1px solid #E5E5E7', marginTop: '48px' }}>
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                            className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            style={{
+                              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              color: currentPage === 1 ? '#6E6E73' : '#007AFF',
+                              border: '1px solid #E5E5E7',
+                              borderRadius: '8px',
+                              padding: '8px 12px'
+                            }}
+                            data-testid="pagination-previous"
+                          />
+                        </PaginationItem>
+                        
+                        {/* Page numbers */}
+                        {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 7) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 4) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 3) {
+                            pageNum = totalPages - 6 + i;
+                          } else {
+                            pageNum = currentPage - 3 + i;
+                          }
+                          
+                          if (pageNum < 1 || pageNum > totalPages) return null;
+                          
+                          return (
+                            <PaginationItem key={pageNum}>
+                              <PaginationLink
+                                onClick={() => handlePageChange(pageNum)}
+                                isActive={currentPage === pageNum}
+                                className="cursor-pointer"
+                                style={{
+                                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                                  fontSize: '14px',
+                                  fontWeight: '500',
+                                  color: currentPage === pageNum ? '#FFFFFF' : '#1D1D1F',
+                                  backgroundColor: currentPage === pageNum ? '#007AFF' : 'transparent',
+                                  border: '1px solid #E5E5E7',
+                                  borderRadius: '8px',
+                                  minWidth: '40px',
+                                  height: '40px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                                data-testid={`pagination-page-${pageNum}`}
+                              >
+                                {pageNum}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        })}
+                        
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                            className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            style={{
+                              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              color: currentPage === totalPages ? '#6E6E73' : '#007AFF',
+                              border: '1px solid #E5E5E7',
+                              borderRadius: '8px',
+                              padding: '8px 12px'
+                            }}
+                            data-testid="pagination-next"
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                    
+                    {/* Results count */}
+                    <div className="text-center mt-4" style={{ 
+                      fontSize: '14px', 
+                      color: '#6E6E73',
+                      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
+                    }}>
+                      Showing {((currentPage - 1) * limit) + 1} - {Math.min(currentPage * limit, totalResults)} of {totalResults} publications
+                    </div>
                   </div>
                 )}
               </>
