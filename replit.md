@@ -4,6 +4,18 @@ This project is a research publication management system for CONNEQT Health, foc
 
 ## Recent Updates (November 2025)
 
+**Featured Research & Sidebar Polish (November 15, 2025 - Final):**
+- Redesigned Featured Research cards to match main publications list format
+- Removed abstract preview from featured cards, added authors display instead
+- Authors now show with proper formatting (sanitizeAuthors decodes HTML entities while preserving commas)
+- Journal/date format simplified to "Journal, Year" (e.g., "Open Heart, 2025")
+- Softened "Read Paper" button styling: subtle gradient (rgba blue, low opacity), font-weight 400, blue text instead of white
+- Fixed sidebar collapse to fully disappear: collapsedSize=1 with forced width:0px when collapsed
+- Added smooth 200ms transitions with overflow-hidden to prevent partial/broken visual states
+- Sidebar height constrained to max-h-[70vh] to prevent extending beyond main content
+- Updated minSize from 10% to 16% for better collapse threshold
+- All E2E tests passing: featured cards, sidebar collapse/expand, and formatting working correctly
+
 **Collapsible Sidebar with Button Controls (November 15, 2025 - Late Night):**
 - Implemented button-controlled sidebar collapse/expand functionality using react-resizable-panels
 - Added collapse button (ChevronLeft icon, #007AFF blue) in top-right of sidebar when expanded
