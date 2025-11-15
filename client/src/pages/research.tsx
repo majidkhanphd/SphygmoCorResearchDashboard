@@ -645,7 +645,15 @@ export default function Home() {
           </aside>
           </ResizablePanel>
           
-          <ResizableHandle withHandle className="hidden lg:flex" style={{ width: '6px' }} />
+          <ResizableHandle 
+            withHandle 
+            style={{ 
+              width: '8px',
+              cursor: 'col-resize',
+              backgroundColor: 'rgba(0, 0, 0, 0.05)',
+              transition: 'background-color 0.2s'
+            }} 
+          />
           
           <ResizablePanel defaultSize={80}>
             {/* Main content area - Apple typography */}
