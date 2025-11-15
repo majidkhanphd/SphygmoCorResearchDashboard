@@ -657,7 +657,7 @@ export default function Home() {
           </aside>
           </ResizablePanel>
           
-          <ResizableHandle withHandle />
+          <ResizableHandle withHandle className="hidden lg:flex" />
           
           <ResizablePanel defaultSize={80}>
             {/* Main content area - Apple typography */}
