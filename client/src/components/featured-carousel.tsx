@@ -191,7 +191,7 @@ export default function FeaturedCarousel() {
                     </div>
 
                     <h3
-                      className="line-clamp-3 mb-3"
+                      className="line-clamp-2 mb-3"
                       style={{
                         fontSize: '18px',
                         fontWeight: '600',
@@ -204,20 +204,20 @@ export default function FeaturedCarousel() {
                     </h3>
 
                     <p
-                      className="line-clamp-3 mb-4 flex-grow"
+                      className="line-clamp-2 mb-3 flex-grow"
                       style={{
-                        fontSize: '14px',
+                        fontSize: '13px',
                         color: '#6E6E73',
                         lineHeight: '1.5',
                       }}
-                      data-testid={`card-abstract-${index}`}
+                      data-testid={`card-authors-${index}`}
                     >
-                      {sanitizeAuthors(publication.abstract || '')}
+                      {sanitizeAuthors(publication.authors || '')}
                     </p>
 
-                    <div className="border-t pt-4" style={{ borderColor: '#E5E5E7' }}>
+                    <div className="border-t pt-3" style={{ borderColor: '#E5E5E7' }}>
                       <p
-                        className="mb-1 truncate"
+                        className="mb-1"
                         style={{
                           fontSize: '13px',
                           fontWeight: '500',
@@ -225,20 +225,7 @@ export default function FeaturedCarousel() {
                         }}
                         data-testid={`card-journal-${index}`}
                       >
-                        {sanitizeAuthors(publication.journal)}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: '12px',
-                          color: '#6E6E73',
-                        }}
-                        data-testid={`card-date-${index}`}
-                      >
-                        {new Date(publication.publicationDate).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
+                        {sanitizeAuthors(publication.journal)}, {new Date(publication.publicationDate).getFullYear()}
                       </p>
                     </div>
 
@@ -249,18 +236,20 @@ export default function FeaturedCarousel() {
                         paddingTop: '10px',
                         paddingBottom: '10px',
                         fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#FFFFFF',
-                        backgroundColor: '#007AFF',
-                        border: 'none',
+                        fontWeight: '400',
+                        color: '#007AFF',
+                        background: 'linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(0, 122, 255, 0.12) 100%)',
+                        border: '1px solid rgba(0, 122, 255, 0.2)',
                         outline: 'none',
                         cursor: 'pointer',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#0056CC';
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 122, 255, 0.12) 0%, rgba(0, 122, 255, 0.16) 100%)';
+                        e.currentTarget.style.borderColor = 'rgba(0, 122, 255, 0.3)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#007AFF';
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(0, 122, 255, 0.12) 100%)';
+                        e.currentTarget.style.borderColor = 'rgba(0, 122, 255, 0.2)';
                       }}
                       data-testid={`card-read-button-${index}`}
                     >

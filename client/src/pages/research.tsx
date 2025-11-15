@@ -156,7 +156,7 @@ export default function Home() {
     }
 
     // Store last expanded size when panel is open and reasonably wide
-    if (!actuallyCollapsed && currentSidebarSize > 10) {
+    if (!actuallyCollapsed && currentSidebarSize > 16) {
       setLastExpandedSize(currentSidebarSize);
     }
   };
@@ -170,7 +170,7 @@ export default function Home() {
   // Handle expanding the sidebar (via button)
   const handleExpandSidebar = () => {
     // Expand to last size or default to 28%
-    const targetSize = lastExpandedSize > 11.5 ? lastExpandedSize : 28;
+    const targetSize = lastExpandedSize > 16 ? lastExpandedSize : 28;
     sidebarPanelRef.current?.resize(targetSize);
     setIsSidebarCollapsed(false);
   };
@@ -427,17 +427,22 @@ export default function Home() {
         )}
 
         {/* Main content with sidebar and publications */}
-        <ResizablePanelGroup direction="horizontal" className="min-h-screen" onLayout={handlePanelLayout}>
+        <ResizablePanelGroup direction="horizontal" className="w-full" onLayout={handlePanelLayout}>
           <ResizablePanel 
             ref={sidebarPanelRef} 
             defaultSize={28} 
-            minSize={10} 
+            minSize={16} 
             maxSize={40}
             collapsible={true}
-            collapsedSize={5}
+            collapsedSize={1}
+            className={`transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
+            style={{ 
+              ...(isSidebarCollapsed ? { width: '0px', minWidth: '0px' } : {})
+            }}
           >
             {/* Left sidebar - Apple ML Research Style */}
-            <aside className="min-w-0 pr-8 relative" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
+            <div className={`${isSidebarCollapsed ? 'hidden' : 'block'}`}>
+            <aside className="min-w-0 pr-8 relative max-h-[70vh] overflow-y-auto" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
             {/* Collapse button - top right of sidebar */}
             {!isSidebarCollapsed && (
               <button
@@ -701,6 +706,7 @@ export default function Home() {
               </div>
             </section>
           </aside>
+          </div>
           </ResizablePanel>
           
           <ResizableHandle 
