@@ -657,7 +657,7 @@ export default function Home() {
           </aside>
           </ResizablePanel>
           
-          <ResizableHandle withHandle className="hidden lg:flex" />
+          <ResizableHandle withHandle className="hidden lg:flex" style={{ width: '6px' }} />
           
           <ResizablePanel defaultSize={80}>
             {/* Main content area - Apple typography */}
@@ -784,7 +784,7 @@ export default function Home() {
                               onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
                               data-testid="publication-title-link"
                             >
-                              {publication.title}
+                              {sanitizeAuthors(publication.title)}
                             </a>
                           </h3>
                           
@@ -804,7 +804,7 @@ export default function Home() {
                           }}>
                             {/* Venue (italicized) and year */}
                             <span data-testid="publication-venue">
-                              <em>{publication.journal}</em>, {publicationYear}
+                              <em>{sanitizeAuthors(publication.journal)}</em>, {publicationYear}
                             </span>
                             
                             {/* DOI Badge */}
