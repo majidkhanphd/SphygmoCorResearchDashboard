@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/navigation";
 import HeroBanner from "@/components/hero-banner";
-import ResearchHighlights from "@/components/research-highlights";
+import FeaturedCarousel from "@/components/featured-carousel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -193,7 +193,7 @@ export default function Home() {
       <HeroBanner />
       
       {/* Introduction Text Section */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         <p 
           className="text-center text-lg text-muted-foreground leading-relaxed"
           data-testid="intro-text"
@@ -204,8 +204,8 @@ export default function Home() {
         </p>
       </div>
       
-      {/* Research Highlights Section */}
-      <ResearchHighlights />
+      {/* Featured Research Carousel */}
+      <FeaturedCarousel />
       
       {/* Publications Section */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '64px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
