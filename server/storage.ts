@@ -248,7 +248,7 @@ export class DatabaseStorage implements IStorage {
         eq(publications.status, "approved")
       ))
       .orderBy(desc(publications.publicationDate))
-      .limit(5);
+      .limit(30);
   }
 
   async getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number, totalByStatus?: Record<string, number>}> {
