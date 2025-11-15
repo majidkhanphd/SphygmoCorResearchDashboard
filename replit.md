@@ -4,6 +4,21 @@ This project is a research publication management system for CONNEQT Health, foc
 
 ## Recent Updates (November 2025)
 
+**Collapsible Sidebar with Button Controls (November 15, 2025 - Late Night):**
+- Implemented button-controlled sidebar collapse/expand functionality using react-resizable-panels
+- Added collapse button (ChevronLeft icon, #007AFF blue) in top-right of sidebar when expanded
+- Added floating expand button (ChevronRight icon) on left edge when sidebar is collapsed
+- State synchronization: React state (`isSidebarCollapsed`) syncs with panel state via `isCollapsed()` method
+- Panel configuration: defaultSize=28%, minSize=10%, maxSize=40%, collapsible=true, collapsedSize=5%
+- Stores last expanded size to restore sidebar to previous width when expanding
+- User workflows supported:
+  - Click collapse button → sidebar collapses to 5% → expand button appears
+  - Click expand button → sidebar expands to last size (or 28% default) → collapse button reappears
+  - Manual drag resize continues to work (ResizableHandle always visible per earlier update)
+- Hero banner updated: "Arterial Intelligence©" (line 1), "Research" (line 2)
+- Intro text section below hero removed for cleaner layout
+- All changes maintain Apple ML aesthetic and responsive design
+
 **UI Polish & HTML Entity Sanitization (November 15, 2025 - Evening):**
 - Redesigned category badges: plain colored text with dash separators (—) replacing rounded badge backgrounds
 - Added colored circular dots (●) to sidebar category filters using CATEGORY_COLORS
