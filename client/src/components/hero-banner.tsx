@@ -22,11 +22,13 @@ export default function HeroBanner() {
             style={{ 
               fontSize: 'clamp(36px, 5vw, 64px)', 
               letterSpacing: '-0.03em',
-              lineHeight: '1.05' 
+              lineHeight: '1.2' 
             }}
             data-testid="hero-title"
           >
-            CONNEQT Health Arterial Intelligence Research
+            Arterial Intelligence©
+            <br />
+            Research
           </h1>
         </div>
       </div>
