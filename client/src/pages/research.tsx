@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, ChevronUp, Search, X, Star, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronRight, Search, X, Star, ExternalLink } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { searchPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
 import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES, RESEARCH_AREAS } from "@shared/schema";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import type { ImperativePanelHandle } from "react-resizable-panels";
 import { PaginationControls } from "@/components/pagination-controls";
 import { sanitizeAuthors } from "@/utils/sanitizeAuthors";
 
@@ -59,6 +60,10 @@ export default function Home() {
     return saved ? parseInt(saved) : 25;
   });
   const resultsRef = useRef<HTMLDivElement>(null);
+  const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
+  const [sidebarSize, setSidebarSize] = useState(28);
+  const [lastExpandedSize, setLastExpandedSize] = useState(28);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Reset to page 1 when filters or perPage changes
   useEffect(() => {
@@ -135,6 +140,35 @@ export default function Home() {
     setCurrentPage(page);
     // Scroll to top of results
     resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // Handle sidebar resize/collapse
+  const handlePanelLayout = (sizes: number[]) => {
+    const currentSidebarSize = sizes[0];
+    setSidebarSize(currentSidebarSize);
+
+    // Store last expanded size if above threshold
+    if (currentSidebarSize > 11.5 && !isSidebarCollapsed) {
+      setLastExpandedSize(currentSidebarSize);
+    }
+
+    // Auto-collapse when dragged below threshold
+    if (currentSidebarSize <= 11.5 && !isSidebarCollapsed) {
+      sidebarPanelRef.current?.collapse();
+      setIsSidebarCollapsed(true);
+    }
+
+    // Update collapsed state when panel is expanded again
+    if (currentSidebarSize > 11.5 && isSidebarCollapsed) {
+      setIsSidebarCollapsed(false);
+    }
+  };
+
+  // Handle expanding the sidebar
+  const handleExpandSidebar = () => {
+    const targetSize = lastExpandedSize > 11.5 ? lastExpandedSize : 28;
+    sidebarPanelRef.current?.resize(targetSize);
+    setIsSidebarCollapsed(false);
   };
 
   // Get publications from current page
@@ -389,8 +423,8 @@ export default function Home() {
         )}
 
         {/* Main content with sidebar and publications */}
-        <ResizablePanelGroup direction="horizontal" className="min-h-screen">
-          <ResizablePanel defaultSize={28} minSize={10} maxSize={40}>
+        <ResizablePanelGroup direction="horizontal" className="min-h-screen" onLayout={handlePanelLayout}>
+          <ResizablePanel ref={sidebarPanelRef} defaultSize={28} minSize={10} maxSize={40}>
             {/* Left sidebar - Apple ML Research Style */}
             <aside className="min-w-0 pr-8" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
             {/* Research Areas Filter */}
@@ -883,6 +917,23 @@ export default function Home() {
           </section>
           </ResizablePanel>
         </ResizablePanelGroup>
+
+        {/* Floating expand button when sidebar is collapsed */}
+        {isSidebarCollapsed && (
+          <button
+            onClick={handleExpandSidebar}
+            className="fixed z-50 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3 bg-white border border-gray-200 hover:bg-gray-50"
+            style={{
+              left: '16px',
+              top: '50%',
+              transform: 'translateY(-50%)'
+            }}
+            aria-label="Expand sidebar"
+            data-testid="expand-sidebar-button"
+          >
+            <ChevronRight className="h-5 w-5" style={{ color: '#007AFF' }} />
+          </button>
+        )}
       </div>
       {/* Apple-style Footer */}
       <footer className="border-t" style={{ 
