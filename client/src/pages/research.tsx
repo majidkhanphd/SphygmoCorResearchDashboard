@@ -736,31 +736,28 @@ export default function Home() {
                             <div style={{ 
                               display: 'flex', 
                               flexWrap: 'wrap', 
-                              gap: '8px', 
+                              alignItems: 'center',
+                              gap: '4px', 
                               marginBottom: '12px' 
                             }}>
-                              {publication.categories.map((category: string) => {
-                                const colors = CATEGORY_COLORS[category] || { 
-                                  bg: '#F6F6F6', 
-                                  text: '#1D1D1F', 
-                                  border: '#E5E5E7' 
-                                };
+                              {publication.categories.map((category: string, catIndex: number) => {
+                                const colors = CATEGORY_COLORS[category] || { text: '#6E6E73' };
+                                const displayName = getBadgeDisplayName(category);
                                 return (
-                                  <span
-                                    key={category}
-                                    style={{
-                                      display: 'inline-block',
-                                      padding: '4px 10px',
-                                      fontSize: '12px',
-                                      fontWeight: '500',
-                                      borderRadius: '4px',
-                                      backgroundColor: colors.bg,
-                                      color: colors.text,
-                                      border: `1px solid ${colors.border}`
-                                    }}
-                                    data-testid={`category-badge-${category}`}
-                                  >
-                                    {getBadgeDisplayName(category)}
+                                  <span key={category} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                    <span
+                                      style={{
+                                        fontSize: '12px',
+                                        fontWeight: '500',
+                                        color: colors.text,
+                                      }}
+                                      data-testid={`category-badge-${category}`}
+                                    >
+                                      {displayName}
+                                    </span>
+                                    {catIndex < publication.categories.length - 1 && (
+                                      <span style={{ color: '#E5E5E7', margin: '0 4px' }}>—</span>
+                                    )}
                                   </span>
                                 );
                               })}
