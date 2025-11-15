@@ -443,11 +443,12 @@ export default function Home() {
                 </button>
                 {visibleAreas.map(([slug, displayName]) => {
                   const count = filterCounts.areas[slug] || 0;
+                  const categoryColor = CATEGORY_COLORS[slug];
                   return (
                     <button
                       key={slug}
                       onClick={() => handleResearchAreaChange(slug)}
-                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
+                      className={`flex items-center text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                         selectedResearchArea === slug
                           ? "font-medium"
                           : "hover:opacity-80"
@@ -457,7 +458,10 @@ export default function Home() {
                       aria-pressed={selectedResearchArea === slug}
                       aria-label={`Filter by ${displayName}${count > 0 ? ` (${count} publications)` : ''}`}
                     >
-                      {displayName} {count > 0 && `(${count})`}
+                      {categoryColor && (
+                        <span style={{ color: categoryColor.text, marginRight: '6px', fontSize: '10px' }}>●</span>
+                      )}
+                      <span>{displayName} {count > 0 && `(${count})`}</span>
                     </button>
                   );
                 })}
