@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, ChevronUp, ChevronRight, Search, X, Star, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search, X, Star, ExternalLink } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { searchPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
@@ -142,30 +142,34 @@ export default function Home() {
     resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // Handle sidebar resize/collapse
+  // Handle sidebar resize to store last expanded size and sync collapsed state
   const handlePanelLayout = (sizes: number[]) => {
     const currentSidebarSize = sizes[0];
     setSidebarSize(currentSidebarSize);
 
-    // Store last expanded size if above threshold
-    if (currentSidebarSize > 11.5 && !isSidebarCollapsed) {
+    // Check actual collapsed state from the panel
+    const actuallyCollapsed = sidebarPanelRef.current?.isCollapsed() ?? false;
+
+    // Sync React state with panel state
+    if (actuallyCollapsed !== isSidebarCollapsed) {
+      setIsSidebarCollapsed(actuallyCollapsed);
+    }
+
+    // Store last expanded size when panel is open and reasonably wide
+    if (!actuallyCollapsed && currentSidebarSize > 10) {
       setLastExpandedSize(currentSidebarSize);
-    }
-
-    // Auto-collapse when dragged below threshold
-    if (currentSidebarSize <= 11.5 && !isSidebarCollapsed) {
-      sidebarPanelRef.current?.collapse();
-      setIsSidebarCollapsed(true);
-    }
-
-    // Update collapsed state when panel is expanded again
-    if (currentSidebarSize > 11.5 && isSidebarCollapsed) {
-      setIsSidebarCollapsed(false);
     }
   };
 
-  // Handle expanding the sidebar
+  // Handle collapsing the sidebar (via button)
+  const handleCollapseSidebar = () => {
+    sidebarPanelRef.current?.collapse();
+    setIsSidebarCollapsed(true);
+  };
+
+  // Handle expanding the sidebar (via button)
   const handleExpandSidebar = () => {
+    // Expand to last size or default to 28%
     const targetSize = lastExpandedSize > 11.5 ? lastExpandedSize : 28;
     sidebarPanelRef.current?.resize(targetSize);
     setIsSidebarCollapsed(false);
@@ -424,9 +428,29 @@ export default function Home() {
 
         {/* Main content with sidebar and publications */}
         <ResizablePanelGroup direction="horizontal" className="min-h-screen" onLayout={handlePanelLayout}>
-          <ResizablePanel ref={sidebarPanelRef} defaultSize={28} minSize={10} maxSize={40}>
+          <ResizablePanel 
+            ref={sidebarPanelRef} 
+            defaultSize={28} 
+            minSize={10} 
+            maxSize={40}
+            collapsible={true}
+            collapsedSize={5}
+          >
             {/* Left sidebar - Apple ML Research Style */}
-            <aside className="min-w-0 pr-8" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
+            <aside className="min-w-0 pr-8 relative" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
+            {/* Collapse button - top right of sidebar */}
+            {!isSidebarCollapsed && (
+              <button
+                onClick={handleCollapseSidebar}
+                className="absolute top-0 right-2 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+                aria-label="Collapse sidebar"
+                data-testid="collapse-sidebar-button"
+                title="Collapse sidebar"
+              >
+                <ChevronLeft className="h-5 w-5" style={{ color: '#007AFF' }} />
+              </button>
+            )}
+            
             {/* Research Areas Filter */}
             <section className="mb-10 min-w-0" role="group" aria-labelledby="research-areas-heading">
               {/* Uppercase caption */}
