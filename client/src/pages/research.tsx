@@ -390,7 +390,7 @@ export default function Home() {
 
         {/* Main content with sidebar and publications */}
         <ResizablePanelGroup direction="horizontal" className="min-h-screen">
-          <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
+          <ResizablePanel defaultSize={28} minSize={10} maxSize={40}>
             {/* Left sidebar - Apple ML Research Style */}
             <aside className="min-w-0 pr-8" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
             {/* Research Areas Filter */}
@@ -655,7 +655,7 @@ export default function Home() {
             }} 
           />
           
-          <ResizablePanel defaultSize={80}>
+          <ResizablePanel defaultSize={72}>
             {/* Main content area - Apple typography */}
             <section 
               ref={resultsRef}
