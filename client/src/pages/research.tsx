@@ -208,7 +208,7 @@ export default function Home() {
       <FeaturedCarousel />
       
       {/* Publications Section */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '64px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '48px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Breadcrumb - Apple style */}
         <nav className="text-center" style={{ marginBottom: '32px' }} data-testid="breadcrumb">
           <span className="font-normal tracking-widest uppercase text-[16px]" style={{ color: '#6E6E73' }}>ARTERIAL INTELLIGENCE</span>
@@ -897,7 +897,7 @@ export default function Home() {
       <footer className="border-t" style={{ 
         backgroundColor: '#F6F6F6', 
         borderColor: '#E5E5E7',
-        marginTop: '96px',
+        marginTop: '48px',
         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
       }}>
         <div className="max-w-[980px] mx-auto px-6" style={{ paddingTop: '48px', paddingBottom: '48px' }}>
