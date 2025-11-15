@@ -80,7 +80,7 @@ export default function FeaturedCarousel() {
             Featured Research
           </h2>
           
-          {featuredPublications.length > 3 && (
+          {featuredPublications.length > 1 && (
             <div className="hidden lg:flex items-center gap-2">
               <button
                 onClick={scrollPrev}
