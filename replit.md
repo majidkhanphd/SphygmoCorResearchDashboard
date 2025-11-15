@@ -4,6 +4,19 @@ This project is a research publication management system for CONNEQT Health, foc
 
 ## Recent Updates (November 2025)
 
+**Featured Carousel Implementation (November 15, 2025):**
+- Replaced static ResearchHighlights section with dynamic horizontal scrolling FeaturedCarousel
+- Implemented using embla-carousel-react for smooth horizontal navigation
+- Responsive card display: 1 card (mobile), 2 cards (tablet), 3 cards (desktop)
+- Navigation controls: top-right arrows on desktop, bottom-center arrows on mobile/tablet
+- Compact featured publication cards with title, abstract preview, journal, date, categories, and Read Paper button
+- Backend increased featured publications limit from 5 to 30
+- Reduced vertical spacing throughout:
+  - Intro section: py-12→py-8 (sm:py-16→sm:py-10)
+  - Publications section top padding: 64px→48px
+  - Footer margin-top: 96px→48px
+- Layout flow: Navigation → Hero Banner → Intro Text (py-8) → Featured Carousel (py-8) → Publications Section (pt-48px) → Footer (mt-48px)
+
 **Site Polish & Refinements (November 13, 2025):**
 - Replaced "CONNEQT Health Research" text with company logo in navigation
 - Logo sized to h-8 (32px) to maintain header proportions
@@ -13,20 +26,15 @@ This project is a research publication management system for CONNEQT Health, foc
 - Simplified hero banner (removed description paragraph for cleaner look)
 - Added new intro text section between Navigation and ResearchHighlights
 - Moved SphygmoCor technology description to intro section
-- Reduced vertical spacing in ResearchHighlights (py-20→py-12, mb-16→mb-10, mb-20→mb-12)
 - Changed pagination default from 50 to 25 items per page
 - All changes maintain full responsiveness and Apple-inspired design language
 
 **Site Restructure - Publications as Main Landing Page:**
 - Publications is now the primary landing page at `/` (root route)
 - New full-width HeroBanner component with gradient background and pulse-wave animation placeholder
-- New ResearchHighlights section featuring:
-  - Featured Research (data-driven from `/api/publications/featured`)
-  - Recent Breakthroughs cards (Early Detection, Precision Medicine)
 - Navigation simplified to Apple ML style (logo only, no horizontal menu tabs)
 - Deprecated routes now redirect to main page: `/overview`, `/highlights`, `/updates`, `/work-with-us`
 - Admin panel remains accessible at `/admin`
-- Layout flow: Navigation → HeroBanner → Intro Text → ResearchHighlights → Publications Hero → Search/Filters → Publications List
 
 # User Preferences
 
