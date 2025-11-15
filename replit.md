@@ -4,7 +4,16 @@ This project is a research publication management system for CONNEQT Health, foc
 
 ## Recent Updates (November 2025)
 
-**Featured Carousel Implementation (November 15, 2025):**
+**UI Polish & HTML Entity Sanitization (November 15, 2025 - Evening):**
+- Redesigned category badges: plain colored text with dash separators (—) replacing rounded badge backgrounds
+- Added colored circular dots (●) to sidebar category filters using CATEGORY_COLORS
+- Created HTML entity sanitization utility (client/src/utils/sanitizeAuthors.ts) to decode all PubMed HTML entities
+- Applied sanitization to all publication text fields: titles, abstracts, journals, authors
+- Common entities decoded: &#228;→ä, &#246;→ö, &#177;→±, &#215;→×, &#8208;→‐, &#8211;→–, &#8217;→'
+- Enhanced ResizableHandle visibility on desktop (6px width) while keeping it hidden on mobile/tablet (lg:flex)
+- All changes maintain Apple ML aesthetic with improved text clarity and mobile UX
+
+**Featured Carousel Implementation (November 15, 2025 - Morning):**
 - Replaced static ResearchHighlights section with dynamic horizontal scrolling FeaturedCarousel
 - Implemented using embla-carousel-react for smooth horizontal navigation
 - Responsive card display: 1 card (mobile), 2 cards (tablet), 3 cards (desktop)
