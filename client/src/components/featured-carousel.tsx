@@ -5,6 +5,32 @@ import useEmblaCarousel from "embla-carousel-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getFeaturedPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
+import { getResearchAreaDisplayName } from "@shared/schema";
+
+const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
+  "copd": { bg: "#F3E5F5", text: "#4A148C", border: "#CE93D8" },
+  "eva": { bg: "#E0F2F1", text: "#004D40", border: "#80CBC4" },
+  "heart-failure": { bg: "#FFF3E0", text: "#E65100", border: "#FFB74D" },
+  "hypertension": { bg: "#E1F5FE", text: "#01579B", border: "#81D4FA" },
+  "longevity": { bg: "#F3E5F5", text: "#6A1B9A", border: "#CE93D8" },
+  "maternal-health": { bg: "#FCE4EC", text: "#880E4F", border: "#F48FB1" },
+  "mens-health": { bg: "#E0F2F1", text: "#00695C", border: "#80CBC4" },
+  "metabolic-health": { bg: "#FFF8E1", text: "#F57F17", border: "#FFD54F" },
+  "neuroscience": { bg: "#EDE7F6", text: "#311B92", border: "#B39DDB" },
+  "womens-health": { bg: "#FCE4EC", text: "#AD1457", border: "#F48FB1" }
+};
+
+const getBadgeDisplayName = (category: string): string => {
+  if (category === 'ckd') return 'CKD';
+  if (category === 'copd') return 'COPD';
+  if (category === 'eva') return 'EVA';
+  
+  const displayName = getResearchAreaDisplayName(category);
+  if (!displayName) return category.replace('-', ' ');
+  
+  return displayName;
+};
 
 export default function FeaturedCarousel() {
   const { data: featuredPublications, isLoading } = useQuery({
@@ -139,27 +165,28 @@ export default function FeaturedCarousel() {
                       e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
                     }}
                   >
-                    <div className="flex flex-wrap items-center gap-2 mb-3">
-                      {publication.categories?.slice(0, 2).map((category: string, catIndex: number) => (
-                        <span
-                          key={catIndex}
-                          className="inline-flex items-center rounded-full"
-                          style={{
-                            paddingLeft: '10px',
-                            paddingRight: '10px',
-                            paddingTop: '3px',
-                            paddingBottom: '3px',
-                            fontSize: '11px',
-                            fontWeight: '400',
-                            color: '#007AFF',
-                            backgroundColor: '#F0F7FF',
-                            border: '1px solid #007AFF20',
-                          }}
-                          data-testid={`card-category-${index}-${catIndex}`}
-                        >
-                          {category}
-                        </span>
-                      ))}
+                    <div className="flex flex-wrap items-center gap-1 mb-3">
+                      {publication.categories?.map((category: string, catIndex: number) => {
+                        const colors = CATEGORY_COLORS[category] || { text: '#6E6E73' };
+                        const displayName = getBadgeDisplayName(category);
+                        return (
+                          <span key={catIndex} className="inline-flex items-center">
+                            <span
+                              style={{
+                                fontSize: '12px',
+                                fontWeight: '500',
+                                color: colors.text,
+                              }}
+                              data-testid={`card-category-${index}-${catIndex}`}
+                            >
+                              {displayName}
+                            </span>
+                            {catIndex < (publication.categories?.length || 0) - 1 && (
+                              <span style={{ color: '#E5E5E7', margin: '0 4px' }}>—</span>
+                            )}
+                          </span>
+                        );
+                      })}
                     </div>
 
                     <h3
