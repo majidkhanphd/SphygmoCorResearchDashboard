@@ -209,11 +209,6 @@ export default function Home() {
       
       {/* Publications Section */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '48px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
-        {/* Breadcrumb - Apple style */}
-        <nav className="text-center" style={{ marginBottom: '32px' }} data-testid="breadcrumb">
-          <span className="font-normal tracking-widest uppercase text-[16px]" style={{ color: '#6E6E73' }}>ARTERIAL INTELLIGENCE</span>
-        </nav>
-        
         {/* Main title - Apple's exact typography */}
         <div className="text-center" style={{ marginBottom: '64px' }}>
           <h1 style={{ fontSize: '48px', fontWeight: '300', letterSpacing: '-0.02em', color: '#1D1D1F', marginBottom: '12px', lineHeight: '1.1' }} data-testid="main-title">
