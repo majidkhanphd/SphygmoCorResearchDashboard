@@ -755,7 +755,7 @@ export default function Home() {
                                     >
                                       {displayName}
                                     </span>
-                                    {catIndex < publication.categories.length - 1 && (
+                                    {catIndex < (publication.categories?.length || 0) - 1 && (
                                       <span style={{ color: '#E5E5E7', margin: '0 4px' }}>—</span>
                                     )}
                                   </span>
