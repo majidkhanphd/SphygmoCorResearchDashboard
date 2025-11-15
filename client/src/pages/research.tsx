@@ -14,6 +14,7 @@ import type { Publication } from "@shared/schema";
 import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES, RESEARCH_AREAS } from "@shared/schema";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { PaginationControls } from "@/components/pagination-controls";
+import { sanitizeAuthors } from "@/utils/sanitizeAuthors";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
@@ -702,10 +703,8 @@ export default function Home() {
                 >
                   {allPublications?.map((publication: Publication, index) => {
                     const publicationYear = new Date(publication.publicationDate).getFullYear();
-                    // Transform authors: replace commas with em dashes
-                    const formattedAuthors = publication.authors
-                      .split(', ')
-                      .join(' — ');
+                    // Sanitize authors to decode HTML entities
+                    const formattedAuthors = sanitizeAuthors(publication.authors);
                     
                     return (
                       <div 
