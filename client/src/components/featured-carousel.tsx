@@ -48,18 +48,10 @@ export default function FeaturedCarousel() {
 
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
-  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [areAbstractsExpanded, setAreAbstractsExpanded] = useState(false);
 
-  const toggleExpand = (id: string) => {
-    setExpandedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
+  const toggleExpand = () => {
+    setAreAbstractsExpanded(prev => !prev);
   };
 
   const scrollPrev = useCallback(() => {
@@ -255,7 +247,7 @@ export default function FeaturedCarousel() {
                       )}
                     </p>
 
-                    {expandedCards.has(publication.id) && publication.abstract && (
+                    {areAbstractsExpanded && publication.abstract && (
                       <p
                         className="mb-3"
                         style={{
@@ -270,7 +262,7 @@ export default function FeaturedCarousel() {
                     )}
 
                     <button
-                      onClick={() => toggleExpand(publication.id)}
+                      onClick={toggleExpand}
                       className="inline-flex items-center justify-center rounded-lg transition-all duration-200 w-full"
                       style={{
                         padding: '8px',
@@ -287,10 +279,10 @@ export default function FeaturedCarousel() {
                       onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
                       }}
-                      aria-label={expandedCards.has(publication.id) ? "Collapse abstract" : "Expand abstract"}
+                      aria-label={areAbstractsExpanded ? "Collapse abstracts" : "Expand abstracts"}
                       data-testid={`toggle-abstract-button-${index}`}
                     >
-                      {expandedCards.has(publication.id) ? (
+                      {areAbstractsExpanded ? (
                         <ChevronUp className="h-4 w-4" />
                       ) : (
                         <ChevronDown className="h-4 w-4" />
