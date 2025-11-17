@@ -16,6 +16,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { PaginationControls } from "@/components/pagination-controls";
 import { sanitizeText } from "@shared/sanitize";
+import { getChildJournals, isParentJournal, type JournalGroup, JOURNAL_GROUPS } from "@shared/journal-mappings";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
@@ -54,6 +55,7 @@ export default function Home() {
   const [showAllAreas, setShowAllAreas] = useState(false);
   const [showAllVenues, setShowAllVenues] = useState(false);
   const [showAllYears, setShowAllYears] = useState(false);
+  const [expandedParentJournals, setExpandedParentJournals] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState<number>(() => {
     const saved = localStorage.getItem('publicationsPerPage');
@@ -61,7 +63,6 @@ export default function Home() {
   });
   const resultsRef = useRef<HTMLDivElement>(null);
   const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
-  const publicationsListRef = useRef<HTMLDivElement>(null);
   const [sidebarSize, setSidebarSize] = useState(16);
   const [lastExpandedSize, setLastExpandedSize] = useState(18);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -136,6 +137,18 @@ export default function Home() {
 
   const handleYearChange = (year: number | null) => {
     setSelectedYear(year);
+  };
+
+  const toggleParentJournal = (parentJournal: string) => {
+    setExpandedParentJournals(prev => {
+      const next = new Set(prev);
+      if (next.has(parentJournal)) {
+        next.delete(parentJournal);
+      } else {
+        next.add(parentJournal);
+      }
+      return next;
+    });
   };
 
   const handlePageChange = (page: number) => {
@@ -225,11 +238,12 @@ export default function Home() {
   // Calculate total count for all years
   const totalYearCount = Object.values(filterCounts.years).reduce((sum, count) => sum + (count as number), 0);
 
-  // Track publications list height for dynamic journal list sizing
+  // Track visible publications section height for dynamic journal list sizing
   useEffect(() => {
     const updateHeight = () => {
-      if (publicationsListRef.current) {
-        const rect = publicationsListRef.current.getBoundingClientRect();
+      if (resultsRef.current) {
+        const rect = resultsRef.current.getBoundingClientRect();
+        // Use the visible viewport height, not the scrollable content height
         setPublicationsHeight(rect.height);
       }
     };
@@ -240,10 +254,10 @@ export default function Home() {
     // Update on window resize
     window.addEventListener('resize', updateHeight);
     
-    // Update when publications change
+    // Update when publications change or container resizes
     const observer = new ResizeObserver(updateHeight);
-    if (publicationsListRef.current) {
-      observer.observe(publicationsListRef.current);
+    if (resultsRef.current) {
+      observer.observe(resultsRef.current);
     }
 
     return () => {
@@ -695,26 +709,77 @@ export default function Home() {
                   data-testid="venue-all"
                   aria-pressed={!selectedVenue}
                 >
-                  All journals
+                  All Journals
                 </button>
                 {visibleVenues.map((venue) => {
                   const count = filterCounts.venues[venue] || 0;
+                  const hasChildren = isParentJournal(venue);
+                  const isExpanded = expandedParentJournals.has(venue);
+                  const childJournals = hasChildren ? getChildJournals(venue) : [];
+                  
                   return (
-                    <button
-                      key={venue}
-                      onClick={() => handleVenueChange(venue)}
-                      className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
-                        selectedVenue === venue
-                          ? "font-medium"
-                          : "hover:opacity-80"
-                      }`}
-                      style={{ color: selectedVenue === venue ? '#1D1D1F' : '#6E6E73' }}
-                      data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
-                      aria-pressed={selectedVenue === venue}
-                      aria-label={`Filter by ${venue}${count > 0 ? ` (${count} publications)` : ''}`}
-                    >
-                      {venue} {count > 0 && `(${count})`}
-                    </button>
+                    <div key={venue}>
+                      {/* Parent or regular journal */}
+                      <div className="flex items-center">
+                        {hasChildren && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleParentJournal(venue);
+                            }}
+                            className="flex-shrink-0 mr-1 apple-transition apple-focus-ring"
+                            style={{ color: '#6E6E73' }}
+                            aria-label={isExpanded ? `Collapse ${venue}` : `Expand ${venue}`}
+                            data-testid={`toggle-journal-${venue.replace(/\s+/g, '-').toLowerCase()}`}
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="h-3 w-3" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3" />
+                            )}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleVenueChange(venue)}
+                          className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
+                            selectedVenue === venue
+                              ? "font-medium"
+                              : "hover:opacity-80"
+                          } ${!hasChildren ? 'ml-4' : ''}`}
+                          style={{ color: selectedVenue === venue ? '#1D1D1F' : '#6E6E73' }}
+                          data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
+                          aria-pressed={selectedVenue === venue}
+                          aria-label={`Filter by ${venue}${count > 0 ? ` (${count} publications)` : ''}`}
+                        >
+                          {venue} {count > 0 && `(${count})`}
+                        </button>
+                      </div>
+                      
+                      {/* Child journals (shown when expanded) */}
+                      {hasChildren && isExpanded && childJournals.map((childJournal) => {
+                        // Child journals won't have their own counts in the venues list
+                        // since they're aggregated under the parent
+                        return (
+                          <button
+                            key={childJournal}
+                            onClick={() => handleVenueChange(childJournal)}
+                            className={`block text-sm w-full text-left py-1 ml-8 apple-transition apple-focus-ring break-words ${
+                              selectedVenue === childJournal
+                                ? "font-medium"
+                                : "hover:opacity-80"
+                            }`}
+                            style={{ 
+                              color: selectedVenue === childJournal ? '#1D1D1F' : '#86868B',
+                              fontSize: '13px'
+                            }}
+                            data-testid={`venue-child-${childJournal.replace(/\s+/g, '-').toLowerCase()}`}
+                            aria-pressed={selectedVenue === childJournal}
+                          >
+                            {childJournal}
+                          </button>
+                        );
+                      })}
+                    </div>
                   );
                 })}
                 {venues.length > 10 && (
@@ -786,7 +851,6 @@ export default function Home() {
               <>
                 {/* Publications List - Single Column Layout */}
                 <div 
-                  ref={publicationsListRef}
                   className="min-w-0"
                   style={{ 
                     display: 'flex',

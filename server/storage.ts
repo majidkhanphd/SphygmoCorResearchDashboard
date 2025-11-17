@@ -2,10 +2,54 @@ import { type Publication, type InsertPublication, type Category, type InsertCat
 import { publications, categories } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, like, sql, desc, asc } from "drizzle-orm";
+import { normalizeJournalName, findParentGroup, getChildJournals, JOURNAL_GROUPS } from "@shared/journal-mappings";
 
 // Helper to escape SQL LIKE special characters
 function escapeLikePattern(str: string): string {
   return str.replace(/[%_\\]/g, '\\$&');
+}
+
+// Build a cache of all distinct journal names at module initialization
+let journalNameCache: string[] | null = null;
+
+async function initializeJournalCache(): Promise<void> {
+  if (!journalNameCache) {
+    const allJournals = await db
+      .selectDistinct({ journal: publications.journal })
+      .from(publications);
+    journalNameCache = allJournals.map(j => j.journal).filter(Boolean) as string[];
+  }
+}
+
+// Helper to get all raw journal names that match a normalized journal name
+// This includes both the exact matches and parent-child relationships
+async function getRawJournalNamesForFilter(normalizedJournalName: string): Promise<string[]> {
+  // Initialize cache if not already done
+  await initializeJournalCache();
+  
+  if (!journalNameCache) {
+    // This shouldn't happen, but fail gracefully
+    console.error('Journal cache failed to initialize');
+    return [];
+  }
+  
+  const matchingJournals: string[] = [];
+  const childJournals = getChildJournals(normalizedJournalName);
+  
+  for (const rawJournal of journalNameCache) {
+    const normalized = normalizeJournalName(rawJournal);
+    
+    // Direct match to the selected journal (parent or regular)
+    if (normalized === normalizedJournalName) {
+      matchingJournals.push(rawJournal);
+    }
+    // If the selected journal is a parent, also match all its children
+    else if (childJournals.length > 0 && childJournals.includes(normalized)) {
+      matchingJournals.push(rawJournal);
+    }
+  }
+  
+  return matchingJournals;
 }
 
 export interface IStorage {
@@ -95,7 +139,12 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (params.venue) {
-      conditions.push(eq(publications.journal, params.venue));
+      // Get all raw journal names that match the normalized venue
+      const matchingJournals = await getRawJournalNamesForFilter(params.venue);
+      if (matchingJournals.length > 0) {
+        const journalConditions = matchingJournals.map(j => eq(publications.journal, j));
+        conditions.push(or(...journalConditions));
+      }
     }
 
     if (params.year) {
@@ -180,7 +229,13 @@ export class DatabaseStorage implements IStorage {
 
     // Category counts (exclude categories filter)
     const categoryConditions = [...baseConditions];
-    if (params.venue) categoryConditions.push(eq(publications.journal, params.venue));
+    if (params.venue) {
+      const matchingJournals = await getRawJournalNamesForFilter(params.venue);
+      if (matchingJournals.length > 0) {
+        const journalConditions = matchingJournals.map(j => eq(publications.journal, j));
+        categoryConditions.push(or(...journalConditions));
+      }
+    }
     if (params.year) categoryConditions.push(sql`EXTRACT(YEAR FROM ${publications.publicationDate}) = ${params.year}`);
 
     const categoryResults = await db
@@ -216,10 +271,39 @@ export class DatabaseStorage implements IStorage {
       .where(venueConditions.length > 0 ? and(...venueConditions) : undefined)
       .groupBy(publications.journal);
 
-    const venues: Record<string, number> = {};
+    // Apply journal normalization and parent-child grouping
+    const normalizedVenues: Record<string, number> = {};
+    const childJournalCounts: Record<string, Record<string, number>> = {};
+    
+    // First pass: normalize journal names and aggregate counts
     venueResults.forEach(r => {
-      if (r.venue) venues[r.venue] = r.count;
+      if (!r.venue) return;
+      
+      const normalized = normalizeJournalName(r.venue);
+      const parentGroup = findParentGroup(normalized);
+      
+      if (parentGroup && normalized !== parentGroup.parent) {
+        // This is a child journal - aggregate under parent
+        if (!normalizedVenues[parentGroup.parent]) {
+          normalizedVenues[parentGroup.parent] = 0;
+        }
+        normalizedVenues[parentGroup.parent] += r.count;
+        
+        // Track individual child counts for potential expansion
+        if (!childJournalCounts[parentGroup.parent]) {
+          childJournalCounts[parentGroup.parent] = {};
+        }
+        childJournalCounts[parentGroup.parent][normalized] = r.count;
+      } else {
+        // Regular journal or parent journal itself
+        if (!normalizedVenues[normalized]) {
+          normalizedVenues[normalized] = 0;
+        }
+        normalizedVenues[normalized] += r.count;
+      }
     });
+
+    const venues = normalizedVenues;
 
     // Years count (exclude year filter)
     const yearConditions = [...baseConditions];
@@ -229,7 +313,13 @@ export class DatabaseStorage implements IStorage {
       );
       yearConditions.push(or(...catConditions));
     }
-    if (params.venue) yearConditions.push(eq(publications.journal, params.venue));
+    if (params.venue) {
+      const matchingJournals = await getRawJournalNamesForFilter(params.venue);
+      if (matchingJournals.length > 0) {
+        const journalConditions = matchingJournals.map(j => eq(publications.journal, j));
+        yearConditions.push(or(...journalConditions));
+      }
+    }
 
     const yearResults = await db
       .select({
