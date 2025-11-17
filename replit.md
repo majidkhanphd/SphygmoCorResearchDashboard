@@ -4,6 +4,40 @@ This project is a research publication management system for CONNEQT Health, foc
 
 ## Recent Updates (November 2025)
 
+**ML-Powered Category Suggestion System (November 17, 2025):**
+- Implemented comprehensive ML category suggestion system with OpenAI GPT-4o-mini integration
+- Extended publications schema with 5 new fields for suggestion workflow:
+  - `suggestedCategories` (JSON array): Stores ML/keyword suggestions with confidence scores
+  - `categoryReviewStatus` (text): Tracks review state (pending_review, reviewed, auto_approved)
+  - `categoryReviewedBy` (varchar): Records admin who reviewed suggestions
+  - `categoryReviewedAt` (timestamp): Audit trail for review actions
+  - `categoriesLastUpdatedBy` (varchar): Tracks who made category changes
+- Created CategorySuggestionService (server/services/categorySuggestions.ts):
+  - GPT-4o-mini analyzes title+abstract to suggest relevant research areas
+  - Anti-over-tagging system: requires specific keywords for sensitive categories (e.g., Women's Health)
+  - Negative keyword filtering prevents false matches (e.g., "both men and women" excludes Women's Health)
+  - Improved keyword matching with confidence scoring (exact match 0.9, keyword match 0.7)
+  - Hybrid approach: merges ML suggestions (priority) with keyword-based fallback
+- Built complete admin Category Review workflow:
+  - New "Category Review" tab showing publications needing review with counter
+  - Confidence-based color coding: green (>=0.8), yellow (0.6-0.79), gray (<0.6)
+  - Source indicators: ML suggestions (blue badge), keyword suggestions (purple badge)
+  - Per-publication actions: Accept Suggestions, Edit & Approve, Reject All, View Paper
+  - Bulk operations: Generate Suggestions, Bulk Accept, Bulk Reject for selected publications
+  - Edit & Approve dialog: multi-select suggested categories, add manual categories
+  - "Generate Suggestions" buttons added to Pending/Approved tabs for individual publications
+- 5 new API endpoints for suggestion workflow:
+  - POST /api/admin/publications/:id/generate-suggestions (individual generation)
+  - POST /api/admin/publications/batch-generate-suggestions (bulk generation)
+  - POST /api/admin/publications/:id/approve-categories (approve with reviewer tracking)
+  - POST /api/admin/publications/:id/reject-suggestions (reject with reviewer tracking)
+  - GET /api/admin/publications/needing-review (paginated query with NULL status handling)
+- Critical fixes applied:
+  - Query parameter parsing uses safe defaults for missing/invalid limit/offset values
+  - Database query handles NULL categoryReviewStatus as pending when suggestions exist
+- Usage: Generate suggestions for uncategorized publications, review ML recommendations, bulk approve/reject
+- Integration: Uses blueprint:javascript_openai (requires OPENAI_API_KEY secret)
+
 **HTML Sanitization System & Database Cleanup Migration (November 17, 2025):**
 - Created comprehensive HTML sanitization system that works on both client and server (shared/sanitize.ts)
 - Moved sanitization from client-only utility to shared module for consistency across full stack

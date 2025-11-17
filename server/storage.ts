@@ -340,7 +340,9 @@ export class DatabaseStorage implements IStorage {
       .set({
         suggestedCategories: suggestions as any,
         categoryReviewStatus: status,
-        categoryReviewedAt: new Date()
+        // Reset reviewer metadata when new suggestions are generated (allows re-review)
+        categoryReviewedBy: null,
+        categoryReviewedAt: null
       })
       .where(eq(publications.id, id))
       .returning();

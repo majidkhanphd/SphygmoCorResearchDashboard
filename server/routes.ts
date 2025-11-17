@@ -907,7 +907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useML
       );
 
-      // Store suggestions in database
+      // Store suggestions in database (always use pending_review to ensure items appear in review tab)
       await storage.updateSuggestedCategories(id, suggestions, 'pending_review');
 
       res.json({ 
@@ -955,6 +955,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             useML
           );
 
+          // Always use pending_review status to ensure items appear in review tab
           await storage.updateSuggestedCategories(id, suggestions, 'pending_review');
           results.push({ id, suggestions });
 
