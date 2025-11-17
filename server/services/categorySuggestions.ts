@@ -46,58 +46,77 @@ Rules:
 - The category field MUST match the format exactly: "Full Name (ACRONYM)" where applicable`;
 
 /**
- * Generate ML-based category suggestions using OpenAI
+ * Generate ML-based category suggestions using OpenAI with retry logic
  */
 export async function generateMLSuggestions(
   title: string,
   abstract: string | null
 ): Promise<SuggestedCategory[]> {
-  try {
-    if (!process.env.OPENAI_API_KEY) {
-      console.warn("OpenAI API key not configured, skipping ML suggestions");
-      return [];
-    }
-
-    const text = abstract ? `${title}\n\n${abstract}` : title;
-    
-    const response = await openai.chat.completions.create({
-      model: "gpt-5-nano",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Analyze this publication and suggest categories:\n\n${text}` }
-      ],
-      response_format: { type: "json_object" },
-      max_completion_tokens: 1000,
-    });
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      console.warn("No response from OpenAI");
-      return [];
-    }
-
-    const parsed = JSON.parse(content);
-    const suggestions = parsed.suggestions || [];
-
-    // Validate and filter suggestions
-    return suggestions
-      .filter((s: any) => 
-        s.category && 
-        typeof s.confidence === 'number' && 
-        s.confidence >= 0.6 &&
-        RESEARCH_AREAS.includes(s.category)
-      )
-      .slice(0, 3) // Max 3 categories
-      .map((s: any) => ({
-        category: s.category,
-        confidence: s.confidence,
-        source: 'ml' as const
-      }));
-
-  } catch (error: any) {
-    console.error("Error generating ML suggestions:", error.message);
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn("OpenAI API key not configured, skipping ML suggestions");
     return [];
   }
+
+  const text = abstract ? `${title}\n\n${abstract}` : title;
+  const maxRetries = 3;
+  let lastError: any = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-5-nano",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: `Analyze this publication and suggest categories:\n\n${text}` }
+        ],
+        response_format: { type: "json_object" },
+      }, {
+        timeout: 90000,
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        console.warn("No response from OpenAI");
+        return [];
+      }
+
+      const parsed = JSON.parse(content);
+      const suggestions = parsed.suggestions || [];
+
+      // Validate and filter suggestions
+      return suggestions
+        .filter((s: any) => 
+          s.category && 
+          typeof s.confidence === 'number' && 
+          s.confidence >= 0.6 &&
+          RESEARCH_AREAS.includes(s.category)
+        )
+        .slice(0, 3) // Max 3 categories
+        .map((s: any) => ({
+          category: s.category,
+          confidence: s.confidence,
+          source: 'ml' as const
+        }));
+
+    } catch (error: any) {
+      lastError = error;
+      console.error(`Error generating ML suggestions (attempt ${attempt}/${maxRetries}):`, error.message);
+      
+      // Don't retry on non-retryable errors
+      if (error.code === 'invalid_api_key' || error.status === 401) {
+        return [];
+      }
+      
+      // Exponential backoff: 1s, 2s, 4s
+      if (attempt < maxRetries) {
+        const backoffMs = Math.pow(2, attempt - 1) * 1000;
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
+    }
+  }
+
+  console.error(`Failed to generate ML suggestions after ${maxRetries} attempts:`, lastError?.message);
+  return [];
 }
 
 /**

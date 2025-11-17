@@ -55,6 +55,7 @@ interface BatchCategorizationStatus {
   startTime: number | null;
   endTime: number | null;
   error: string | null;
+  etaSeconds: number | null;
 }
 
 export default function Admin() {
@@ -588,6 +589,7 @@ export default function Admin() {
         startTime: data.startTime || null,
         endTime: data.endTime || null,
         error: data.error,
+        etaSeconds: data.etaSeconds || null,
       };
       
       setBatchCategorizationStatus(newStatus);
@@ -606,7 +608,7 @@ export default function Admin() {
         batchCategorizationCompletionTimeout.current = null;
       }
       
-      batchCategorizationPollingInterval.current = setInterval(fetchBatchCategorizationStatus, 2000);
+      batchCategorizationPollingInterval.current = setInterval(fetchBatchCategorizationStatus, 500);
     } else {
       if (batchCategorizationPollingInterval.current) {
         clearInterval(batchCategorizationPollingInterval.current);
@@ -1432,33 +1434,59 @@ export default function Admin() {
               </div>
               
               {/* Progress Display */}
-              {batchCategorizationStatus?.status === "running" && (
-                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-purple-600 dark:text-purple-400" />
-                      <span className="font-medium text-sm text-purple-900 dark:text-purple-100">{batchCategorizationStatus.phase}</span>
+              {batchCategorizationStatus?.status === "running" && (() => {
+                const percentage = batchCategorizationStatus.total > 0 
+                  ? (batchCategorizationStatus.processed / batchCategorizationStatus.total) * 100 
+                  : 0;
+                
+                // Use backend-calculated ETA for stability
+                let etaText = "Calculating...";
+                if (batchCategorizationStatus.etaSeconds !== null && batchCategorizationStatus.etaSeconds >= 0) {
+                  const etaSec = batchCategorizationStatus.etaSeconds;
+                  if (etaSec < 60) {
+                    etaText = `~${etaSec}s remaining`;
+                  } else {
+                    const mins = Math.ceil(etaSec / 60);
+                    etaText = `~${mins} min${mins > 1 ? 's' : ''} remaining`;
+                  }
+                }
+                
+                return (
+                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-purple-600 dark:text-purple-400" />
+                        <span className="font-medium text-sm text-purple-900 dark:text-purple-100">{batchCategorizationStatus.phase}</span>
+                      </div>
+                      <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">
+                        {percentage.toFixed(1)}%
+                      </span>
                     </div>
-                    <span className="text-sm text-purple-700 dark:text-purple-300">
-                      {batchCategorizationStatus.processed}/{batchCategorizationStatus.total} publications
-                    </span>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-purple-700 dark:text-purple-300">
+                        {batchCategorizationStatus.processed}/{batchCategorizationStatus.total} publications
+                      </span>
+                      <span className="text-xs text-purple-600 dark:text-purple-400">
+                        {etaText}
+                      </span>
+                    </div>
+                    <Progress 
+                      value={percentage} 
+                      className="h-2 mb-2"
+                    />
+                    <div className="flex gap-4 text-xs text-purple-700 dark:text-purple-300">
+                      <span>✓ Success: {batchCategorizationStatus.success}</span>
+                      <span>⊘ Skipped: {batchCategorizationStatus.skipped}</span>
+                      <span>✗ Failed: {batchCategorizationStatus.failed}</span>
+                    </div>
+                    {batchCategorizationStatus.currentPublication && (
+                      <p className="mt-2 text-xs text-purple-600 dark:text-purple-400 truncate">
+                        Current: {batchCategorizationStatus.currentPublication}
+                      </p>
+                    )}
                   </div>
-                  <Progress 
-                    value={batchCategorizationStatus.total > 0 ? (batchCategorizationStatus.processed / batchCategorizationStatus.total) * 100 : 0} 
-                    className="h-2 mb-2"
-                  />
-                  <div className="flex gap-4 text-xs text-purple-700 dark:text-purple-300">
-                    <span>Success: {batchCategorizationStatus.success}</span>
-                    <span>Skipped: {batchCategorizationStatus.skipped}</span>
-                    <span>Failed: {batchCategorizationStatus.failed}</span>
-                  </div>
-                  {batchCategorizationStatus.currentPublication && (
-                    <p className="mt-2 text-xs text-purple-600 dark:text-purple-400 truncate">
-                      Current: {batchCategorizationStatus.currentPublication}
-                    </p>
-                  )}
-                </div>
-              )}
+                );
+              })()}
             </div>
           </CardContent>
         </Card>

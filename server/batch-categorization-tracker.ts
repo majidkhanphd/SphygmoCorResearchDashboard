@@ -18,6 +18,7 @@ export interface BatchCategorizationState {
   endTime: number | null;
   error: string | null;
   currentPublication: string | null;
+  etaSeconds: number | null;
 }
 
 class BatchCategorizationTracker {
@@ -34,6 +35,7 @@ class BatchCategorizationTracker {
     endTime: null,
     error: null,
     currentPublication: null,
+    etaSeconds: null,
   };
 
   isRunning(): boolean {
@@ -58,6 +60,7 @@ class BatchCategorizationTracker {
       endTime: null,
       error: null,
       currentPublication: null,
+      etaSeconds: null,
     };
   }
 
@@ -71,6 +74,17 @@ class BatchCategorizationTracker {
     if (this.state.status === "running") {
       this.state.processed = processed;
       this.state.currentPublication = currentPublication;
+      
+      // Calculate ETA based on server-side timing
+      if (this.state.startTime && processed > 0) {
+        const elapsedMs = Date.now() - this.state.startTime;
+        const avgMsPerPub = elapsedMs / processed;
+        const remainingPubs = this.state.total - processed;
+        const etaMs = avgMsPerPub * remainingPubs;
+        this.state.etaSeconds = Math.ceil(etaMs / 1000);
+      } else {
+        this.state.etaSeconds = null;
+      }
     }
   }
 
@@ -89,6 +103,14 @@ class BatchCategorizationTracker {
   incrementSkipped() {
     if (this.state.status === "running") {
       this.state.skipped++;
+    }
+  }
+
+  incrementBatch(success: number, failed: number, skipped: number) {
+    if (this.state.status === "running") {
+      this.state.successful += success;
+      this.state.failed += failed;
+      this.state.skipped += skipped;
     }
   }
 
@@ -123,6 +145,7 @@ class BatchCategorizationTracker {
       endTime: null,
       error: null,
       currentPublication: null,
+      etaSeconds: null,
     };
   }
 
