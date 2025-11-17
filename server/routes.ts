@@ -651,16 +651,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(String(req.query.limit)) || 25;
       const offset = parseInt(String(req.query.offset)) || 0;
+      const searchQuery = req.query.search ? String(req.query.search) : null;
       
       // Direct database query for pending publications (bypass approved filter)
       const { db } = await import("./db");
       const { publications } = await import("@shared/schema");
-      const { eq, desc, sql } = await import("drizzle-orm");
+      const { eq, desc, sql, and, or } = await import("drizzle-orm");
+      
+      // Build where conditions
+      const conditions = [eq(publications.status, "pending")];
+      
+      // Add search filter if provided
+      if (searchQuery) {
+        const search = `%${searchQuery.toLowerCase()}%`;
+        const searchCondition = or(
+          sql`LOWER(${publications.title}) LIKE ${search}`,
+          sql`LOWER(${publications.authors}) LIKE ${search}`,
+          sql`LOWER(${publications.journal}) LIKE ${search}`
+        );
+        if (searchCondition) {
+          conditions.push(searchCondition);
+        }
+      }
       
       const pendingPubs = await db
         .select()
         .from(publications)
-        .where(eq(publications.status, "pending"))
+        .where(and(...conditions))
         .orderBy(desc(publications.publicationDate))
         .limit(limit)
         .offset(offset);
@@ -668,7 +685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [countResult] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(publications)
-        .where(eq(publications.status, "pending"));
+        .where(and(...conditions));
       
       const total = countResult?.count || 0;
       const totalPages = Math.ceil(total / limit);
@@ -728,6 +745,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { status } = req.params;
       const limit = parseInt(String(req.query.limit)) || 25;
       const offset = parseInt(String(req.query.offset)) || 0;
+      const searchQuery = req.query.search ? String(req.query.search) : null;
       
       // Validate status
       if (!["pending", "approved", "rejected"].includes(status)) {
@@ -740,12 +758,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Direct database query for publications by status (bypass approved filter)
       const { db } = await import("./db");
       const { publications } = await import("@shared/schema");
-      const { eq, desc, sql } = await import("drizzle-orm");
+      const { eq, desc, sql, and, or } = await import("drizzle-orm");
+      
+      // Build where conditions
+      const conditions = [eq(publications.status, status)];
+      
+      // Add search filter if provided
+      if (searchQuery) {
+        const search = `%${searchQuery.toLowerCase()}%`;
+        const searchCondition = or(
+          sql`LOWER(${publications.title}) LIKE ${search}`,
+          sql`LOWER(${publications.authors}) LIKE ${search}`,
+          sql`LOWER(${publications.journal}) LIKE ${search}`
+        );
+        if (searchCondition) {
+          conditions.push(searchCondition);
+        }
+      }
       
       const pubs = await db
         .select()
         .from(publications)
-        .where(eq(publications.status, status))
+        .where(and(...conditions))
         .orderBy(desc(publications.publicationDate))
         .limit(limit)
         .offset(offset);
@@ -753,7 +787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [countResult] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(publications)
-        .where(eq(publications.status, status));
+        .where(and(...conditions));
       
       const total = countResult?.count || 0;
       const totalPages = Math.ceil(total / limit);
@@ -781,19 +815,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(String(req.query.limit)) || 25;
       const offset = parseInt(String(req.query.offset)) || 0;
+      const searchQuery = req.query.search ? String(req.query.search) : null;
       
       // Direct database query for featured publications
       const { db } = await import("./db");
       const { publications } = await import("@shared/schema");
-      const { eq, desc, sql, and } = await import("drizzle-orm");
+      const { eq, desc, sql, and, or } = await import("drizzle-orm");
+      
+      // Build where conditions
+      const conditions = [
+        eq(publications.isFeatured, 1),
+        eq(publications.status, "approved")
+      ];
+      
+      // Add search filter if provided
+      if (searchQuery) {
+        const search = `%${searchQuery.toLowerCase()}%`;
+        const searchCondition = or(
+          sql`LOWER(${publications.title}) LIKE ${search}`,
+          sql`LOWER(${publications.authors}) LIKE ${search}`,
+          sql`LOWER(${publications.journal}) LIKE ${search}`
+        );
+        if (searchCondition) {
+          conditions.push(searchCondition);
+        }
+      }
       
       const featuredPubs = await db
         .select()
         .from(publications)
-        .where(and(
-          eq(publications.isFeatured, 1),
-          eq(publications.status, "approved")
-        ))
+        .where(and(...conditions))
         .orderBy(desc(publications.publicationDate))
         .limit(limit)
         .offset(offset);

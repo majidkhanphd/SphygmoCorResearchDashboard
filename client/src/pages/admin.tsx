@@ -82,24 +82,27 @@ export default function Admin() {
   const debouncedSearch = useDebounce(searchQuery, 400);
   const { toast } = useToast();
 
-  // Reset to page 1 when tab changes
+  // Reset to page 1 when tab or search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab]);
+  }, [activeTab, debouncedSearch]);
 
   const offset = (currentPage - 1) * perPage;
   
+  // Build query URLs with search parameter
+  const searchParam = debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : '';
   const queryUrl = activeTab === "featured" 
-    ? `/api/admin/publications-list/featured?limit=${perPage}&offset=${offset}`
+    ? `/api/admin/publications-list/featured?limit=${perPage}&offset=${offset}${searchParam}`
     : activeTab === "category-review"
-    ? `/api/admin/publications/needing-review?limit=${perPage}&offset=${offset}`
-    : `/api/admin/publications/${activeTab}?limit=${perPage}&offset=${offset}`;
+    ? `/api/admin/publications/needing-review?limit=${perPage}&offset=${offset}${searchParam}`
+    : `/api/admin/publications/${activeTab}?limit=${perPage}&offset=${offset}${searchParam}`;
 
+  // Include search in query key for proper caching
   const queryKey = activeTab === "featured"
-    ? ['/api/admin/publications-list/featured', { limit: perPage, offset }]
+    ? ['/api/admin/publications-list/featured', { limit: perPage, offset, search: debouncedSearch }]
     : activeTab === "category-review"
-    ? ['/api/admin/publications/needing-review', { limit: perPage, offset }]
-    : ['/api/admin/publications', activeTab, { limit: perPage, offset }];
+    ? ['/api/admin/publications/needing-review', { limit: perPage, offset, search: debouncedSearch }]
+    : ['/api/admin/publications', activeTab, { limit: perPage, offset, search: debouncedSearch }];
 
   const { data: publicationsData, isLoading } = useQuery<{ success: boolean; publications: Publication[]; total: number; totalPages: number; currentPage: number }>({
     queryKey,
@@ -775,19 +778,8 @@ export default function Admin() {
   };
 
   // Memoize filtered publications to prevent recomputing on every render
-  const filteredPublications = useMemo(() => {
-    if (!publicationsData?.publications) return [];
-    if (!debouncedSearch) return publicationsData.publications;
-    
-    const search = debouncedSearch.toLowerCase();
-    return publicationsData.publications.filter(pub => {
-      return (
-        pub.title.toLowerCase().includes(search) ||
-        pub.authors.toLowerCase().includes(search) ||
-        pub.journal.toLowerCase().includes(search)
-      );
-    });
-  }, [publicationsData?.publications, debouncedSearch]);
+  // No need for client-side filtering - backend now handles search
+  const filteredPublications = publicationsData?.publications || [];
 
   const stats = statsData?.stats?.totalByStatus || { pending: 0, approved: 0, rejected: 0 };
 
@@ -800,7 +792,7 @@ export default function Admin() {
         minSize: 200,
         cell: ({ row }) => (
           <div className="space-y-1">
-            <div className="line-clamp-2 text-sm" data-testid={`text-title-${row.original.id}`}>
+            <div className="text-sm" data-testid={`text-title-${row.original.id}`}>
               {row.original.title}
             </div>
             <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${row.original.id}`}>
@@ -929,7 +921,7 @@ export default function Admin() {
         minSize: 200,
         cell: ({ row }) => (
           <div className="space-y-1">
-            <div className="line-clamp-2 text-sm" data-testid={`text-title-${row.original.id}`}>
+            <div className="text-sm" data-testid={`text-title-${row.original.id}`}>
               {row.original.title}
             </div>
             <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${row.original.id}`}>
@@ -1083,7 +1075,7 @@ export default function Admin() {
         minSize: 200,
         cell: ({ row }) => (
           <div className="space-y-2">
-            <div className="line-clamp-2 text-sm font-medium" data-testid={`text-title-${row.original.id}`}>
+            <div className="text-sm font-medium" data-testid={`text-title-${row.original.id}`}>
               {row.original.title}
             </div>
             <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${row.original.id}`}>
@@ -1508,9 +1500,9 @@ export default function Admin() {
                 data-testid="input-search-publications"
               />
             </div>
-            {debouncedSearch && (
+            {debouncedSearch && publicationsData && (
               <p className="mt-2 text-sm text-[#6e6e73] dark:text-gray-400">
-                Showing {filteredPublications.length} of {publicationsData?.publications.length || 0} publications
+                Found {publicationsData.total} publication{publicationsData.total !== 1 ? 's' : ''} matching "{debouncedSearch}"
               </p>
             )}
           </CardContent>
