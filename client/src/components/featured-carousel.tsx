@@ -191,7 +191,7 @@ export default function FeaturedCarousel() {
                     </div>
 
                     <h3
-                      className="line-clamp-2 mb-3"
+                      className="line-clamp-2 mb-2"
                       style={{
                         fontSize: '18px',
                         fontWeight: '600',
@@ -204,6 +204,18 @@ export default function FeaturedCarousel() {
                     </h3>
 
                     <p
+                      className="mb-2"
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        color: '#6E6E73',
+                      }}
+                      data-testid={`card-journal-${index}`}
+                    >
+                      {sanitizeAuthors(publication.journal)}, {new Date(publication.publicationDate).getFullYear()}
+                    </p>
+
+                    <p
                       className="line-clamp-2 mb-3 flex-grow"
                       style={{
                         fontSize: '13px',
@@ -214,20 +226,6 @@ export default function FeaturedCarousel() {
                     >
                       {sanitizeAuthors(publication.authors || '')}
                     </p>
-
-                    <div className="border-t pt-3" style={{ borderColor: '#E5E5E7' }}>
-                      <p
-                        className="mb-1"
-                        style={{
-                          fontSize: '13px',
-                          fontWeight: '500',
-                          color: '#1D1D1F',
-                        }}
-                        data-testid={`card-journal-${index}`}
-                      >
-                        {sanitizeAuthors(publication.journal)}, {new Date(publication.publicationDate).getFullYear()}
-                      </p>
-                    </div>
 
                     <button
                       onClick={() => window.open(publication.pubmedUrl || publication.doi || '', '_blank')}

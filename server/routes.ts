@@ -164,6 +164,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Toggle featured status
+  app.patch("/api/publications/:id/featured", async (req, res) => {
+    try {
+      const publication = await storage.toggleFeatured(req.params.id);
+      if (!publication) {
+        return res.status(404).json({ message: "Publication not found" });
+      }
+      res.json(publication);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to toggle featured status" });
+    }
+  });
+
   // Create publication manually
   app.post("/api/publications", async (req, res) => {
     try {

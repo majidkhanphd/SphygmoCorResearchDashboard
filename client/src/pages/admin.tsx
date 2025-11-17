@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Search, Check, X, ExternalLink, Loader2, Pencil } from "lucide-react";
+import { Search, Check, X, ExternalLink, Loader2, Pencil, Star } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
 import { RESEARCH_AREAS, RESEARCH_AREA_DISPLAY_NAMES } from "@shared/schema";
@@ -166,6 +166,29 @@ export default function Admin() {
     },
   });
 
+  const toggleFeaturedMutation = useMutation({
+    mutationFn: async (publicationId: string) => {
+      return await apiRequest("PATCH", `/api/publications/${publicationId}/featured`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/featured"] });
+      toast({
+        title: "Featured Status Updated",
+        description: "The publication's featured status has been toggled.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Toggle Failed",
+        description: error.message || "Failed to toggle featured status",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Poll sync status
   const fetchSyncStatus = async () => {
     try {
@@ -183,7 +206,10 @@ export default function Admin() {
         skipped: data.skipped,
         approved: data.approved,
         pending: data.pending,
+        startTime: data.startTime || null,
+        endTime: data.endTime || null,
         error: data.error,
+        lastSuccessTime: data.lastSuccessTime || null,
       };
       
       setSyncStatus(newStatus);
@@ -537,6 +563,17 @@ export default function Admin() {
             </Button>
             <Button
               size="sm"
+              variant={row.original.isFeatured === 1 ? "default" : "ghost"}
+              onClick={() => toggleFeaturedMutation.mutate(row.original.id)}
+              disabled={toggleFeaturedMutation.isPending}
+              className="h-8 w-8 p-0"
+              title={row.original.isFeatured === 1 ? "Remove from Featured" : "Add to Featured"}
+              data-testid={`button-feature-${row.original.id}`}
+            >
+              <Star className={`h-4 w-4 ${row.original.isFeatured === 1 ? 'fill-current' : ''}`} />
+            </Button>
+            <Button
+              size="sm"
               variant="ghost"
               onClick={() => openEditDialog(row.original)}
               className="h-8 w-8 p-0"
@@ -563,7 +600,7 @@ export default function Admin() {
         ),
       },
     ],
-    [activeTab, changeStatusMutation]
+    [activeTab, changeStatusMutation, toggleFeaturedMutation]
   );
 
   const pendingTable = useReactTable({

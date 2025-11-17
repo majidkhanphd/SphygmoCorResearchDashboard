@@ -13,6 +13,7 @@ export interface IStorage {
   searchPublications(params: SearchPublicationsParams): Promise<SearchPublicationsResponse>;
   getFilterCounts(params: SearchPublicationsParams): Promise<FilterCounts>;
   getFeaturedPublications(): Promise<Publication[]>;
+  toggleFeatured(id: string): Promise<Publication | undefined>;
   getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number, totalByStatus?: Record<string, number>}>;
   getMostRecentPublicationDate(): Promise<Date | null>;
 
@@ -249,6 +250,20 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(desc(publications.publicationDate))
       .limit(30);
+  }
+
+  async toggleFeatured(id: string): Promise<Publication | undefined> {
+    const publication = await this.getPublication(id);
+    if (!publication) return undefined;
+
+    const newFeaturedStatus = publication.isFeatured === 1 ? 0 : 1;
+    const [updated] = await db
+      .update(publications)
+      .set({ isFeatured: newFeaturedStatus })
+      .where(eq(publications.id, id))
+      .returning();
+    
+    return updated || undefined;
   }
 
   async getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number, totalByStatus?: Record<string, number>}> {

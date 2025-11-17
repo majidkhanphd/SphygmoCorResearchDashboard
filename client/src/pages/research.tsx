@@ -442,7 +442,7 @@ export default function Home() {
           >
             {/* Left sidebar - Apple ML Research Style */}
             <div className={`${isSidebarCollapsed ? 'hidden' : 'block'}`}>
-            <aside className="min-w-0 pr-8 relative max-h-[70vh] overflow-y-auto" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
+            <aside className="min-w-0 pr-8 relative" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
             {/* Collapse button - top right of sidebar */}
             {!isSidebarCollapsed && (
               <button
@@ -649,7 +649,7 @@ export default function Home() {
                 </button>
               )}
               
-              <div className="space-y-1 min-w-0">
+              <div className="space-y-1 min-w-0 max-h-[60vh] overflow-y-auto">
                 <button
                   onClick={() => handleVenueChange(null)}
                   className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
@@ -933,20 +933,24 @@ export default function Home() {
                     );
                   })}
                 </div>
-                
-                {/* Pagination controls - Apple style */}
-                <PaginationControls
-                  total={totalResults}
-                  currentPage={currentPage}
-                  perPage={perPage}
-                  onPageChange={handlePageChange}
-                  onPerPageChange={setPerPage}
-                />
               </>
             )}
           </section>
           </ResizablePanel>
         </ResizablePanelGroup>
+
+        {/* Pagination controls - Apple style */}
+        {!isLoading && allPublications.length > 0 && (
+          <div className="pl-8 mt-8">
+            <PaginationControls
+              total={totalResults}
+              currentPage={currentPage}
+              perPage={perPage}
+              onPageChange={handlePageChange}
+              onPerPageChange={setPerPage}
+            />
+          </div>
+        )}
 
         {/* Floating expand button when sidebar is collapsed */}
         {isSidebarCollapsed && (

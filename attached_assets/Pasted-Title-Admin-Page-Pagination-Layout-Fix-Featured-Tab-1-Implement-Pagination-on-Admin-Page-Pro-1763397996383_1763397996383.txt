@@ -1,0 +1,56 @@
+Title: Admin Page Pagination + Layout Fix + Featured Tab
+
+1. Implement Pagination on Admin Page
+
+Problem: The admin page attempts to load the entire Approved Publications list at once, causing load failures and testing issues.
+Goal: Apply the same pagination system used on the main publications page.
+
+Tasks:
+	•	Integrate the existing pagination component into the admin page’s Approved Publications list.
+	•	Match items-per-page settings and pagination behavior to the main publications section.
+	•	Ensure pagination is functional for Pending, Approved, and Rejected lists (if needed based on list size).
+
+Acceptance Criteria:
+	•	The admin page loads instantly without errors.
+	•	Publications are displayed in pages rather than one long list.
+	•	Pagination controls work identically to how they function on the main publications page.
+
+⸻
+
+2. Fix Admin Page Width / Column Layout
+
+Problem: The admin table layout is too narrow; the Actions column is partially cut off, forcing horizontal scrolling.
+
+Tasks:
+	•	Increase the max width of the admin content area or adjust the layout grid.
+	•	Ensure the table columns auto-adjust so all primary actions (Approve / Reject) are fully visible.
+	•	Remove the need for horizontal scrolling for core admin actions.
+
+Acceptance Criteria:
+	•	Admin table fits within the viewport width.
+	•	The Approve/Reject buttons are fully visible without horizontal scroll.
+	•	Layout remains responsive on medium and large screens.
+
+⸻
+
+3. Add a “Featured Publications” Tab
+
+Goal: Better organization by isolating featured items into their own tab.
+
+Tasks:
+	•	Add a new tab labeled Featured alongside Pending, Approved, and Rejected.
+	•	Create a new backend endpoint or query (if needed) to fetch featured publications.
+	•	Ensure the same actions (e.g., remove from featured) are available within this tab.
+	•	Display featured publications using the same table format and pagination rules.
+
+Acceptance Criteria:
+	•	Four tabs are visible: Pending, Approved, Rejected, Featured.
+	•	Featured tab loads only featured items.
+	•	Tab switching is smooth and follows existing UI conventions.
+
+⸻
+
+4. General QA
+	•	Validate no regressions appear in the existing admin workflow.
+	•	Confirm all table views respond correctly when resized.
+	•	Confirm pagination and tab state persist correctly during navigation.
