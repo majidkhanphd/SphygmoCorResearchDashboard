@@ -6,6 +6,8 @@ import { z } from "zod";
 import { XMLParser } from "fast-xml-parser";
 import { pubmedService } from "./services/pubmed";
 import { syncTracker } from "./sync-tracker";
+import { startBatchCategorization } from "./services/batchCategorization";
+import { batchCategorizationTracker } from "./batch-categorization-tracker";
 
 // Helper to normalize XML text from fast-xml-parser
 function normalizeXmlText(value: any): string {
@@ -1079,6 +1081,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false,
         message: "Failed to fetch publications needing review", 
         error: error.message 
+      });
+    }
+  });
+
+  // Batch categorization endpoints
+  app.post("/api/admin/batch-categorization/start", async (req, res) => {
+    try {
+      const { filter } = req.body;
+      
+      if (!filter || !["all", "uncategorized", "pending", "approved"].includes(filter)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid filter. Must be one of: all, uncategorized, pending, approved"
+        });
+      }
+
+      const result = await startBatchCategorization(filter);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      console.error("Error starting batch categorization:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to start batch categorization"
+      });
+    }
+  });
+
+  app.get("/api/admin/batch-categorization/status", async (req, res) => {
+    try {
+      const status = batchCategorizationTracker.getStatus();
+      res.json({ success: true, ...status });
+    } catch (error: any) {
+      console.error("Error fetching batch categorization status:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch batch categorization status"
       });
     }
   });

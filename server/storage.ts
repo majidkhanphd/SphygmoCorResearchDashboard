@@ -380,12 +380,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPublicationsNeedingReview(limit: number, offset: number): Promise<{publications: Publication[], total: number}> {
-    // Get publications with pending_review status OR with suggestions but NULL status (handle legacy data)
+    // Get publications with:
+    // 1. pending_review status (ML suggestions awaiting human review)
+    // 2. Legacy data: suggestions but NULL status
+    // 3. Uncategorized: approved but have no categories at all
     const whereClause = or(
       eq(publications.categoryReviewStatus, 'pending_review'),
       and(
         sql`${publications.categoryReviewStatus} IS NULL`,
         sql`${publications.suggestedCategories} IS NOT NULL`
+      ),
+      and(
+        eq(publications.status, 'approved'),
+        or(
+          sql`${publications.categories} IS NULL`,
+          sql`jsonb_array_length(${publications.categories}) = 0`
+        )
       )
     );
     
@@ -406,6 +416,30 @@ export class DatabaseStorage implements IStorage {
       publications: pubs,
       total: countResult?.count || 0
     };
+  }
+
+  async getPublicationsByApprovalStatus(status: "pending" | "approved" | "rejected"): Promise<Publication[]> {
+    return db
+      .select()
+      .from(publications)
+      .where(eq(publications.status, status))
+      .orderBy(desc(publications.publicationDate));
+  }
+
+  async getUncategorizedPublications(): Promise<Publication[]> {
+    return db
+      .select()
+      .from(publications)
+      .where(
+        and(
+          eq(publications.status, "approved"),
+          or(
+            sql`${publications.categories} IS NULL`,
+            sql`jsonb_array_length(${publications.categories}) = 0`
+          )
+        )
+      )
+      .orderBy(desc(publications.publicationDate));
   }
 }
 

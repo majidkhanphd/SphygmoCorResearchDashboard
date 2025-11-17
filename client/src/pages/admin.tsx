@@ -104,6 +104,17 @@ export default function Admin() {
     },
   });
 
+  // Query for featured publications count
+  const { data: featuredCountData } = useQuery<{ success: boolean; total: number }>({
+    queryKey: ['/api/admin/publications-list/featured/count'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/publications-list/featured?limit=1&offset=0');
+      if (!response.ok) throw new Error('Failed to fetch featured count');
+      const data = await response.json();
+      return { success: true, total: data.total || 0 };
+    },
+  });
+
   const approveMutation = useMutation({
     mutationFn: async (publicationId: string) => {
       return await apiRequest("POST", `/api/admin/publications/${publicationId}/approve`);
@@ -215,6 +226,7 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/publications-list/featured"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications-list/featured/count"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/featured"] });
       toast({
         title: "Featured Status Updated",
@@ -1280,7 +1292,7 @@ export default function Admin() {
                   Rejected ({stats.rejected || 0})
                 </TabsTrigger>
                 <TabsTrigger value="featured" data-testid="tab-featured">
-                  Featured ({activeTab === "featured" ? publicationsData?.total || 0 : 0})
+                  Featured ({featuredCountData?.total || 0})
                 </TabsTrigger>
                 <TabsTrigger value="category-review" data-testid="tab-category-review">
                   Category Review ({categoryReviewData?.total || 0})
