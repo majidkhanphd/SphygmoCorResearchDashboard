@@ -12,12 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Search, Check, X, ExternalLink, Loader2, Pencil, Star } from "lucide-react";
+import { Search, Check, X, ExternalLink, Loader2, Pencil, Star, Sparkles, CheckCheck } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
 import { PaginationControls } from "@/components/pagination-controls";
 import { RESEARCH_AREAS, RESEARCH_AREA_DISPLAY_NAMES } from "@shared/schema";
-import type { Publication } from "@shared/schema";
+import type { Publication, SuggestedCategory } from "@shared/schema";
 import {
   useReactTable,
   getCoreRowModel,
@@ -44,12 +44,16 @@ interface SyncStatus {
 
 export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected" | "featured">("pending");
+  const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected" | "featured" | "category-review">("pending");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
   const [editCategories, setEditCategories] = useState<string[]>([]);
+  const [editSuggestedCategories, setEditSuggestedCategories] = useState<string[]>([]);
+  const [selectedPublications, setSelectedPublications] = useState<Set<string>>(new Set());
+  const [bulkGenerateDialogOpen, setBulkGenerateDialogOpen] = useState(false);
+  const [bulkGenerateUseML, setBulkGenerateUseML] = useState(true);
   const [columnResizeMode] = useState<ColumnResizeMode>("onEnd");
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
@@ -66,10 +70,14 @@ export default function Admin() {
   
   const queryUrl = activeTab === "featured" 
     ? `/api/admin/publications-list/featured?limit=${perPage}&offset=${offset}`
+    : activeTab === "category-review"
+    ? `/api/admin/publications/needing-review?limit=${perPage}&offset=${offset}`
     : `/api/admin/publications/${activeTab}?limit=${perPage}&offset=${offset}`;
 
   const queryKey = activeTab === "featured"
     ? ['/api/admin/publications-list/featured', { limit: perPage, offset }]
+    : activeTab === "category-review"
+    ? ['/api/admin/publications/needing-review', { limit: perPage, offset }]
     : ['/api/admin/publications', activeTab, { limit: perPage, offset }];
 
   const { data: publicationsData, isLoading } = useQuery<{ success: boolean; publications: Publication[]; total: number; totalPages: number; currentPage: number }>({
@@ -83,6 +91,17 @@ export default function Admin() {
 
   const { data: statsData } = useQuery<{ success: boolean; stats: { totalByStatus: { pending: number; approved: number; rejected: number } } }>({
     queryKey: ["/api/publications/stats"],
+  });
+
+  // Query for category review count
+  const { data: categoryReviewData } = useQuery<{ success: boolean; total: number }>({
+    queryKey: ['/api/admin/publications/needing-review/count'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/publications/needing-review?limit=1&offset=0');
+      if (!response.ok) throw new Error('Failed to fetch category review count');
+      const data = await response.json();
+      return { success: true, total: data.total || 0 };
+    },
   });
 
   const approveMutation = useMutation({
@@ -206,6 +225,166 @@ export default function Admin() {
       toast({
         title: "Toggle Failed",
         description: error.message || "Failed to toggle featured status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Category Suggestion Mutations
+  const generateSuggestionsMutation = useMutation({
+    mutationFn: async ({ id, useML = true }: { id: string; useML?: boolean }) => {
+      return await apiRequest("POST", `/api/admin/publications/${id}/generate-suggestions`, { useML });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/needing-review"] });
+      toast({
+        title: "Suggestions Generated",
+        description: "Category suggestions have been generated for this publication.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Failed to generate suggestions",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const approveCategoriesMutation = useMutation({
+    mutationFn: async ({ id, categories }: { id: string; categories: string[] }) => {
+      return await apiRequest("POST", `/api/admin/publications/${id}/approve-categories`, { 
+        categories, 
+        reviewerName: 'admin' 
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/needing-review"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
+      setEditDialogOpen(false);
+      setSelectedPublications(new Set());
+      toast({
+        title: "Categories Approved",
+        description: "Selected categories have been approved.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message || "Failed to approve categories",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectSuggestionsMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("POST", `/api/admin/publications/${id}/reject-suggestions`, { 
+        reviewerName: 'admin' 
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/needing-review"] });
+      setSelectedPublications(new Set());
+      toast({
+        title: "Suggestions Rejected",
+        description: "Category suggestions have been rejected.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Rejection Failed",
+        description: error.message || "Failed to reject suggestions",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const batchGenerateSuggestionsMutation = useMutation({
+    mutationFn: async ({ publicationIds, useML = true }: { publicationIds: string[]; useML?: boolean }) => {
+      return await apiRequest("POST", "/api/admin/publications/batch-generate-suggestions", { 
+        publicationIds, 
+        useML 
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/needing-review"] });
+      setBulkGenerateDialogOpen(false);
+      setSelectedPublications(new Set());
+      toast({
+        title: "Bulk Generation Complete",
+        description: "Category suggestions have been generated for selected publications.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Bulk Generation Failed",
+        description: error.message || "Failed to generate suggestions",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const bulkApproveMutation = useMutation({
+    mutationFn: async (publicationIds: string[]) => {
+      const promises = publicationIds.map(id => {
+        const pub = filteredPublications.find(p => p.id === id);
+        if (pub?.suggestedCategories) {
+          const categories = pub.suggestedCategories.map(sc => sc.category);
+          return apiRequest("POST", `/api/admin/publications/${id}/approve-categories`, { 
+            categories, 
+            reviewerName: 'admin' 
+          });
+        }
+        return Promise.resolve();
+      });
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/needing-review"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
+      setSelectedPublications(new Set());
+      toast({
+        title: "Bulk Approval Complete",
+        description: "Category suggestions have been approved for selected publications.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Bulk Approval Failed",
+        description: error.message || "Failed to approve categories",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const bulkRejectMutation = useMutation({
+    mutationFn: async (publicationIds: string[]) => {
+      const promises = publicationIds.map(id =>
+        apiRequest("POST", `/api/admin/publications/${id}/reject-suggestions`, { reviewerName: 'admin' })
+      );
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/needing-review"] });
+      setSelectedPublications(new Set());
+      toast({
+        title: "Bulk Rejection Complete",
+        description: "Category suggestions have been rejected for selected publications.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Bulk Rejection Failed",
+        description: error.message || "Failed to reject suggestions",
         variant: "destructive",
       });
     },
@@ -361,16 +540,30 @@ export default function Admin() {
   const openEditDialog = (publication: Publication) => {
     setEditingPublication(publication);
     setEditCategories(publication.categories || []);
+    // If has suggested categories, pre-select them for Edit & Approve
+    if (publication.suggestedCategories && publication.suggestedCategories.length > 0) {
+      setEditSuggestedCategories(publication.suggestedCategories.map(sc => sc.category));
+    } else {
+      setEditSuggestedCategories([]);
+    }
     setEditDialogOpen(true);
   };
 
   const handleSaveCategories = () => {
     if (!editingPublication) return;
     
-    updateCategoriesMutation.mutate({
-      id: editingPublication.id,
-      categories: editCategories,
-    });
+    // If on category review tab and has suggested categories, use approve mutation
+    if (activeTab === "category-review" && editingPublication.suggestedCategories && editingPublication.suggestedCategories.length > 0) {
+      approveCategoriesMutation.mutate({
+        id: editingPublication.id,
+        categories: editSuggestedCategories,
+      });
+    } else {
+      updateCategoriesMutation.mutate({
+        id: editingPublication.id,
+        categories: editCategories,
+      });
+    }
   };
 
   const toggleCategory = (category: string) => {
@@ -379,6 +572,79 @@ export default function Admin() {
         ? prev.filter(c => c !== category)
         : [...prev, category]
     );
+  };
+
+  const toggleSuggestedCategory = (category: string) => {
+    setEditSuggestedCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const handleAcceptAllSuggestions = (publication: Publication) => {
+    if (!publication.suggestedCategories || publication.suggestedCategories.length === 0) return;
+    const categories = publication.suggestedCategories.map(sc => sc.category);
+    approveCategoriesMutation.mutate({
+      id: publication.id,
+      categories,
+    });
+  };
+
+  const handleToggleSelection = (publicationId: string) => {
+    setSelectedPublications(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(publicationId)) {
+        newSet.delete(publicationId);
+      } else {
+        newSet.add(publicationId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedPublications.size === filteredPublications.length) {
+      setSelectedPublications(new Set());
+    } else {
+      setSelectedPublications(new Set(filteredPublications.map(p => p.id)));
+    }
+  };
+
+  const handleBulkGenerate = () => {
+    const ids = Array.from(selectedPublications);
+    batchGenerateSuggestionsMutation.mutate({
+      publicationIds: ids,
+      useML: bulkGenerateUseML,
+    });
+  };
+
+  const handleBulkAccept = () => {
+    const ids = Array.from(selectedPublications);
+    bulkApproveMutation.mutate(ids);
+  };
+
+  const handleBulkReject = () => {
+    const ids = Array.from(selectedPublications);
+    bulkRejectMutation.mutate(ids);
+  };
+
+  const getConfidenceBadgeClass = (confidence: number) => {
+    if (confidence >= 0.8) {
+      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+    } else if (confidence >= 0.6) {
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
+    } else {
+      return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+    }
+  };
+
+  const getSourceBadgeClass = (source: 'ml' | 'keyword') => {
+    if (source === 'ml') {
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+    } else {
+      return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400";
+    }
   };
 
   // Memoize filtered publications to prevent recomputing on every render
@@ -460,10 +726,10 @@ export default function Admin() {
       {
         id: "actions",
         header: "Actions",
-        size: 280,
+        size: 350,
         enableResizing: false,
         cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-2 flex-wrap">
             <Button
               size="sm"
               variant="ghost"
@@ -484,6 +750,20 @@ export default function Admin() {
             >
               <Pencil className="h-4 w-4" />
             </Button>
+            {(!row.original.suggestedCategories || row.original.suggestedCategories.length === 0) && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => generateSuggestionsMutation.mutate({ id: row.original.id, useML: true })}
+                disabled={generateSuggestionsMutation.isPending}
+                className="h-8"
+                title="Generate category suggestions"
+                data-testid={`button-generate-${row.original.id}`}
+              >
+                <Sparkles className="h-4 w-4 mr-1" />
+                Generate
+              </Button>
+            )}
             <Button
               size="sm"
               variant="default"
@@ -510,7 +790,7 @@ export default function Admin() {
         ),
       },
     ],
-    [approveMutation, rejectMutation]
+    [approveMutation, rejectMutation, generateSuggestionsMutation]
   );
 
   const approvedRejectedColumns = useMemo<ColumnDef<Publication>[]>(
@@ -575,10 +855,10 @@ export default function Admin() {
       {
         id: "actions",
         header: "Actions",
-        size: 280,
+        size: 350,
         enableResizing: false,
         cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-2 flex-wrap">
             <Button
               size="sm"
               variant="ghost"
@@ -610,6 +890,20 @@ export default function Admin() {
             >
               <Pencil className="h-4 w-4" />
             </Button>
+            {(!row.original.suggestedCategories || row.original.suggestedCategories.length === 0) && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => generateSuggestionsMutation.mutate({ id: row.original.id, useML: true })}
+                disabled={generateSuggestionsMutation.isPending}
+                className="h-8"
+                title="Generate category suggestions"
+                data-testid={`button-generate-${row.original.id}`}
+              >
+                <Sparkles className="h-4 w-4 mr-1" />
+                Generate
+              </Button>
+            )}
             <Select
               value={activeTab}
               onValueChange={(value) => changeStatusMutation.mutate({ id: row.original.id, status: value as "pending" | "approved" | "rejected" })}
@@ -628,7 +922,156 @@ export default function Admin() {
         ),
       },
     ],
-    [activeTab, changeStatusMutation, toggleFeaturedMutation]
+    [activeTab, changeStatusMutation, toggleFeaturedMutation, generateSuggestionsMutation]
+  );
+
+  // Category Review Columns
+  const categoryReviewColumns = useMemo<ColumnDef<Publication>[]>(
+    () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <Checkbox
+            checked={selectedPublications.size === filteredPublications.length && filteredPublications.length > 0}
+            onCheckedChange={handleSelectAll}
+            aria-label="Select all"
+            data-testid="checkbox-select-all"
+          />
+        ),
+        size: 50,
+        enableResizing: false,
+        cell: ({ row }) => (
+          <Checkbox
+            checked={selectedPublications.has(row.original.id)}
+            onCheckedChange={() => handleToggleSelection(row.original.id)}
+            aria-label="Select row"
+            data-testid={`checkbox-select-${row.original.id}`}
+          />
+        ),
+      },
+      {
+        accessorKey: "title",
+        header: "Publication",
+        size: 300,
+        minSize: 200,
+        cell: ({ row }) => (
+          <div className="space-y-2">
+            <div className="line-clamp-2 text-sm font-medium" data-testid={`text-title-${row.original.id}`}>
+              {row.original.title}
+            </div>
+            <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${row.original.id}`}>
+              {row.original.authors}
+            </div>
+            <div className="text-xs text-[#6e6e73] dark:text-gray-400">
+              {row.original.journal} • {new Date(row.original.publicationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+            </div>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "categories",
+        header: "Current Categories",
+        size: 180,
+        cell: ({ row }) => (
+          <div className="flex flex-wrap gap-1">
+            {row.original.categories && row.original.categories.length > 0 ? (
+              row.original.categories.map((category) => (
+                <Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-current-category-${row.original.id}-${category}`}>
+                  {RESEARCH_AREA_DISPLAY_NAMES[category] || category}
+                </Badge>
+              ))
+            ) : (
+              <span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>
+            )}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "suggestedCategories",
+        header: "Suggested Categories",
+        size: 280,
+        cell: ({ row }) => (
+          <div className="space-y-2">
+            {row.original.suggestedCategories && row.original.suggestedCategories.length > 0 ? (
+              row.original.suggestedCategories.map((suggestion, idx) => (
+                <div key={idx} className="flex items-center gap-2 flex-wrap">
+                  <Badge 
+                    className={`text-xs ${getConfidenceBadgeClass(suggestion.confidence)}`}
+                    data-testid={`badge-suggested-${row.original.id}-${suggestion.category}`}
+                  >
+                    {suggestion.confidence >= 0.8 && <Check className="h-3 w-3 mr-1" />}
+                    {RESEARCH_AREA_DISPLAY_NAMES[suggestion.category] || suggestion.category}
+                    <span className="ml-1 opacity-75">({Math.round(suggestion.confidence * 100)}%)</span>
+                  </Badge>
+                  <Badge 
+                    className={`text-xs ${getSourceBadgeClass(suggestion.source)}`}
+                    data-testid={`badge-source-${row.original.id}-${suggestion.category}`}
+                  >
+                    {suggestion.source === 'ml' ? 'ML' : 'Keyword'}
+                  </Badge>
+                </div>
+              ))
+            ) : (
+              <span className="text-xs text-[#6e6e73] dark:text-gray-400">No suggestions</span>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        size: 400,
+        enableResizing: false,
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => row.original.pubmedUrl && window.open(row.original.pubmedUrl, '_blank')}
+              className="h-8 w-8 p-0"
+              title="View on PubMed"
+              data-testid={`button-view-${row.original.id}`}
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => handleAcceptAllSuggestions(row.original)}
+              disabled={approveCategoriesMutation.isPending || !row.original.suggestedCategories || row.original.suggestedCategories.length === 0}
+              className="h-8 bg-green-600 hover:bg-green-700 text-white"
+              data-testid={`button-accept-${row.original.id}`}
+            >
+              <CheckCheck className="h-4 w-4 mr-1" />
+              Accept
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openEditDialog(row.original)}
+              disabled={!row.original.suggestedCategories || row.original.suggestedCategories.length === 0}
+              className="h-8"
+              data-testid={`button-edit-approve-${row.original.id}`}
+            >
+              <Pencil className="h-4 w-4 mr-1" />
+              Edit & Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => rejectSuggestionsMutation.mutate(row.original.id)}
+              disabled={rejectSuggestionsMutation.isPending}
+              className="h-8"
+              data-testid={`button-reject-suggestions-${row.original.id}`}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Reject
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [selectedPublications, filteredPublications, approveCategoriesMutation, rejectSuggestionsMutation]
   );
 
   const pendingTable = useReactTable({
@@ -642,6 +1085,14 @@ export default function Admin() {
   const approvedRejectedTable = useReactTable({
     data: filteredPublications,
     columns: approvedRejectedColumns,
+    getCoreRowModel: getCoreRowModel(),
+    columnResizeMode,
+    enableColumnResizing: true,
+  });
+
+  const categoryReviewTable = useReactTable({
+    data: filteredPublications,
+    columns: categoryReviewColumns,
     getCoreRowModel: getCoreRowModel(),
     columnResizeMode,
     enableColumnResizing: true,
@@ -816,9 +1267,9 @@ export default function Admin() {
         </Card>
 
         <Card>
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "pending" | "approved" | "rejected" | "featured")} data-testid="tabs-status">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "pending" | "approved" | "rejected" | "featured" | "category-review")} data-testid="tabs-status">
             <CardHeader className="pb-3">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="pending" data-testid="tab-pending">
                   Pending ({stats.pending || 0})
                 </TabsTrigger>
@@ -829,7 +1280,10 @@ export default function Admin() {
                   Rejected ({stats.rejected || 0})
                 </TabsTrigger>
                 <TabsTrigger value="featured" data-testid="tab-featured">
-                  Featured ({publicationsData?.total || 0})
+                  Featured ({activeTab === "featured" ? publicationsData?.total || 0 : 0})
+                </TabsTrigger>
+                <TabsTrigger value="category-review" data-testid="tab-category-review">
+                  Category Review ({categoryReviewData?.total || 0})
                 </TabsTrigger>
               </TabsList>
             </CardHeader>
@@ -949,37 +1403,164 @@ export default function Admin() {
                 )}
               </CardContent>
             </TabsContent>
+
+            <TabsContent value="category-review" className="mt-0">
+              <CardContent className="p-0">
+                {selectedPublications.size > 0 && (
+                  <div className="p-4 border-b bg-[#f5f5f7] dark:bg-gray-900">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="text-sm font-medium text-[#1d1d1f] dark:text-white">
+                        {selectedPublications.size} selected
+                      </span>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setBulkGenerateDialogOpen(true)}
+                          disabled={batchGenerateSuggestionsMutation.isPending}
+                          data-testid="button-bulk-generate"
+                        >
+                          <Sparkles className="h-4 w-4 mr-1" />
+                          Bulk Generate Suggestions
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={handleBulkAccept}
+                          disabled={bulkApproveMutation.isPending}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                          data-testid="button-bulk-accept"
+                        >
+                          <CheckCheck className="h-4 w-4 mr-1" />
+                          Bulk Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleBulkReject}
+                          disabled={bulkRejectMutation.isPending}
+                          data-testid="button-bulk-reject"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Bulk Reject
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#0071e3]" />
+                  </div>
+                ) : filteredPublications.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <p className="text-[#6e6e73] dark:text-gray-400">
+                      {debouncedSearch ? "No publications match your search" : "No publications need category review"}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {renderTable(categoryReviewTable)}
+                    <div className="p-4 border-t">
+                      <PaginationControls
+                        total={publicationsData?.total || 0}
+                        currentPage={currentPage}
+                        perPage={perPage}
+                        onPageChange={setCurrentPage}
+                        onPerPageChange={setPerPage}
+                      />
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </TabsContent>
           </Tabs>
         </Card>
       </main>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Edit Categories</DialogTitle>
+            <DialogTitle>
+              {activeTab === "category-review" && editingPublication?.suggestedCategories && editingPublication.suggestedCategories.length > 0
+                ? "Edit & Approve Categories"
+                : "Edit Categories"}
+            </DialogTitle>
             <DialogDescription>
-              Select the research areas that apply to this publication
+              {activeTab === "category-review" && editingPublication?.suggestedCategories && editingPublication.suggestedCategories.length > 0
+                ? "Select suggested categories to approve, or add additional ones"
+                : "Select the research areas that apply to this publication"}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-3">
-              {RESEARCH_AREAS.map((area) => (
-                <div key={area} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={area}
-                    checked={editCategories.includes(area)}
-                    onCheckedChange={() => toggleCategory(area)}
-                    data-testid={`checkbox-category-${area}`}
-                  />
-                  <Label
-                    htmlFor={area}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {RESEARCH_AREA_DISPLAY_NAMES[area]}
-                  </Label>
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
+            {activeTab === "category-review" && editingPublication?.suggestedCategories && editingPublication.suggestedCategories.length > 0 ? (
+              <>
+                <div className="space-y-3">
+                  <h3 className="font-medium text-sm text-[#1d1d1f] dark:text-white">Suggested Categories</h3>
+                  {editingPublication.suggestedCategories.map((suggestion) => (
+                    <div key={suggestion.category} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`suggested-${suggestion.category}`}
+                        checked={editSuggestedCategories.includes(suggestion.category)}
+                        onCheckedChange={() => toggleSuggestedCategory(suggestion.category)}
+                        data-testid={`checkbox-suggested-${suggestion.category}`}
+                      />
+                      <Label
+                        htmlFor={`suggested-${suggestion.category}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                      >
+                        {RESEARCH_AREA_DISPLAY_NAMES[suggestion.category]}
+                        <Badge className={`text-xs ${getConfidenceBadgeClass(suggestion.confidence)}`}>
+                          {Math.round(suggestion.confidence * 100)}%
+                        </Badge>
+                        <Badge className={`text-xs ${getSourceBadgeClass(suggestion.source)}`}>
+                          {suggestion.source === 'ml' ? 'ML' : 'Keyword'}
+                        </Badge>
+                      </Label>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+                <div className="space-y-3 pt-4 border-t">
+                  <h3 className="font-medium text-sm text-[#1d1d1f] dark:text-white">Add Other Categories</h3>
+                  {RESEARCH_AREAS.filter(area => !editingPublication.suggestedCategories?.some(sc => sc.category === area)).map((area) => (
+                    <div key={area} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`additional-${area}`}
+                        checked={editSuggestedCategories.includes(area)}
+                        onCheckedChange={() => toggleSuggestedCategory(area)}
+                        data-testid={`checkbox-additional-${area}`}
+                      />
+                      <Label
+                        htmlFor={`additional-${area}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {RESEARCH_AREA_DISPLAY_NAMES[area]}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3">
+                {RESEARCH_AREAS.map((area) => (
+                  <div key={area} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={area}
+                      checked={editCategories.includes(area)}
+                      onCheckedChange={() => toggleCategory(area)}
+                      data-testid={`checkbox-category-${area}`}
+                    />
+                    <Label
+                      htmlFor={area}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {RESEARCH_AREA_DISPLAY_NAMES[area]}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)} data-testid="button-cancel-edit">
@@ -987,16 +1568,69 @@ export default function Admin() {
             </Button>
             <Button 
               onClick={handleSaveCategories} 
-              disabled={updateCategoriesMutation.isPending}
+              disabled={updateCategoriesMutation.isPending || approveCategoriesMutation.isPending}
               data-testid="button-save-categories"
             >
-              {updateCategoriesMutation.isPending ? (
+              {(updateCategoriesMutation.isPending || approveCategoriesMutation.isPending) ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
                 </>
               ) : (
-                "Save Changes"
+                activeTab === "category-review" && editingPublication?.suggestedCategories && editingPublication.suggestedCategories.length > 0
+                  ? "Approve Selected"
+                  : "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={bulkGenerateDialogOpen} onOpenChange={setBulkGenerateDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Bulk Generate Suggestions</DialogTitle>
+            <DialogDescription>
+              Generate category suggestions for {selectedPublications.size} selected publication{selectedPublications.size !== 1 ? 's' : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="use-ml"
+                checked={bulkGenerateUseML}
+                onCheckedChange={(checked) => setBulkGenerateUseML(checked as boolean)}
+                data-testid="checkbox-use-ml"
+              />
+              <Label
+                htmlFor="use-ml"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Use ML-based suggestions (recommended)
+              </Label>
+            </div>
+            <p className="text-sm text-[#6e6e73] dark:text-gray-400">
+              {bulkGenerateUseML
+                ? "ML-based suggestions use advanced models to analyze publication content and provide high-confidence category recommendations."
+                : "Keyword-based suggestions use simple keyword matching from publication titles and abstracts."}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkGenerateDialogOpen(false)} data-testid="button-cancel-bulk-generate">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleBulkGenerate} 
+              disabled={batchGenerateSuggestionsMutation.isPending}
+              data-testid="button-confirm-bulk-generate"
+            >
+              {batchGenerateSuggestionsMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                "Generate Suggestions"
               )}
             </Button>
           </DialogFooter>

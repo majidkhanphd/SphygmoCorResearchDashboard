@@ -1054,8 +1054,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get publications needing category review
   app.get("/api/admin/publications/needing-review", async (req, res) => {
     try {
-      const limit = parseInt(String(req.query.limit)) || 25;
-      const offset = parseInt(String(req.query.offset)) || 0;
+      // Parse query params with safe defaults
+      const limitParam = req.query.limit ? parseInt(String(req.query.limit)) : 25;
+      const offsetParam = req.query.offset ? parseInt(String(req.query.offset)) : 0;
+      
+      const limit = isNaN(limitParam) ? 25 : Math.min(Math.max(limitParam, 1), 100);
+      const offset = isNaN(offsetParam) ? 0 : Math.max(offsetParam, 0);
       
       const { publications: pubs, total } = await storage.getPublicationsNeedingReview(limit, offset);
       const totalPages = Math.ceil(total / limit);

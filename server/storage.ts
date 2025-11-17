@@ -378,10 +378,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPublicationsNeedingReview(limit: number, offset: number): Promise<{publications: Publication[], total: number}> {
+    // Get publications with pending_review status OR with suggestions but NULL status (handle legacy data)
+    const whereClause = or(
+      eq(publications.categoryReviewStatus, 'pending_review'),
+      and(
+        sql`${publications.categoryReviewStatus} IS NULL`,
+        sql`${publications.suggestedCategories} IS NOT NULL`
+      )
+    );
+    
     const pubs = await db
       .select()
       .from(publications)
-      .where(eq(publications.categoryReviewStatus, 'pending_review'))
+      .where(whereClause)
       .orderBy(desc(publications.categoryReviewedAt))
       .limit(limit)
       .offset(offset);
@@ -389,7 +398,7 @@ export class DatabaseStorage implements IStorage {
     const [countResult] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(publications)
-      .where(eq(publications.categoryReviewStatus, 'pending_review'));
+      .where(whereClause);
 
     return {
       publications: pubs,
