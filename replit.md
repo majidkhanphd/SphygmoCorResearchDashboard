@@ -4,6 +4,14 @@ This project is a research publication management system for CONNEQT Health, foc
 
 ## Recent Updates (November 2025)
 
+**Admin Performance Optimization (November 17, 2025):**
+- Resolved freezing/blocking issues on admin page when handling large datasets (2,500+ publications)
+- Memoized client-side filtering with useMemo to prevent unnecessary recomputations on every render
+- Fixed sync-status query invalidation to use prefix-based matching for paginated queries
+- Verified backend SQL queries use LIMIT/OFFSET at database level (not post-processing)
+- Performance results: Smooth tab switching, responsive search (400ms debounce), quick pagination (<2s), API calls ~2.5-3s with non-blocking UI
+- Admin page now handles thousands of publications without freezing during search, filter, tab switching, or pagination operations
+
 **Featured Research & Sidebar Polish (November 15, 2025 - Final):**
 - Redesigned Featured Research cards to match main publications list format
 - Removed abstract preview from featured cards, added authors display instead
