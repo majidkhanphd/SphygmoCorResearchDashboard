@@ -1,0 +1,124 @@
+Goal
+Improve data quality and category handling for all publications without breaking existing production behavior, focusing on:
+	1.	Cleaning up HTML formatting issues in publication titles, and
+	2.	Revisiting, tightening, and partially automating the publication category/tagging logic and admin workflows.
+
+⸻
+
+Part 1 – Clean up HTML in publication titles
+
+Tasks
+	1.	Audit titles for HTML artifacts
+	•	Scan all publication titles in the database for:
+	•	Raw HTML tags (e.g., <i>, <sub>, <sup>, <em>, <b>, etc.).
+	•	HTML entities (e.g., &amp;, &quot;, &lt;, &gt;, &#123;, etc.) that are being displayed instead of rendered.
+	•	Pay special attention to:
+	•	Non-English titles.
+	•	Titles imported from external sources or legacy imports.
+	2.	Normalize and clean titles
+	•	Implement a safe normalization step that:
+	•	Removes or properly decodes HTML tags and entities.
+	•	Ensures the final stored title is plain text (no visible HTML markup).
+	•	Avoid altering the semantic content of titles (no truncation or unintended character loss).
+	3.	Validation and safety
+	•	Run the cleaning logic in a non-destructive “dry run” mode first:
+	•	Log titles that would be changed, and how.
+	•	Once validated, apply the transformation to production data in a controlled way.
+	•	Add unit tests and/or integration tests to ensure:
+	•	New imports and updates do not reintroduce HTML formatting issues into titles.
+
+⸻
+
+Part 2 – Revisit and improve category/tagging logic (with ML assist)
+
+High-level intent
+We need to make sure publications are:
+	•	Correctly categorized.
+	•	Not over-tagged.
+	•	Using a consistent, well-defined set of category rules.
+
+Tasks
+	1.	Understand current category system
+	•	Inspect:
+	•	How categories are currently assigned (rule-based, manual, ML-driven, or mixed).
+	•	The list of existing categories (e.g., women’s health, men’s health, etc.).
+	•	Document current behavior:
+	•	Inputs (e.g., title, abstract, keywords).
+	•	Logic or model used.
+	•	Known failure modes (e.g., over-tagging).
+	2.	Define category assignment rules and constraints
+	•	For each category, write down clear criteria (even if ML is involved).
+	•	Explicitly avoid over-general tagging. For example:
+	•	If a publication does not specifically mention women, female, men, male, or sex/gender-specific populations, it should not automatically be tagged as “women’s health” or “men’s health.”
+	•	Identify other similar “over-tagging” patterns and define guardrails.
+	3.	Introduce or refine ML-based tagging
+	•	(If not already present) design an ML-based or ML-assisted pipeline for category prediction.
+	•	If ML is already used:
+	•	Evaluate its performance with respect to:
+	•	Precision (avoid false positives and over-tagging).
+	•	Recall (still capture relevant categories).
+	•	Implement logic that:
+	•	Uses model outputs as suggestions, with thresholds tuned to avoid over-tagging.
+	•	Applies explicit business rules on top (e.g., “do not tag as X unless condition Y is true”).
+	4.	Human-in-the-loop and manual review workflow
+	•	Design a workflow to:
+	•	Flag publications where the model is uncertain or rules conflict.
+	•	Allow human reviewers to confirm, adjust, or remove categories.
+	•	Ensure that manual overrides are:
+	•	Stored in the database.
+	•	Respected by future re-runs of the ML tagging process (i.e., no “undoing” human decisions).
+	5.	Safety and rollout
+	•	Do not directly overwrite all existing categories blindly.
+	•	Start with:
+	•	A shadow evaluation (run new logic alongside current one and compare).
+	•	A small subset of publications for trial.
+	•	Only after validation, consider:
+	•	Batch updating categories with strict logging and the ability to revert.
+
+⸻
+
+Part 3 – Improve category handling in the admin page
+
+Goals
+	•	Make category management and review in the admin more usable and scalable.
+	•	Support manual review for potentially large sets of publications without breaking performance.
+
+Tasks
+	1.	Refine category UI/UX
+	•	Improve how categories are displayed and edited per publication:
+	•	Clear view of currently assigned categories.
+	•	Easy controls to add, remove, or modify categories.
+	•	Ensure the layout and interactions remain usable even for:
+	•	Many categories.
+	•	Large lists of publications.
+	2.	Support batch review and filtering
+	•	Add tools to:
+	•	Filter by category, “needs review,” or “model-suggested changes.”
+	•	Approve/reject suggested category changes in bulk where appropriate.
+	•	Make it easy to:
+	•	See which publications have uncertain or conflicting tags.
+	•	Prioritize manual review.
+	3.	Performance and safety
+	•	Ensure the admin page remains responsive and does not freeze with large datasets.
+	•	Avoid any changes that could corrupt or wipe existing category data.
+	•	Add logging around category edits (both automated and manual) for traceability.
+
+⸻
+
+Constraints & Acceptance Criteria
+	•	Constraints
+	•	Do not break existing front-end or database behavior.
+	•	All changes must be rolled out in a controlled and reversible manner.
+	•	Treat production data with extreme care; prefer migrations that are:
+	•	Logged.
+	•	Testable.
+	•	Reversible.
+	•	Acceptance Criteria
+	•	No publication title in the database displays visible HTML tags or stray entities.
+	•	Category assignment:
+	•	Matches clearly defined rules and business logic.
+	•	Demonstrably reduces over-tagging (e.g., fewer unjustified women’s/men’s health tags).
+	•	Admin category management:
+	•	Supports efficient manual review at scale.
+	•	Remains performant and stable.
+	•	All core functionality related to publications and categories continues to work without regressions.

@@ -244,7 +244,7 @@ export default function Home() {
           <p
             style={{ fontSize: '18px', color: '#6E6E73', maxWidth: '820px', margin: '0 auto', lineHeight: '1.4' }}
             className="ml-[50px] mr-[50px] text-center pl-[30px] pr-[30px]">
-            Browse our comprehensive collection of peer-reviewed cardiovascular research.
+            Browse our comprehensive collection of peer-reviewed research spanning decades of SphygmoCor technology in practice worldwide.
           </p>
         </div>
         
@@ -1038,10 +1038,10 @@ export default function Home() {
           {/* Copyright */}
           <div className="text-center">
             <p className="text-sm" style={{ color: '#6E6E73', lineHeight: '1.4' }} data-testid="footer-copyright">
-              Copyright © {new Date().getFullYear()} CONNEQT Health Inc. All rights reserved.
+              Copyright © {new Date().getFullYear()} CONNEQT Health. All rights reserved.
             </p>
             <p className="text-xs mt-2" style={{ color: '#86868B', lineHeight: '1.4' }} data-testid="footer-location">
-              United States
+              United States | Austrailia | Worldwide
             </p>
           </div>
         </div>
