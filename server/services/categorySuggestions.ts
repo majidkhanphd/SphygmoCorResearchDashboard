@@ -60,7 +60,7 @@ export async function generateMLSuggestions(
     const text = abstract ? `${title}\n\n${abstract}` : title;
     
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: `Analyze this publication and suggest categories:\n\n${text}` }
