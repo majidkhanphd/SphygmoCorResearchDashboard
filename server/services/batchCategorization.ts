@@ -49,10 +49,10 @@ async function processBatchCategorization(
       // Process batch in parallel
       await Promise.all(
         batch.map(async (pub, idx) => {
+          const globalIdx = i + idx;
           try {
-            const globalIdx = i + idx;
             batchCategorizationTracker.updateProgress(
-              globalIdx,
+              globalIdx + 1,
               pub.title || "Untitled"
             );
 

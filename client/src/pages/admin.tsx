@@ -42,6 +42,21 @@ interface SyncStatus {
   lastSuccessTime: number | null;
 }
 
+interface BatchCategorizationStatus {
+  status: "idle" | "running" | "completed" | "error";
+  filter: "all" | "uncategorized" | "pending" | "approved" | null;
+  phase: string;
+  processed: number;
+  total: number;
+  success: number;
+  failed: number;
+  skipped: number;
+  currentPublication: string | null;
+  startTime: number | null;
+  endTime: number | null;
+  error: string | null;
+}
+
 export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected" | "featured" | "category-review">("pending");
@@ -54,10 +69,15 @@ export default function Admin() {
   const [selectedPublications, setSelectedPublications] = useState<Set<string>>(new Set());
   const [bulkGenerateDialogOpen, setBulkGenerateDialogOpen] = useState(false);
   const [bulkGenerateUseML, setBulkGenerateUseML] = useState(true);
+  const [batchCategorizeDialogOpen, setBatchCategorizeDialogOpen] = useState(false);
+  const [batchCategorizeFilter, setBatchCategorizeFilter] = useState<"all" | "uncategorized" | "pending" | "approved">("uncategorized");
   const [columnResizeMode] = useState<ColumnResizeMode>("onEnd");
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
+  const [batchCategorizationStatus, setBatchCategorizationStatus] = useState<BatchCategorizationStatus | null>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
   const completionTimeout = useRef<NodeJS.Timeout | null>(null);
+  const batchCategorizationPollingInterval = useRef<NodeJS.Timeout | null>(null);
+  const batchCategorizationCompletionTimeout = useRef<NodeJS.Timeout | null>(null);
   const debouncedSearch = useDebounce(searchQuery, 400);
   const { toast } = useToast();
 
@@ -549,6 +569,99 @@ export default function Admin() {
     }
   };
 
+  // Poll batch categorization status
+  const fetchBatchCategorizationStatus = async () => {
+    try {
+      const response = await apiRequest("GET", "/api/admin/batch-categorization/status");
+      const data = await response.json();
+      
+      const newStatus: BatchCategorizationStatus = {
+        status: data.status,
+        filter: data.filter,
+        phase: data.phase,
+        processed: data.processed,
+        total: data.total,
+        success: data.success,
+        failed: data.failed,
+        skipped: data.skipped,
+        currentPublication: data.currentPublication,
+        startTime: data.startTime || null,
+        endTime: data.endTime || null,
+        error: data.error,
+      };
+      
+      setBatchCategorizationStatus(newStatus);
+      return newStatus;
+    } catch (error) {
+      console.error("Failed to fetch batch categorization status:", error);
+      return null;
+    }
+  };
+
+  // Start polling when batch categorization is running
+  useEffect(() => {
+    if (batchCategorizationStatus?.status === "running") {
+      if (batchCategorizationCompletionTimeout.current) {
+        clearTimeout(batchCategorizationCompletionTimeout.current);
+        batchCategorizationCompletionTimeout.current = null;
+      }
+      
+      batchCategorizationPollingInterval.current = setInterval(fetchBatchCategorizationStatus, 2000);
+    } else {
+      if (batchCategorizationPollingInterval.current) {
+        clearInterval(batchCategorizationPollingInterval.current);
+        batchCategorizationPollingInterval.current = null;
+      }
+      
+      if (batchCategorizationStatus?.status === "completed") {
+        batchCategorizationCompletionTimeout.current = setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/needing-review"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/needing-review/count"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
+          
+          toast({
+            title: "Batch Categorization Complete",
+            description: `Successfully categorized ${batchCategorizationStatus.success} publications (${batchCategorizationStatus.skipped} skipped, ${batchCategorizationStatus.failed} failed)`,
+          });
+        }, 1000);
+      }
+    }
+    
+    return () => {
+      if (batchCategorizationPollingInterval.current) {
+        clearInterval(batchCategorizationPollingInterval.current);
+      }
+      if (batchCategorizationCompletionTimeout.current) {
+        clearTimeout(batchCategorizationCompletionTimeout.current);
+      }
+    };
+  }, [batchCategorizationStatus?.status]);
+
+  // Fetch batch categorization status on mount
+  useEffect(() => {
+    fetchBatchCategorizationStatus();
+  }, []);
+
+  const handleStartBatchCategorization = async () => {
+    try {
+      await apiRequest("POST", "/api/admin/batch-categorization/start", {
+        filter: batchCategorizeFilter,
+      });
+      toast({
+        title: "Batch Categorization Started",
+        description: `Generating ML-powered category suggestions. Progress will update automatically.`,
+      });
+      setBatchCategorizeDialogOpen(false);
+      fetchBatchCategorizationStatus();
+    } catch (error: any) {
+      toast({
+        title: "Batch Categorization Failed",
+        description: error.message || "Failed to start batch categorization",
+        variant: "destructive",
+      });
+    }
+  };
+
   const openEditDialog = (publication: Publication) => {
     setEditingPublication(publication);
     setEditCategories(publication.categories || []);
@@ -981,6 +1094,39 @@ export default function Admin() {
         ),
       },
       {
+        accessorKey: "reviewReason",
+        header: "Review Reason",
+        size: 150,
+        cell: ({ row }) => {
+          const hasCategories = row.original.categories && row.original.categories.length > 0;
+          const hasSuggestions = row.original.suggestedCategories && row.original.suggestedCategories.length > 0;
+          const hasLowConfidence = hasSuggestions && row.original.suggestedCategories && row.original.suggestedCategories.some(s => s.confidence < 0.8);
+          
+          let reason = "";
+          let badgeClass = "";
+          
+          if (!hasCategories && !hasSuggestions) {
+            reason = "Uncategorized";
+            badgeClass = "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
+          } else if (hasLowConfidence) {
+            reason = "Low Confidence";
+            badgeClass = "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400";
+          } else if (row.original.categoryReviewStatus === 'pending_review') {
+            reason = "Pending Review";
+            badgeClass = "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+          } else {
+            reason = "Needs Review";
+            badgeClass = "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+          }
+          
+          return (
+            <Badge className={`text-xs ${badgeClass}`} data-testid={`badge-reason-${row.original.id}`}>
+              {reason}
+            </Badge>
+          );
+        },
+      },
+      {
         accessorKey: "categories",
         header: "Current Categories",
         size: 180,
@@ -1250,6 +1396,70 @@ export default function Admin() {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Batch Categorization</CardTitle>
+            <CardDescription>Generate ML-powered category suggestions for multiple publications</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-[#6e6e73] dark:text-gray-400 mb-3">
+                  Use GPT-5 nano to automatically generate category suggestions for publications. High-confidence suggestions (≥80%) are auto-approved, while others are flagged for manual review.
+                </p>
+                <Button 
+                  onClick={() => setBatchCategorizeDialogOpen(true)} 
+                  disabled={batchCategorizationStatus?.status === "running"}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  data-testid="button-batch-categorize"
+                >
+                  {batchCategorizationStatus?.status === "running" ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Categorizing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Bulk Generate Categories
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              {/* Progress Display */}
+              {batchCategorizationStatus?.status === "running" && (
+                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-purple-600 dark:text-purple-400" />
+                      <span className="font-medium text-sm text-purple-900 dark:text-purple-100">{batchCategorizationStatus.phase}</span>
+                    </div>
+                    <span className="text-sm text-purple-700 dark:text-purple-300">
+                      {batchCategorizationStatus.processed}/{batchCategorizationStatus.total} publications
+                    </span>
+                  </div>
+                  <Progress 
+                    value={batchCategorizationStatus.total > 0 ? (batchCategorizationStatus.processed / batchCategorizationStatus.total) * 100 : 0} 
+                    className="h-2 mb-2"
+                  />
+                  <div className="flex gap-4 text-xs text-purple-700 dark:text-purple-300">
+                    <span>Success: {batchCategorizationStatus.success}</span>
+                    <span>Skipped: {batchCategorizationStatus.skipped}</span>
+                    <span>Failed: {batchCategorizationStatus.failed}</span>
+                  </div>
+                  {batchCategorizationStatus.currentPublication && (
+                    <p className="mt-2 text-xs text-purple-600 dark:text-purple-400 truncate">
+                      Current: {batchCategorizationStatus.currentPublication}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -1644,6 +1854,55 @@ export default function Admin() {
               ) : (
                 "Generate Suggestions"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={batchCategorizeDialogOpen} onOpenChange={setBatchCategorizeDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Bulk Generate Categories</DialogTitle>
+            <DialogDescription>
+              Use GPT-5 nano to generate ML-powered category suggestions for publications
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="filter-select">Select Publications</Label>
+              <Select value={batchCategorizeFilter} onValueChange={(value: "all" | "uncategorized" | "pending" | "approved") => setBatchCategorizeFilter(value)}>
+                <SelectTrigger id="filter-select" data-testid="select-batch-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="uncategorized">Uncategorized Only (Approved publications with no categories)</SelectItem>
+                  <SelectItem value="approved">All Approved Publications</SelectItem>
+                  <SelectItem value="pending">Pending Publications</SelectItem>
+                  <SelectItem value="all">All Publications (Pending + Approved)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-900 dark:text-blue-100">
+                <strong>How it works:</strong> GPT-5 nano analyzes each publication's title and abstract to suggest relevant research areas. High-confidence suggestions (≥80%) are auto-approved, while lower confidence suggestions are flagged for manual review in the Category Review tab.
+              </p>
+            </div>
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <p className="text-sm text-amber-900 dark:text-amber-100">
+                <strong>Cost:</strong> ~$0.13 for all 2,911 publications using GPT-5 nano ($0.05/1M input, $0.40/1M output tokens)
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBatchCategorizeDialogOpen(false)} data-testid="button-cancel-batch-categorize">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleStartBatchCategorization} 
+              data-testid="button-confirm-batch-categorize"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              Start Categorization
             </Button>
           </DialogFooter>
         </DialogContent>
