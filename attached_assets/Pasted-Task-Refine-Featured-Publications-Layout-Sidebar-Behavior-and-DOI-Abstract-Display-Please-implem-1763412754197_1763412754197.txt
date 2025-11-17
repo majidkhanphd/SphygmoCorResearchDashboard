@@ -1,0 +1,51 @@
+Task: Refine Featured Publications Layout, Sidebar Behavior, and DOI/Abstract Display
+
+Please implement the following UX and layout improvements.
+
+⸻
+
+1. Featured Publications Cards
+
+Title & Authors
+	•	Fix the truncation of publication titles on the featured pages so the full title is visible by default, or only truncated in a controlled way (e.g., with ellipsis) that doesn’t cut off too aggressively.
+	•	Fix the author list display so it is not permanently cut off inside the card.
+	•	Within each featured publication card, add an expand/collapse toggle, similar in feel to the dropdown behavior we use in the sidebar:
+	•	Collapsed (default) state:
+	•	Compact view with:
+	•	Full (or cleanly truncated) title
+	•	Journal + year line
+	•	Short author list, in a way that doesn’t look abruptly cut off
+	•	Card height should be relatively small/compact.
+	•	Expanded state:
+	•	Show:
+	•	Full title
+	•	Full author list
+	•	Journal + year line
+	•	Abstract text for that publication (for featured publications, the abstract should appear only when expanded).
+	•	User can collapse back to the compact view.
+
+Read Paper / DOI Handling
+	•	Remove the “Read paper” link/button currently shown at the bottom of the featured publication cards.
+	•	Instead, add a small DOI link inline next to the journal, year line (same style as elsewhere in the app where DOI is displayed).
+	•	Goal is to keep the card visually clean and compact while still giving clear access to the DOI link.
+
+⸻
+
+2. Sidebar Default Size & Behavior
+	•	Set the default width of the sidebar to the minimum visible width right before it disappears:
+	•	On first load, the sidebar should appear in this compact, minimal width.
+	•	Users should still be able to drag and expand the sidebar to a wider width up to the current maximum width.
+	•	Introduce a safe threshold before auto-collapse:
+	•	Add a small buffer zone so that the sidebar does not immediately disappear with very slight mouse movement or small drags to the left.
+	•	The sidebar should only fully collapse and disappear once the user clearly drags past a defined minimum threshold, to avoid accidental hide behavior.
+	•	Maintain the existing maximum width limit:
+	•	Preserve the current maximum width the sidebar can expand to.
+	•	Do not change that max-width value; ensure resizing logic respects both the minimum visible width and the existing maximum width.
+
+⸻
+
+3. Constraints / Acceptance Criteria
+	•	No regression in existing sidebar hide/show behavior, aside from making it less sensitive to accidental small drags when approaching the collapse threshold.
+	•	No visual clipping of titles, author lists, journal/year, DOI, or abstract when cards are expanded.
+	•	The expand/collapse behavior for featured publication cards should feel consistent and intuitive, similar to the interaction patterns we already use (e.g., sidebar dropdowns).
+	•	Featured cards should look cleaner and more compact in their collapsed state, with the abstract only visible on expand and the DOI shown inline next to the journal/year.
