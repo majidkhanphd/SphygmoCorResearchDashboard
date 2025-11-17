@@ -691,6 +691,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get publications needing category review (MUST be before :status route)
+  app.get("/api/admin/publications/needing-review", async (req, res) => {
+    try {
+      // Parse query params with safe defaults
+      const limitParam = req.query.limit ? parseInt(String(req.query.limit)) : 25;
+      const offsetParam = req.query.offset ? parseInt(String(req.query.offset)) : 0;
+      
+      const limit = isNaN(limitParam) ? 25 : Math.min(Math.max(limitParam, 1), 100);
+      const offset = isNaN(offsetParam) ? 0 : Math.max(offsetParam, 0);
+      
+      const { publications: pubs, total } = await storage.getPublicationsNeedingReview(limit, offset);
+      const totalPages = Math.ceil(total / limit);
+      const currentPage = Math.floor(offset / limit) + 1;
+      
+      res.json({
+        success: true,
+        publications: pubs,
+        total,
+        totalPages,
+        currentPage
+      });
+    } catch (error: any) {
+      console.error("Error fetching publications needing review:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch publications needing review", 
+        error: error.message 
+      });
+    }
+  });
+
   // Admin endpoint to get publications by status (pending, approved, rejected)
   app.get("/api/admin/publications/:status", async (req, res) => {
     try {
@@ -1049,37 +1080,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false,
         message: "Failed to reject suggestions", 
-        error: error.message 
-      });
-    }
-  });
-
-  // Get publications needing category review
-  app.get("/api/admin/publications/needing-review", async (req, res) => {
-    try {
-      // Parse query params with safe defaults
-      const limitParam = req.query.limit ? parseInt(String(req.query.limit)) : 25;
-      const offsetParam = req.query.offset ? parseInt(String(req.query.offset)) : 0;
-      
-      const limit = isNaN(limitParam) ? 25 : Math.min(Math.max(limitParam, 1), 100);
-      const offset = isNaN(offsetParam) ? 0 : Math.max(offsetParam, 0);
-      
-      const { publications: pubs, total } = await storage.getPublicationsNeedingReview(limit, offset);
-      const totalPages = Math.ceil(total / limit);
-      const currentPage = Math.floor(offset / limit) + 1;
-      
-      res.json({
-        success: true,
-        publications: pubs,
-        total,
-        totalPages,
-        currentPage
-      });
-    } catch (error: any) {
-      console.error("Error fetching publications needing review:", error);
-      res.status(500).json({ 
-        success: false,
-        message: "Failed to fetch publications needing review", 
         error: error.message 
       });
     }
