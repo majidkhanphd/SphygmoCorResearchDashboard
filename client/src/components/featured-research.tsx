@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,6 +8,8 @@ import { getFeaturedPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
 
 export default function FeaturedResearch() {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
   const { data: featuredPublications, isLoading } = useQuery({
     queryKey: ["/api/publications/featured"],
     queryFn: getFeaturedPublications,
@@ -65,48 +68,60 @@ export default function FeaturedResearch() {
                   {new Date(featuredArticle.publicationDate).toLocaleDateString()}
                 </span>
               </div>
-              <h3 style={{ fontSize: '24px', fontWeight: '600', color: '#1D1D1F', marginBottom: '16px', lineHeight: '1.25' }} data-testid="featured-title">
-                {featuredArticle.title}
-              </h3>
-              <p style={{ fontSize: '16px', color: '#6E6E73', marginBottom: '24px', lineHeight: '1.5' }} data-testid="featured-abstract">
-                {featuredArticle.abstract?.substring(0, 300)}...
-              </p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p style={{ fontSize: '14px', fontWeight: '500', color: '#1D1D1F' }} data-testid="featured-authors">
-                    {featuredArticle.authors}
-                  </p>
-                  <p style={{ fontSize: '14px', color: '#6E6E73' }} data-testid="featured-journal">
-                    {featuredArticle.journal}
-                  </p>
-                </div>
+              <div className="flex items-start justify-between gap-4">
+                <h3 style={{ fontSize: '24px', fontWeight: '600', color: '#1D1D1F', marginBottom: '16px', lineHeight: '1.25', flex: 1 }} data-testid="featured-title">
+                  {featuredArticle.title}
+                </h3>
                 <button
-                  onClick={() => window.open(featuredArticle.pubmedUrl || featuredArticle.doi, '_blank')}
-                  className="inline-flex items-center justify-center rounded-xl transition-all duration-200"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="inline-flex items-center justify-center rounded-lg transition-all duration-200 flex-shrink-0"
                   style={{
-                    paddingLeft: '20px',
-                    paddingRight: '20px',
-                    paddingTop: '10px',
-                    paddingBottom: '10px',
-                    fontSize: '16px',
-                    fontWeight: '500',
-                    color: '#FFFFFF',
-                    backgroundColor: '#007AFF',
-                    border: 'none',
-                    outline: 'none',
+                    padding: '8px',
+                    color: '#007AFF',
+                    backgroundColor: 'transparent',
+                    border: '1px solid #E5E5E7',
                     cursor: 'pointer'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#0056CC';
+                    e.currentTarget.style.backgroundColor = '#F5F5F7';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#007AFF';
+                    e.currentTarget.style.backgroundColor = 'transparent';
                   }}
-                  data-testid="read-paper-button"
+                  aria-label={isExpanded ? "Collapse abstract" : "Expand abstract"}
+                  data-testid="toggle-abstract-button"
                 >
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Read Paper
+                  {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 </button>
+              </div>
+              {isExpanded && featuredArticle.abstract && (
+                <p style={{ fontSize: '16px', color: '#6E6E73', marginBottom: '24px', lineHeight: '1.5' }} data-testid="featured-abstract">
+                  {featuredArticle.abstract}
+                </p>
+              )}
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: '500', color: '#1D1D1F', marginBottom: '4px' }} data-testid="featured-authors">
+                  {featuredArticle.authors}
+                </p>
+                <p style={{ fontSize: '14px', color: '#6E6E73' }} data-testid="featured-journal">
+                  {featuredArticle.journal} • {new Date(featuredArticle.publicationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+                  {featuredArticle.doi && (
+                    <>
+                      {' • '}
+                      <a 
+                        href={featuredArticle.doi} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center hover:underline"
+                        style={{ color: '#007AFF' }}
+                        data-testid="featured-doi-link"
+                      >
+                        DOI
+                        <ExternalLink className="ml-1 h-3 w-3" />
+                      </a>
+                    </>
+                  )}
+                </p>
               </div>
             </div>
             <div className="lg:w-80">
