@@ -61,8 +61,8 @@ export default function Home() {
   });
   const resultsRef = useRef<HTMLDivElement>(null);
   const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
-  const [sidebarSize, setSidebarSize] = useState(28);
-  const [lastExpandedSize, setLastExpandedSize] = useState(28);
+  const [sidebarSize, setSidebarSize] = useState(16);
+  const [lastExpandedSize, setLastExpandedSize] = useState(18);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Reset to page 1 when filters or perPage changes
@@ -169,8 +169,8 @@ export default function Home() {
 
   // Handle expanding the sidebar (via button)
   const handleExpandSidebar = () => {
-    // Expand to last size or default to 28%
-    const targetSize = lastExpandedSize > 16 ? lastExpandedSize : 28;
+    // Expand to last size or default to 18% (safe minimum)
+    const targetSize = lastExpandedSize > 16 ? lastExpandedSize : 18;
     sidebarPanelRef.current?.resize(targetSize);
     setIsSidebarCollapsed(false);
   };
@@ -430,7 +430,7 @@ export default function Home() {
         <ResizablePanelGroup direction="horizontal" className="w-full" onLayout={handlePanelLayout}>
           <ResizablePanel 
             ref={sidebarPanelRef} 
-            defaultSize={28} 
+            defaultSize={16} 
             minSize={16} 
             maxSize={40}
             collapsible={true}

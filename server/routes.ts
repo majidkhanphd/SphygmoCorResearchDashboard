@@ -9,6 +9,11 @@ import { syncTracker } from "./sync-tracker";
 import { startBatchCategorization } from "./services/batchCategorization";
 import { batchCategorizationTracker } from "./batch-categorization-tracker";
 
+// Helper to escape SQL LIKE special characters
+function escapeLikePattern(str: string): string {
+  return str.replace(/[%_\\]/g, '\\$&');
+}
+
 // Helper to normalize XML text from fast-xml-parser
 function normalizeXmlText(value: any): string {
   if (typeof value === 'string') {
@@ -663,11 +668,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Add search filter if provided
       if (searchQuery) {
-        const search = `%${searchQuery.toLowerCase()}%`;
+        const escapedSearch = escapeLikePattern(searchQuery.toLowerCase());
+        const search = `%${escapedSearch}%`;
         const searchCondition = or(
-          sql`LOWER(${publications.title}) LIKE ${search}`,
-          sql`LOWER(${publications.authors}) LIKE ${search}`,
-          sql`LOWER(${publications.journal}) LIKE ${search}`
+          sql`LOWER(${publications.title}) LIKE ${search} ESCAPE '\\'`,
+          sql`LOWER(${publications.authors}) LIKE ${search} ESCAPE '\\'`,
+          sql`LOWER(${publications.journal}) LIKE ${search} ESCAPE '\\'`
         );
         if (searchCondition) {
           conditions.push(searchCondition);
@@ -765,11 +771,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Add search filter if provided
       if (searchQuery) {
-        const search = `%${searchQuery.toLowerCase()}%`;
+        const escapedSearch = escapeLikePattern(searchQuery.toLowerCase());
+        const search = `%${escapedSearch}%`;
         const searchCondition = or(
-          sql`LOWER(${publications.title}) LIKE ${search}`,
-          sql`LOWER(${publications.authors}) LIKE ${search}`,
-          sql`LOWER(${publications.journal}) LIKE ${search}`
+          sql`LOWER(${publications.title}) LIKE ${search} ESCAPE '\\'`,
+          sql`LOWER(${publications.authors}) LIKE ${search} ESCAPE '\\'`,
+          sql`LOWER(${publications.journal}) LIKE ${search} ESCAPE '\\'`
         );
         if (searchCondition) {
           conditions.push(searchCondition);
@@ -830,11 +837,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Add search filter if provided
       if (searchQuery) {
-        const search = `%${searchQuery.toLowerCase()}%`;
+        const escapedSearch = escapeLikePattern(searchQuery.toLowerCase());
+        const search = `%${escapedSearch}%`;
         const searchCondition = or(
-          sql`LOWER(${publications.title}) LIKE ${search}`,
-          sql`LOWER(${publications.authors}) LIKE ${search}`,
-          sql`LOWER(${publications.journal}) LIKE ${search}`
+          sql`LOWER(${publications.title}) LIKE ${search} ESCAPE '\\'`,
+          sql`LOWER(${publications.authors}) LIKE ${search} ESCAPE '\\'`,
+          sql`LOWER(${publications.journal}) LIKE ${search} ESCAPE '\\'`
         );
         if (searchCondition) {
           conditions.push(searchCondition);

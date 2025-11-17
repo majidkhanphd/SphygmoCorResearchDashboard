@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +48,19 @@ export default function FeaturedCarousel() {
 
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -190,70 +203,94 @@ export default function FeaturedCarousel() {
                       })}
                     </div>
 
-                    <h3
-                      className="line-clamp-2 mb-2"
-                      style={{
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        color: '#1D1D1F',
-                        lineHeight: '1.3',
-                      }}
-                      data-testid={`card-title-${index}`}
-                    >
-                      {sanitizeText(publication.title)}
-                    </h3>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3
+                        className="flex-1"
+                        style={{
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: '#1D1D1F',
+                          lineHeight: '1.3',
+                        }}
+                        data-testid={`card-title-${index}`}
+                      >
+                        {sanitizeText(publication.title)}
+                      </h3>
+                      <button
+                        onClick={() => toggleExpand(publication.id)}
+                        className="inline-flex items-center justify-center rounded-lg transition-all duration-200 flex-shrink-0"
+                        style={{
+                          padding: '6px',
+                          color: '#007AFF',
+                          backgroundColor: 'transparent',
+                          border: '1px solid #E5E5E7',
+                          cursor: 'pointer'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#F5F5F7';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        aria-label={expandedCards.has(publication.id) ? "Collapse abstract" : "Expand abstract"}
+                        data-testid={`toggle-abstract-button-${index}`}
+                      >
+                        {expandedCards.has(publication.id) ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </button>
+                    </div>
+
+                    {expandedCards.has(publication.id) && publication.abstract && (
+                      <p
+                        className="mb-3"
+                        style={{
+                          fontSize: '13px',
+                          color: '#6E6E73',
+                          lineHeight: '1.5',
+                        }}
+                        data-testid={`card-abstract-${index}`}
+                      >
+                        {sanitizeText(publication.abstract)}
+                      </p>
+                    )}
 
                     <p
-                      className="mb-2"
+                      className="mb-2 flex-grow"
                       style={{
                         fontSize: '13px',
                         fontWeight: '500',
                         color: '#6E6E73',
-                      }}
-                      data-testid={`card-journal-${index}`}
-                    >
-                      {sanitizeText(publication.journal)}, {new Date(publication.publicationDate).getFullYear()}
-                    </p>
-
-                    <p
-                      className="line-clamp-2 mb-3 flex-grow"
-                      style={{
-                        fontSize: '13px',
-                        color: '#6E6E73',
-                        lineHeight: '1.5',
                       }}
                       data-testid={`card-authors-${index}`}
                     >
                       {sanitizeText(publication.authors || '')}
                     </p>
 
-                    <button
-                      onClick={() => window.open(publication.pubmedUrl || publication.doi || '', '_blank')}
-                      className="inline-flex items-center justify-center rounded-lg transition-all duration-200 mt-4 w-full"
+                    <p
+                      className="mb-0"
                       style={{
-                        paddingTop: '10px',
-                        paddingBottom: '10px',
-                        fontSize: '14px',
-                        fontWeight: '400',
-                        color: '#007AFF',
-                        background: 'linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(0, 122, 255, 0.12) 100%)',
-                        border: '1px solid rgba(0, 122, 255, 0.2)',
-                        outline: 'none',
-                        cursor: 'pointer',
+                        fontSize: '13px',
+                        color: '#6E6E73',
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 122, 255, 0.12) 0%, rgba(0, 122, 255, 0.16) 100%)';
-                        e.currentTarget.style.borderColor = 'rgba(0, 122, 255, 0.3)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(0, 122, 255, 0.12) 100%)';
-                        e.currentTarget.style.borderColor = 'rgba(0, 122, 255, 0.2)';
-                      }}
-                      data-testid={`card-read-button-${index}`}
+                      data-testid={`card-journal-${index}`}
                     >
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Read Paper
-                    </button>
+                      {sanitizeText(publication.journal)} • {new Date(publication.publicationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+                      {publication.doi && (
+                        <>
+                          {' • '}
+                          <a 
+                            href={publication.doi} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center hover:underline"
+                            style={{ color: '#007AFF' }}
+                            data-testid={`card-doi-link-${index}`}
+                          >
+                            DOI
+                            <ExternalLink className="ml-1 h-3 w-3" />
+                          </a>
+                        </>
+                      )}
+                    </p>
                   </div>
                 </div>
               ))}

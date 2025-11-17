@@ -3,6 +3,11 @@ import { publications, categories } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, like, sql, desc, asc } from "drizzle-orm";
 
+// Helper to escape SQL LIKE special characters
+function escapeLikePattern(str: string): string {
+  return str.replace(/[%_\\]/g, '\\$&');
+}
+
 export interface IStorage {
   // Publication methods
   getPublication(id: string): Promise<Publication | undefined>;
@@ -78,12 +83,13 @@ export class DatabaseStorage implements IStorage {
 
     // Build search query conditions
     if (params.query) {
-      const searchQuery = `%${params.query.toLowerCase()}%`;
+      const escapedQuery = escapeLikePattern(params.query.toLowerCase());
+      const searchQuery = `%${escapedQuery}%`;
       conditions.push(
         or(
-          sql`LOWER(${publications.title}) LIKE ${searchQuery}`,
-          sql`LOWER(${publications.authors}) LIKE ${searchQuery}`,
-          sql`LOWER(${publications.abstract}) LIKE ${searchQuery}`
+          sql`LOWER(${publications.title}) LIKE ${searchQuery} ESCAPE '\\'`,
+          sql`LOWER(${publications.authors}) LIKE ${searchQuery} ESCAPE '\\'`,
+          sql`LOWER(${publications.abstract}) LIKE ${searchQuery} ESCAPE '\\'`
         )
       );
     }
