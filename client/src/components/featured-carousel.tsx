@@ -203,41 +203,18 @@ export default function FeaturedCarousel() {
                       })}
                     </div>
 
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3
-                        className="flex-1"
-                        style={{
-                          fontSize: '18px',
-                          fontWeight: '600',
-                          color: '#1D1D1F',
-                          lineHeight: '1.3',
-                        }}
-                        data-testid={`card-title-${index}`}
-                      >
-                        {sanitizeText(publication.title)}
-                      </h3>
-                      <button
-                        onClick={() => toggleExpand(publication.id)}
-                        className="inline-flex items-center justify-center rounded-lg transition-all duration-200 flex-shrink-0"
-                        style={{
-                          padding: '6px',
-                          color: '#007AFF',
-                          backgroundColor: 'transparent',
-                          border: '1px solid #E5E5E7',
-                          cursor: 'pointer'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F7';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        aria-label={expandedCards.has(publication.id) ? "Collapse abstract" : "Expand abstract"}
-                        data-testid={`toggle-abstract-button-${index}`}
-                      >
-                        {expandedCards.has(publication.id) ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      </button>
-                    </div>
+                    <h3
+                      className="mb-2"
+                      style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1D1D1F',
+                        lineHeight: '1.3',
+                      }}
+                      data-testid={`card-title-${index}`}
+                    >
+                      {sanitizeText(publication.title)}
+                    </h3>
 
                     {expandedCards.has(publication.id) && publication.abstract && (
                       <p
@@ -266,7 +243,7 @@ export default function FeaturedCarousel() {
                     </p>
 
                     <p
-                      className="mb-0"
+                      className="mb-2"
                       style={{
                         fontSize: '13px',
                         color: '#6E6E73',
@@ -291,6 +268,40 @@ export default function FeaturedCarousel() {
                         </>
                       )}
                     </p>
+
+                    <button
+                      onClick={() => toggleExpand(publication.id)}
+                      className="inline-flex items-center justify-center rounded-lg transition-all duration-200 w-full"
+                      style={{
+                        padding: '8px',
+                        color: '#007AFF',
+                        backgroundColor: 'transparent',
+                        border: '1px solid #E5E5E7',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '500'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#F5F5F7';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                      aria-label={expandedCards.has(publication.id) ? "Collapse abstract" : "Expand abstract"}
+                      data-testid={`toggle-abstract-button-${index}`}
+                    >
+                      {expandedCards.has(publication.id) ? (
+                        <>
+                          <ChevronUp className="h-4 w-4 mr-1" /> 
+                          Hide Abstract
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4 mr-1" /> 
+                          Show Abstract
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               ))}

@@ -61,9 +61,11 @@ export default function Home() {
   });
   const resultsRef = useRef<HTMLDivElement>(null);
   const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
+  const publicationsListRef = useRef<HTMLDivElement>(null);
   const [sidebarSize, setSidebarSize] = useState(16);
   const [lastExpandedSize, setLastExpandedSize] = useState(18);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [publicationsHeight, setPublicationsHeight] = useState<number | null>(null);
 
   // Reset to page 1 when filters or perPage changes
   useEffect(() => {
@@ -202,7 +204,7 @@ export default function Home() {
     const countB = backendFilterCounts.venues[b] || 0;
     return countB - countA; // Sort descending by count
   });
-  const visibleVenues = showAllVenues ? venues : venues.slice(0, 5);
+  const visibleVenues = showAllVenues ? venues : venues.slice(0, 10);
 
   // Get research areas from schema - sorted by count (descending)
   const researchAreas = Object.entries(RESEARCH_AREA_DISPLAY_NAMES).sort((a, b) => {
@@ -222,6 +224,33 @@ export default function Home() {
   
   // Calculate total count for all years
   const totalYearCount = Object.values(filterCounts.years).reduce((sum, count) => sum + (count as number), 0);
+
+  // Track publications list height for dynamic journal list sizing
+  useEffect(() => {
+    const updateHeight = () => {
+      if (publicationsListRef.current) {
+        const rect = publicationsListRef.current.getBoundingClientRect();
+        setPublicationsHeight(rect.height);
+      }
+    };
+
+    // Initial measurement
+    updateHeight();
+
+    // Update on window resize
+    window.addEventListener('resize', updateHeight);
+    
+    // Update when publications change
+    const observer = new ResizeObserver(updateHeight);
+    if (publicationsListRef.current) {
+      observer.observe(publicationsListRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateHeight);
+      observer.disconnect();
+    };
+  }, [allPublications, perPage, currentPage]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -649,7 +678,12 @@ export default function Home() {
                 </button>
               )}
               
-              <div className="space-y-1 min-w-0 max-h-[60vh] overflow-y-auto">
+              <div 
+                className="space-y-1 min-w-0 overflow-y-auto"
+                style={{ 
+                  maxHeight: publicationsHeight ? `${publicationsHeight}px` : '60vh'
+                }}
+              >
                 <button
                   onClick={() => handleVenueChange(null)}
                   className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
@@ -683,7 +717,7 @@ export default function Home() {
                     </button>
                   );
                 })}
-                {venues.length > 5 && (
+                {venues.length > 10 && (
                   <button
                     onClick={() => setShowAllVenues(!showAllVenues)}
                     className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
@@ -752,6 +786,7 @@ export default function Home() {
               <>
                 {/* Publications List - Single Column Layout */}
                 <div 
+                  ref={publicationsListRef}
                   className="min-w-0"
                   style={{ 
                     display: 'flex',
