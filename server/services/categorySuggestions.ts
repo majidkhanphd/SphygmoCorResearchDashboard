@@ -42,7 +42,8 @@ Rules:
 - Only include categories with confidence >= 0.6
 - Maximum 3 categories per publication
 - Confidence must be between 0.0 and 1.0
-- Use exact category names from the list above`;
+- CRITICAL: Use the EXACT category names from the list above, including the acronyms in parentheses (e.g., "Early Vascular Aging (EVA)" not "Early Vascular Aging")
+- The category field MUST match the format exactly: "Full Name (ACRONYM)" where applicable`;
 
 /**
  * Generate ML-based category suggestions using OpenAI
@@ -60,14 +61,13 @@ export async function generateMLSuggestions(
     const text = abstract ? `${title}\n\n${abstract}` : title;
     
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5-nano",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: `Analyze this publication and suggest categories:\n\n${text}` }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.3,
-      max_tokens: 500,
+      max_completion_tokens: 1000,
     });
 
     const content = response.choices[0]?.message?.content;
