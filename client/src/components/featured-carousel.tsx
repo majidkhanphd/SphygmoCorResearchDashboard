@@ -216,20 +216,6 @@ export default function FeaturedCarousel() {
                       {sanitizeText(publication.title)}
                     </h3>
 
-                    {expandedCards.has(publication.id) && publication.abstract && (
-                      <p
-                        className="mb-3"
-                        style={{
-                          fontSize: '13px',
-                          color: '#6E6E73',
-                          lineHeight: '1.5',
-                        }}
-                        data-testid={`card-abstract-${index}`}
-                      >
-                        {sanitizeText(publication.abstract)}
-                      </p>
-                    )}
-
                     <p
                       className="mb-2 flex-grow"
                       style={{
@@ -269,6 +255,20 @@ export default function FeaturedCarousel() {
                       )}
                     </p>
 
+                    {expandedCards.has(publication.id) && publication.abstract && (
+                      <p
+                        className="mb-3"
+                        style={{
+                          fontSize: '13px',
+                          color: '#6E6E73',
+                          lineHeight: '1.5',
+                        }}
+                        data-testid={`card-abstract-${index}`}
+                      >
+                        {sanitizeText(publication.abstract)}
+                      </p>
+                    )}
+
                     <button
                       onClick={() => toggleExpand(publication.id)}
                       className="inline-flex items-center justify-center rounded-lg transition-all duration-200 w-full"
@@ -291,15 +291,9 @@ export default function FeaturedCarousel() {
                       data-testid={`toggle-abstract-button-${index}`}
                     >
                       {expandedCards.has(publication.id) ? (
-                        <>
-                          <ChevronUp className="h-4 w-4 mr-1" /> 
-                          Hide Abstract
-                        </>
+                        <ChevronUp className="h-4 w-4" />
                       ) : (
-                        <>
-                          <ChevronDown className="h-4 w-4 mr-1" /> 
-                          Show Abstract
-                        </>
+                        <ChevronDown className="h-4 w-4" />
                       )}
                     </button>
                   </div>
