@@ -1,9 +1,21 @@
 import OpenAI from "openai";
 import { RESEARCH_AREAS, type SuggestedCategory } from "@shared/schema";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY) {
+    return null;
+  }
+  
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  
+  return openai;
+}
 
 const SYSTEM_PROMPT = `You are an expert research categorization system for cardiovascular and vascular health publications.
 
@@ -52,7 +64,9 @@ export async function generateMLSuggestions(
   title: string,
   abstract: string | null
 ): Promise<SuggestedCategory[]> {
-  if (!process.env.OPENAI_API_KEY) {
+  const client = getOpenAIClient();
+  
+  if (!client) {
     console.warn("OpenAI API key not configured, skipping ML suggestions");
     return [];
   }
@@ -63,7 +77,7 @@ export async function generateMLSuggestions(
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const response = await openai.chat.completions.create({
+      const response = await client.chat.completions.create({
         model: "gpt-5-nano",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
