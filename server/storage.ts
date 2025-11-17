@@ -1,4 +1,4 @@
-import { type Publication, type InsertPublication, type Category, type InsertCategory, type SearchPublicationsParams, type FilterCounts, type SearchPublicationsResponse } from "@shared/schema";
+import { type Publication, type InsertPublication, type Category, type InsertCategory, type SearchPublicationsParams, type FilterCounts, type SearchPublicationsResponse, type SuggestedCategory } from "@shared/schema";
 import { publications, categories } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, like, sql, desc, asc } from "drizzle-orm";
@@ -21,6 +21,12 @@ export interface IStorage {
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
   getCategoryByName(name: string): Promise<Category | undefined>;
+
+  // Category suggestion methods
+  updateSuggestedCategories(id: string, suggestions: SuggestedCategory[], status: string): Promise<Publication | undefined>;
+  approveCategories(id: string, selectedCategories: string[], reviewerName: string): Promise<Publication | undefined>;
+  rejectSuggestions(id: string, reviewerName: string): Promise<Publication | undefined>;
+  getPublicationsNeedingReview(limit: number, offset: number): Promise<{publications: Publication[], total: number}>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -325,6 +331,70 @@ export class DatabaseStorage implements IStorage {
   async getCategoryByName(name: string): Promise<Category | undefined> {
     const [category] = await db.select().from(categories).where(eq(categories.name, name));
     return category || undefined;
+  }
+
+  // Category suggestion methods
+  async updateSuggestedCategories(id: string, suggestions: SuggestedCategory[], status: string): Promise<Publication | undefined> {
+    const [updated] = await db
+      .update(publications)
+      .set({
+        suggestedCategories: suggestions as any,
+        categoryReviewStatus: status,
+        categoryReviewedAt: new Date()
+      })
+      .where(eq(publications.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async approveCategories(id: string, selectedCategories: string[], reviewerName: string): Promise<Publication | undefined> {
+    const [updated] = await db
+      .update(publications)
+      .set({
+        categories: selectedCategories as any,
+        categoryReviewStatus: 'reviewed',
+        categoryReviewedBy: reviewerName,
+        categoryReviewedAt: new Date(),
+        categoriesLastUpdatedBy: 'admin',
+        suggestedCategories: null
+      })
+      .where(eq(publications.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async rejectSuggestions(id: string, reviewerName: string): Promise<Publication | undefined> {
+    const [updated] = await db
+      .update(publications)
+      .set({
+        categoryReviewStatus: 'reviewed',
+        categoryReviewedBy: reviewerName,
+        categoryReviewedAt: new Date(),
+        suggestedCategories: null
+      })
+      .where(eq(publications.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getPublicationsNeedingReview(limit: number, offset: number): Promise<{publications: Publication[], total: number}> {
+    const pubs = await db
+      .select()
+      .from(publications)
+      .where(eq(publications.categoryReviewStatus, 'pending_review'))
+      .orderBy(desc(publications.categoryReviewedAt))
+      .limit(limit)
+      .offset(offset);
+
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(publications)
+      .where(eq(publications.categoryReviewStatus, 'pending_review'));
+
+    return {
+      publications: pubs,
+      total: countResult?.count || 0
+    };
   }
 }
 

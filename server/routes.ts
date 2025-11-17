@@ -883,6 +883,201 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== Category Suggestion Endpoints =====
+  
+  // Generate ML-based category suggestions for a publication
+  app.post("/api/admin/publications/:id/generate-suggestions", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { useML = true } = req.body;
+      
+      const publication = await storage.getPublication(id);
+      if (!publication) {
+        return res.status(404).json({ 
+          success: false,
+          message: "Publication not found" 
+        });
+      }
+
+      // Generate suggestions using the category service
+      const { generateSuggestionsForPublication } = await import("./services/categorySuggestions");
+      const suggestions = await generateSuggestionsForPublication(
+        publication.title,
+        publication.abstract,
+        useML
+      );
+
+      // Store suggestions in database
+      await storage.updateSuggestedCategories(id, suggestions, 'pending_review');
+
+      res.json({ 
+        success: true,
+        suggestions,
+        message: "Category suggestions generated successfully"
+      });
+    } catch (error: any) {
+      console.error("Error generating category suggestions:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to generate category suggestions", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Batch generate category suggestions
+  app.post("/api/admin/publications/batch-generate-suggestions", async (req, res) => {
+    try {
+      const { publicationIds, useML = true } = req.body;
+      
+      if (!Array.isArray(publicationIds)) {
+        return res.status(400).json({ 
+          success: false,
+          message: "publicationIds must be an array" 
+        });
+      }
+
+      const { generateSuggestionsForPublication } = await import("./services/categorySuggestions");
+      const results = [];
+      const errors = [];
+
+      for (const id of publicationIds) {
+        try {
+          const publication = await storage.getPublication(id);
+          if (!publication) {
+            errors.push({ id, error: "Publication not found" });
+            continue;
+          }
+
+          const suggestions = await generateSuggestionsForPublication(
+            publication.title,
+            publication.abstract,
+            useML
+          );
+
+          await storage.updateSuggestedCategories(id, suggestions, 'pending_review');
+          results.push({ id, suggestions });
+
+          // Rate limit: 100ms delay between OpenAI calls
+          if (useML) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        } catch (error: any) {
+          errors.push({ id, error: error.message });
+        }
+      }
+
+      res.json({ 
+        success: true,
+        processed: results.length,
+        failed: errors.length,
+        results,
+        errors
+      });
+    } catch (error: any) {
+      console.error("Error in batch generate suggestions:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to batch generate suggestions", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Approve category suggestions
+  app.post("/api/admin/publications/:id/approve-categories", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { categories, reviewerName = 'admin' } = req.body;
+      
+      if (!Array.isArray(categories)) {
+        return res.status(400).json({ 
+          success: false,
+          message: "categories must be an array" 
+        });
+      }
+
+      const publication = await storage.approveCategories(id, categories, reviewerName);
+      
+      if (!publication) {
+        return res.status(404).json({ 
+          success: false,
+          message: "Publication not found" 
+        });
+      }
+
+      res.json({ 
+        success: true,
+        publication,
+        message: "Categories approved successfully"
+      });
+    } catch (error: any) {
+      console.error("Error approving categories:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to approve categories", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Reject category suggestions
+  app.post("/api/admin/publications/:id/reject-suggestions", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reviewerName = 'admin' } = req.body;
+
+      const publication = await storage.rejectSuggestions(id, reviewerName);
+      
+      if (!publication) {
+        return res.status(404).json({ 
+          success: false,
+          message: "Publication not found" 
+        });
+      }
+
+      res.json({ 
+        success: true,
+        publication,
+        message: "Suggestions rejected successfully"
+      });
+    } catch (error: any) {
+      console.error("Error rejecting suggestions:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to reject suggestions", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Get publications needing category review
+  app.get("/api/admin/publications/needing-review", async (req, res) => {
+    try {
+      const limit = parseInt(String(req.query.limit)) || 25;
+      const offset = parseInt(String(req.query.offset)) || 0;
+      
+      const { publications: pubs, total } = await storage.getPublicationsNeedingReview(limit, offset);
+      const totalPages = Math.ceil(total / limit);
+      const currentPage = Math.floor(offset / limit) + 1;
+      
+      res.json({
+        success: true,
+        publications: pubs,
+        total,
+        totalPages,
+        currentPage
+      });
+    } catch (error: any) {
+      console.error("Error fetching publications needing review:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch publications needing review", 
+        error: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
