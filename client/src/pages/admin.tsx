@@ -260,12 +260,13 @@ export default function Admin() {
         pollingInterval.current = null;
       }
 
-      // If sync just completed, refresh stats
+      // If sync just completed, refresh stats and all admin queries
       if (syncStatus?.status === "completed") {
         queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/publications-list/featured"] });
         queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/publications/featured"] });
 
         toast({
           title: "Sync Complete",
@@ -380,15 +381,20 @@ export default function Admin() {
     );
   };
 
-  const filteredPublications = publicationsData?.publications.filter(pub => {
-    if (!debouncedSearch) return true;
+  // Memoize filtered publications to prevent recomputing on every render
+  const filteredPublications = useMemo(() => {
+    if (!publicationsData?.publications) return [];
+    if (!debouncedSearch) return publicationsData.publications;
+    
     const search = debouncedSearch.toLowerCase();
-    return (
-      pub.title.toLowerCase().includes(search) ||
-      pub.authors.toLowerCase().includes(search) ||
-      pub.journal.toLowerCase().includes(search)
-    );
-  }) || [];
+    return publicationsData.publications.filter(pub => {
+      return (
+        pub.title.toLowerCase().includes(search) ||
+        pub.authors.toLowerCase().includes(search) ||
+        pub.journal.toLowerCase().includes(search)
+      );
+    });
+  }, [publicationsData?.publications, debouncedSearch]);
 
   const stats = statsData?.stats?.totalByStatus || { pending: 0, approved: 0, rejected: 0 };
 
