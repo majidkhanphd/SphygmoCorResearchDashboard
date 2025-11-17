@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Search, Check, X, ExternalLink, Loader2, Pencil, Star } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
+import { PaginationControls } from "@/components/pagination-controls";
 import { RESEARCH_AREAS, RESEARCH_AREA_DISPLAY_NAMES } from "@shared/schema";
 import type { Publication } from "@shared/schema";
 import {
@@ -43,7 +44,9 @@ interface SyncStatus {
 
 export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected">("pending");
+  const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected" | "featured">("pending");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
   const [editCategories, setEditCategories] = useState<string[]>([]);
@@ -54,8 +57,28 @@ export default function Admin() {
   const debouncedSearch = useDebounce(searchQuery, 400);
   const { toast } = useToast();
 
-  const { data: publicationsData, isLoading } = useQuery<{ success: boolean; publications: Publication[]; total: number }>({
-    queryKey: [`/api/admin/publications/${activeTab}`],
+  // Reset to page 1 when tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  const offset = (currentPage - 1) * perPage;
+  
+  const queryUrl = activeTab === "featured" 
+    ? `/api/admin/publications-list/featured?limit=${perPage}&offset=${offset}`
+    : `/api/admin/publications/${activeTab}?limit=${perPage}&offset=${offset}`;
+
+  const queryKey = activeTab === "featured"
+    ? ['/api/admin/publications-list/featured', { limit: perPage, offset }]
+    : ['/api/admin/publications', activeTab, { limit: perPage, offset }];
+
+  const { data: publicationsData, isLoading } = useQuery<{ success: boolean; publications: Publication[]; total: number; totalPages: number; currentPage: number }>({
+    queryKey,
+    queryFn: async () => {
+      const response = await fetch(queryUrl);
+      if (!response.ok) throw new Error('Failed to fetch publications');
+      return response.json();
+    },
   });
 
   const { data: statsData } = useQuery<{ success: boolean; stats: { totalByStatus: { pending: number; approved: number; rejected: number } } }>({
@@ -67,11 +90,11 @@ export default function Admin() {
       return await apiRequest("POST", `/api/admin/publications/${publicationId}/approve`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications-list/featured"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/featured"] });
       toast({
         title: "Publication Approved",
         description: "The publication is now visible on the website.",
@@ -91,11 +114,11 @@ export default function Admin() {
       return await apiRequest("POST", `/api/admin/publications/${publicationId}/reject`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications-list/featured"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/featured"] });
       toast({
         title: "Publication Rejected",
         description: "The publication has been rejected.",
@@ -117,11 +140,11 @@ export default function Admin() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications-list/featured"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/featured"] });
       setEditDialogOpen(false);
       setEditingPublication(null);
       toast({
@@ -145,11 +168,11 @@ export default function Admin() {
       });
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications-list/featured"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/publications/featured"] });
       const statusMessages = {
         pending: { title: "Publication Moved to Pending", description: "The publication has been moved to pending review." },
         approved: { title: "Publication Approved", description: "The publication is now visible on the website." },
@@ -171,9 +194,8 @@ export default function Admin() {
       return await apiRequest("PATCH", `/api/publications/${publicationId}/featured`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/pending"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/approved"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications/rejected"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications-list/featured"] });
       queryClient.invalidateQueries({ queryKey: ["/api/publications/featured"] });
       toast({
         title: "Featured Status Updated",
@@ -673,7 +695,7 @@ export default function Admin() {
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-black">
       <Navigation />
       
-      <main className="max-w-[980px] mx-auto px-4 py-12">
+      <main className="max-w-[1600px] mx-auto px-4 py-12">
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white mb-3">
             Publication Admin
@@ -788,9 +810,9 @@ export default function Admin() {
         </Card>
 
         <Card>
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "pending" | "approved" | "rejected")} data-testid="tabs-status">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "pending" | "approved" | "rejected" | "featured")} data-testid="tabs-status">
             <CardHeader className="pb-3">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="pending" data-testid="tab-pending">
                   Pending ({stats.pending || 0})
                 </TabsTrigger>
@@ -799,6 +821,9 @@ export default function Admin() {
                 </TabsTrigger>
                 <TabsTrigger value="rejected" data-testid="tab-rejected">
                   Rejected ({stats.rejected || 0})
+                </TabsTrigger>
+                <TabsTrigger value="featured" data-testid="tab-featured">
+                  Featured ({publicationsData?.total || 0})
                 </TabsTrigger>
               </TabsList>
             </CardHeader>
@@ -816,7 +841,18 @@ export default function Admin() {
                     </p>
                   </div>
                 ) : (
-                  renderTable(pendingTable)
+                  <>
+                    {renderTable(pendingTable)}
+                    <div className="p-4 border-t">
+                      <PaginationControls
+                        total={publicationsData?.total || 0}
+                        currentPage={currentPage}
+                        perPage={perPage}
+                        onPageChange={setCurrentPage}
+                        onPerPageChange={setPerPage}
+                      />
+                    </div>
+                  </>
                 )}
               </CardContent>
             </TabsContent>
@@ -834,7 +870,18 @@ export default function Admin() {
                     </p>
                   </div>
                 ) : (
-                  renderTable(approvedRejectedTable)
+                  <>
+                    {renderTable(approvedRejectedTable)}
+                    <div className="p-4 border-t">
+                      <PaginationControls
+                        total={publicationsData?.total || 0}
+                        currentPage={currentPage}
+                        perPage={perPage}
+                        onPageChange={setCurrentPage}
+                        onPerPageChange={setPerPage}
+                      />
+                    </div>
+                  </>
                 )}
               </CardContent>
             </TabsContent>
@@ -852,7 +899,47 @@ export default function Admin() {
                     </p>
                   </div>
                 ) : (
-                  renderTable(approvedRejectedTable)
+                  <>
+                    {renderTable(approvedRejectedTable)}
+                    <div className="p-4 border-t">
+                      <PaginationControls
+                        total={publicationsData?.total || 0}
+                        currentPage={currentPage}
+                        perPage={perPage}
+                        onPageChange={setCurrentPage}
+                        onPerPageChange={setPerPage}
+                      />
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </TabsContent>
+
+            <TabsContent value="featured" className="mt-0">
+              <CardContent className="p-0">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#0071e3]" />
+                  </div>
+                ) : filteredPublications.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <p className="text-[#6e6e73] dark:text-gray-400">
+                      {debouncedSearch ? "No publications match your search" : "No featured publications"}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {renderTable(approvedRejectedTable)}
+                    <div className="p-4 border-t">
+                      <PaginationControls
+                        total={publicationsData?.total || 0}
+                        currentPage={currentPage}
+                        perPage={perPage}
+                        onPageChange={setCurrentPage}
+                        onPerPageChange={setPerPage}
+                      />
+                    </div>
+                  </>
                 )}
               </CardContent>
             </TabsContent>

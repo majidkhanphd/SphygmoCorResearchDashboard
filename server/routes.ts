@@ -647,22 +647,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin endpoint to get all pending publications for review
   app.get("/api/admin/publications/pending", async (req, res) => {
     try {
+      const limit = parseInt(String(req.query.limit)) || 25;
+      const offset = parseInt(String(req.query.offset)) || 0;
+      
       // Direct database query for pending publications (bypass approved filter)
       const { db } = await import("./db");
       const { publications } = await import("@shared/schema");
-      const { eq, desc } = await import("drizzle-orm");
+      const { eq, desc, sql } = await import("drizzle-orm");
       
       const pendingPubs = await db
         .select()
         .from(publications)
         .where(eq(publications.status, "pending"))
         .orderBy(desc(publications.publicationDate))
-        .limit(1000);
+        .limit(limit)
+        .offset(offset);
+      
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(publications)
+        .where(eq(publications.status, "pending"));
+      
+      const total = countResult?.count || 0;
+      const totalPages = Math.ceil(total / limit);
+      const currentPage = Math.floor(offset / limit) + 1;
       
       res.json({
         success: true,
         publications: pendingPubs,
-        total: pendingPubs.length
+        total,
+        totalPages,
+        currentPage
       });
     } catch (error: any) {
       console.error("Error fetching pending publications:", error);
@@ -678,6 +693,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/publications/:status", async (req, res) => {
     try {
       const { status } = req.params;
+      const limit = parseInt(String(req.query.limit)) || 25;
+      const offset = parseInt(String(req.query.offset)) || 0;
       
       // Validate status
       if (!["pending", "approved", "rejected"].includes(status)) {
@@ -690,25 +707,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Direct database query for publications by status (bypass approved filter)
       const { db } = await import("./db");
       const { publications } = await import("@shared/schema");
-      const { eq, desc } = await import("drizzle-orm");
+      const { eq, desc, sql } = await import("drizzle-orm");
       
       const pubs = await db
         .select()
         .from(publications)
         .where(eq(publications.status, status))
         .orderBy(desc(publications.publicationDate))
-        .limit(1000);
+        .limit(limit)
+        .offset(offset);
+      
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(publications)
+        .where(eq(publications.status, status));
+      
+      const total = countResult?.count || 0;
+      const totalPages = Math.ceil(total / limit);
+      const currentPage = Math.floor(offset / limit) + 1;
       
       res.json({
         success: true,
         publications: pubs,
-        total: pubs.length
+        total,
+        totalPages,
+        currentPage
       });
     } catch (error: any) {
       console.error("Error fetching publications by status:", error);
       res.status(500).json({ 
         success: false,
         message: "Failed to fetch publications", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Admin endpoint to get featured publications
+  app.get("/api/admin/publications-list/featured", async (req, res) => {
+    try {
+      const limit = parseInt(String(req.query.limit)) || 25;
+      const offset = parseInt(String(req.query.offset)) || 0;
+      
+      // Direct database query for featured publications
+      const { db } = await import("./db");
+      const { publications } = await import("@shared/schema");
+      const { eq, desc, sql, and } = await import("drizzle-orm");
+      
+      const featuredPubs = await db
+        .select()
+        .from(publications)
+        .where(and(
+          eq(publications.isFeatured, 1),
+          eq(publications.status, "approved")
+        ))
+        .orderBy(desc(publications.publicationDate))
+        .limit(limit)
+        .offset(offset);
+      
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(publications)
+        .where(and(
+          eq(publications.isFeatured, 1),
+          eq(publications.status, "approved")
+        ));
+      
+      const total = countResult?.count || 0;
+      const totalPages = Math.ceil(total / limit);
+      const currentPage = Math.floor(offset / limit) + 1;
+      
+      res.json({
+        success: true,
+        publications: featuredPubs,
+        total,
+        totalPages,
+        currentPage
+      });
+    } catch (error: any) {
+      console.error("Error fetching featured publications:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch featured publications", 
         error: error.message 
       });
     }
