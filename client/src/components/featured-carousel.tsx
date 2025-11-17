@@ -209,7 +209,7 @@ export default function FeaturedCarousel() {
                     </h3>
 
                     <p
-                      className="mb-2 flex-grow"
+                      className="mb-2"
                       style={{
                         fontSize: '13px',
                         fontWeight: '500',
