@@ -1,6 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
 import type { InsertPublication } from "@shared/schema";
 import { PUBMED_SEARCH_TERMS, MAX_RESULTS_PER_TERM } from "../config/search-terms";
+import { sanitizeText } from "@shared/sanitize";
 
 // PMC Article structure (PubMed Central XML format)
 interface PMCArticle {
@@ -190,16 +191,20 @@ export class PubMedService {
       }
 
       // Parse title (use placeholder if missing)
-      const title = this.parseTitle(articleMeta["title-group"]) || "Untitled Publication";
+      const rawTitle = this.parseTitle(articleMeta["title-group"]) || "Untitled Publication";
+      const title = sanitizeText(rawTitle);
 
       // Parse authors (use placeholder if missing)
-      const authors = this.parseAuthors(articleMeta["contrib-group"]);
+      const rawAuthors = this.parseAuthors(articleMeta["contrib-group"]);
+      const authors = sanitizeText(rawAuthors);
 
       // Parse journal (use placeholder if missing)
-      const journal = this.parseJournal(journalMeta);
+      const rawJournal = this.parseJournal(journalMeta);
+      const journal = sanitizeText(rawJournal);
 
       // Parse abstract (can be null)
-      const abstract = this.parseAbstract(articleMeta.abstract);
+      const rawAbstract = this.parseAbstract(articleMeta.abstract);
+      const abstract = rawAbstract ? sanitizeText(rawAbstract) : null;
 
       // Parse publication date
       const publicationDate = this.parsePublicationDate(articleMeta["pub-date"]);

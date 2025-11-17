@@ -15,7 +15,7 @@ import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES, RESEARCH_AREAS
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { PaginationControls } from "@/components/pagination-controls";
-import { sanitizeAuthors } from "@/utils/sanitizeAuthors";
+import { sanitizeText } from "@shared/sanitize";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
@@ -764,7 +764,7 @@ export default function Home() {
                   {allPublications?.map((publication: Publication, index) => {
                     const publicationYear = new Date(publication.publicationDate).getFullYear();
                     // Sanitize authors to decode HTML entities
-                    const formattedAuthors = sanitizeAuthors(publication.authors);
+                    const formattedAuthors = sanitizeText(publication.authors);
                     
                     return (
                       <div 
@@ -844,7 +844,7 @@ export default function Home() {
                               onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
                               data-testid="publication-title-link"
                             >
-                              {sanitizeAuthors(publication.title)}
+                              {sanitizeText(publication.title)}
                             </a>
                           </h3>
                           
@@ -864,7 +864,7 @@ export default function Home() {
                           }}>
                             {/* Venue (italicized) and year */}
                             <span data-testid="publication-venue">
-                              <em>{sanitizeAuthors(publication.journal)}</em>, {publicationYear}
+                              <em>{sanitizeText(publication.journal)}</em>, {publicationYear}
                             </span>
                             
                             {/* DOI Badge */}

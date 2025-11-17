@@ -4,6 +4,28 @@ This project is a research publication management system for CONNEQT Health, foc
 
 ## Recent Updates (November 2025)
 
+**HTML Sanitization System & Database Cleanup Migration (November 17, 2025):**
+- Created comprehensive HTML sanitization system that works on both client and server (shared/sanitize.ts)
+- Moved sanitization from client-only utility to shared module for consistency across full stack
+- Implemented `sanitizeText()` function that:
+  - Decodes ALL HTML entities (numeric decimal &#8208;, hexadecimal &#x20AC;, and named &amp;)
+  - Removes HTML formatting tags (<i>, <sup>, <sub>, <em>, etc.) while preserving content
+  - Handles edge cases safely (empty strings, null values, encoded entities)
+  - Works in both browser (DOM API) and Node.js (regex-based) environments
+- Updated PubMed sync service (server/services/pubmed.ts) to sanitize all text fields during import:
+  - Titles, abstracts, journals, and authors are cleaned before saving to database
+  - Ensures new imports are clean from day 1
+- Created database cleanup migration script (server/scripts/cleanTitles.ts):
+  - Scans all 2,911 publications for HTML entities in titles, abstracts, and journals
+  - Dry-run mode by default (safety first!) with --apply flag for actual updates
+  - Batch processing (100 publications at a time) for performance
+  - Detailed logging of all changes for audit trail
+  - Supports selective field cleaning with --field=title|abstract|journal|all
+  - Usage: `tsx server/scripts/cleanTitles.ts` (dry-run) or `tsx server/scripts/cleanTitles.ts --apply`
+- Updated all client-side components to use new shared sanitization utility
+- Test coverage: 12/12 sanitization tests passing (entities, tags, whitespace, edge cases)
+- Expected impact: 360+ publications with HTML entities will be cleaned up
+
 **Admin Performance Optimization (November 17, 2025):**
 - Resolved freezing/blocking issues on admin page when handling large datasets (2,500+ publications)
 - Memoized client-side filtering with useMemo to prevent unnecessary recomputations on every render

@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getFeaturedPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
 import { getResearchAreaDisplayName } from "@shared/schema";
-import { sanitizeAuthors } from "@/utils/sanitizeAuthors";
+import { sanitizeText } from "@shared/sanitize";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
@@ -200,7 +200,7 @@ export default function FeaturedCarousel() {
                       }}
                       data-testid={`card-title-${index}`}
                     >
-                      {sanitizeAuthors(publication.title)}
+                      {sanitizeText(publication.title)}
                     </h3>
 
                     <p
@@ -212,7 +212,7 @@ export default function FeaturedCarousel() {
                       }}
                       data-testid={`card-journal-${index}`}
                     >
-                      {sanitizeAuthors(publication.journal)}, {new Date(publication.publicationDate).getFullYear()}
+                      {sanitizeText(publication.journal)}, {new Date(publication.publicationDate).getFullYear()}
                     </p>
 
                     <p
@@ -224,7 +224,7 @@ export default function FeaturedCarousel() {
                       }}
                       data-testid={`card-authors-${index}`}
                     >
-                      {sanitizeAuthors(publication.authors || '')}
+                      {sanitizeText(publication.authors || '')}
                     </p>
 
                     <button

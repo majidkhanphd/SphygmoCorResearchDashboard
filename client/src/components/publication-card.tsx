@@ -1,5 +1,4 @@
 import type { Publication } from "@shared/schema";
-import { getResearchAreaDisplayName } from "@shared/schema";
 
 interface PublicationCardProps {
   publication: Publication;
@@ -19,7 +18,7 @@ export default function PublicationCard({ publication }: PublicationCardProps) {
 
   // Create metadata line: Research Area • Journal • Year
   const metadata = [
-    getResearchAreaDisplayName(publication.researchArea) || (publication.categories && publication.categories[0]),
+    publication.categories && publication.categories[0],
     publication.journal,
     formatYear(publication.publicationDate)
   ].filter(Boolean).join(' • ');
