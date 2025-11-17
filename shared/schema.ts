@@ -3,6 +3,12 @@ import { pgTable, text, varchar, integer, timestamp, json } from "drizzle-orm/pg
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export type SuggestedCategory = {
+  category: string;
+  confidence: number;
+  source: 'ml' | 'keyword';
+};
+
 export const publications = pgTable("publications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   pmid: varchar("pmid").unique(), // PubMed ID
@@ -19,6 +25,11 @@ export const publications = pgTable("publications", {
   pubmedUrl: text("pubmed_url"),
   journalImpactFactor: integer("journal_impact_factor"),
   status: text("status").notNull().default("pending"), // pending, approved, rejected
+  suggestedCategories: json("suggested_categories").$type<SuggestedCategory[]>(),
+  categoryReviewStatus: text("category_review_status"),
+  categoryReviewedBy: varchar("category_reviewed_by"),
+  categoryReviewedAt: timestamp("category_reviewed_at"),
+  categoriesLastUpdatedBy: varchar("categories_last_updated_by"),
   createdAt: timestamp("created_at").defaultNow()
 });
 
@@ -32,6 +43,7 @@ export const categories = pgTable("categories", {
 export const insertPublicationSchema = createInsertSchema(publications).omit({
   id: true,
   createdAt: true,
+  categoryReviewedAt: true,
 });
 
 export const insertCategorySchema = createInsertSchema(categories).omit({
