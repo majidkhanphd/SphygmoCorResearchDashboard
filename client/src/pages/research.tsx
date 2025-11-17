@@ -1038,7 +1038,7 @@ export default function Home() {
           {/* Copyright */}
           <div className="text-center">
             <p className="text-sm" style={{ color: '#6E6E73', lineHeight: '1.4' }} data-testid="footer-copyright">
-              Copyright © {new Date().getFullYear()} Apple Inc. All rights reserved.
+              Copyright © {new Date().getFullYear()} CONNEQT Health Inc. All rights reserved.
             </p>
             <p className="text-xs mt-2" style={{ color: '#86868B', lineHeight: '1.4' }} data-testid="footer-location">
               United States
