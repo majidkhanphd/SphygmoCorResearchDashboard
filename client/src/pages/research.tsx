@@ -813,7 +813,7 @@ export default function Home() {
             style={{ 
               width: '8px',
               cursor: 'col-resize',
-              backgroundColor: 'rgba(0, 0, 0, 0.05)',
+              backgroundColor: 'transparent',
               transition: 'background-color 0.2s'
             }} 
           />
