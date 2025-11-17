@@ -181,14 +181,14 @@ export function generateKeywordSuggestions(
     if (requiredMatches === 0) continue;
 
     // Calculate confidence based on match strength
-    let confidence = 0.5; // Base confidence
+    let confidence = 0.6; // Base confidence (raised from 0.5 to ensure valid matches pass merge threshold)
     
     if (weightedMatches > 0) {
       confidence = 0.75; // Higher confidence for weighted matches
     }
     
     if (requiredMatches >= 2) {
-      confidence = Math.min(0.85, confidence + 0.15); // Multiple keywords boost confidence
+      confidence = Math.min(0.9, confidence + 0.15); // Multiple keywords boost confidence
     }
 
     suggestions.push({
