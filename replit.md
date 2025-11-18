@@ -12,13 +12,21 @@ Preferred communication style: Simple, everyday language.
 The frontend is built with React 18, TypeScript, and Vite, utilizing a component-based architecture. It uses Wouter for routing, TanStack React Query for server state management, and shadcn/ui components (based on Radix UI primitives) with Tailwind CSS for styling. The design emphasizes a fluid, responsive CSS Grid layout, consistent with Apple's aesthetic, featuring horizontal navigation and refined typography. Key features include advanced filtering by research areas, journals, and years, a single-column publication list with color-coded categories, and a robust pagination system. Recent enhancements include a dynamic Featured Carousel, a collapsible sidebar with button controls, and comprehensive HTML sanitization.
 
 ## Backend Architecture
-The backend is developed with Express.js and TypeScript on Node.js, providing RESTful API endpoints for publications, categories, and PubMed integration. It features centralized route organization, custom logging, and comprehensive error handling. A core component is the asynchronous PubMed synchronization service, supporting both full and incremental syncs with real-time progress tracking. An intelligent approval workflow automates approval for complete publications and flags incomplete ones for manual review. An ML-powered Category Suggestion Service, integrated with OpenAI GPT-5 nano (optimized for classification tasks), analyzes publication abstracts to suggest relevant research areas, supported by a hybrid keyword-based fallback system.
+The backend is developed with Express.js and TypeScript on Node.js, providing RESTful API endpoints for publications, categories, and PubMed integration. It features centralized route organization, custom logging, and comprehensive error handling. A core component is the asynchronous PubMed synchronization service, supporting both full and incremental syncs with real-time progress tracking. An intelligent approval workflow automates approval for complete publications and flags incomplete ones for manual review. An ML-powered Category Suggestion Service, integrated with OpenAI GPT-5 nano (optimized for classification tasks), analyzes publication abstracts to suggest relevant research areas, supported by a hybrid keyword-based fallback system. All category suggestions are automatically normalized to lowercase slugs (e.g., "eva", "ckd", "copd") for consistent data storage.
 
 ## Data Storage
 The application utilizes Drizzle ORM with PostgreSQL for data persistence. The schema includes tables for publications and categories, leveraging JSON fields for flexible data storage. Drizzle migrations manage schema changes and ensure database evolution.
 
 ## System Design Choices
 The system prioritizes type safety, developer experience, and scalable data management. UI/UX design balances Apple's aesthetic principles with practical full-width responsive layout, incorporating SF Pro Display font, #007AFF blue accents, consistent spacing, and a unified visual style. Responsiveness is achieved primarily through CSS-only techniques, avoiding JavaScript for layout adjustments. All text fields are subject to a comprehensive HTML sanitization process during import and display to ensure data cleanliness and prevent rendering issues.
+
+**Category Normalization System:**
+- All research area categories are stored as lowercase slugs in the database (e.g., "eva", "ckd", "copd", "heart-failure")
+- Display logic automatically converts slugs to uppercase abbreviations (EVA, COPD, CKD) or proper names (Heart Failure, Hypertension)
+- Case-insensitive matching ensures "eva", "EVA", and "Early Vascular Aging (EVA)" are treated identically
+- Comprehensive normalization utilities in `shared/schema.ts` handle all format conversions
+- ML categorization pipeline returns normalized slugs automatically
+- Database contains 2,867+ publications with fully normalized category values
 
 **Mobile Responsiveness & Zoom Behavior:**
 - All content sections (Hero, Featured Carousel, Publications, Footer) use full-width layouts without max-width constraints
