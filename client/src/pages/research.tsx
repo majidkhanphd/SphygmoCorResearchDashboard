@@ -335,7 +335,7 @@ export default function Home() {
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-light mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
             Publications
           </h1>
-          <p className="text-sm sm:text-base md:text-lg px-4 sm:px-8 md:px-12 lg:px-16 text-center mx-auto max-w-3xl" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
+          <p className="text-sm sm:text-base md:text-lg px-4 sm:px-8 md:px-12 lg:px-16 text-center mx-auto w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
             Browse our comprehensive collection of peer-reviewed research spanning decades of SphygmoCor technology in practice worldwide.
           </p>
         </div>
@@ -1112,7 +1112,7 @@ export default function Home() {
         borderColor: '#E5E5E7',
         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
       }}>
-        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
           {/* Footer Links */}
           <div className="flex flex-wrap items-center justify-center gap-6 mb-8">
             <a 
