@@ -67,6 +67,21 @@ export default function Home() {
   const [lastExpandedSize, setLastExpandedSize] = useState(18);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [publicationsHeight, setPublicationsHeight] = useState<number | null>(null);
+  const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() => {
+    // Mobile gets wider sidebar (40%), tablet+ gets narrower (16%)
+    return typeof window !== 'undefined' && window.innerWidth < 768 ? 40 : 16;
+  });
+
+  // Update sidebar default size on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const newDefaultSize = window.innerWidth < 768 ? 40 : 16;
+      setSidebarDefaultSize(newDefaultSize);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Reset to page 1 when filters or perPage changes
   useEffect(() => {
@@ -473,7 +488,7 @@ export default function Home() {
         <ResizablePanelGroup direction="horizontal" className="w-full" onLayout={handlePanelLayout}>
           <ResizablePanel 
             ref={sidebarPanelRef} 
-            defaultSize={16} 
+            defaultSize={sidebarDefaultSize} 
             minSize={16} 
             maxSize={40}
             collapsible={true}
