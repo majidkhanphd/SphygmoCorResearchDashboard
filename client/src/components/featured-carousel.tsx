@@ -82,7 +82,7 @@ export default function FeaturedCarousel() {
   if (isLoading) {
     return (
       <section className="w-full bg-background py-8 sm:py-10" data-testid="featured-carousel-section">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Skeleton className="h-10 w-64 mb-8" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Skeleton className="h-80 w-full rounded-xl" />
@@ -103,7 +103,7 @@ export default function FeaturedCarousel() {
       className="w-full bg-background py-8 sm:py-10" 
       data-testid="featured-carousel-section"
     >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-6">
           <h2 
             className="text-4xl sm:text-5xl font-light tracking-tight text-foreground"

@@ -14,8 +14,8 @@ export default function HeroBanner() {
       />
       
       {/* Content container */}
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
-        <div className="text-center">
+      <div className="relative w-full px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
+        <div className="text-center max-w-5xl mx-auto">
           {/* Main heading - using clamp for responsive sizing */}
           <h1 
             className="text-foreground font-light tracking-tight"

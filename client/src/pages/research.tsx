@@ -64,7 +64,10 @@ export default function Home() {
   const resultsRef = useRef<HTMLDivElement>(null);
   const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
   const [sidebarSize, setSidebarSize] = useState(16);
-  const [lastExpandedSize, setLastExpandedSize] = useState(18);
+  const [lastExpandedSize, setLastExpandedSize] = useState(() => {
+    // Mobile gets wider default (40%), desktop gets narrower (18%)
+    return typeof window !== 'undefined' && window.innerWidth < 768 ? 40 : 18;
+  });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth < 640;
   });
@@ -73,17 +76,35 @@ export default function Home() {
     // Mobile gets wider sidebar (40%), tablet+ gets narrower (16%)
     return typeof window !== 'undefined' && window.innerWidth < 768 ? 40 : 16;
   });
+  const [sidebarMinSize, setSidebarMinSize] = useState(() => {
+    // Mobile needs larger minimum (30%), desktop can be narrower (16%)
+    return typeof window !== 'undefined' && window.innerWidth < 768 ? 30 : 16;
+  });
   
   // Initialize sidebar collapsed state based on screen size
   const [initialSidebarCollapsed] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth < 640;
   });
 
-  // Update sidebar default size on window resize
+  // Update sidebar default size and min size on window resize
   useEffect(() => {
     const handleResize = () => {
-      const newDefaultSize = window.innerWidth < 768 ? 40 : 16;
+      const isMobile = window.innerWidth < 768;
+      const newDefaultSize = isMobile ? 40 : 16;
+      const newMinSize = isMobile ? 30 : 16;
       setSidebarDefaultSize(newDefaultSize);
+      setSidebarMinSize(newMinSize);
+      
+      // Update lastExpandedSize to respect new breakpoint
+      setLastExpandedSize(prev => {
+        if (isMobile) {
+          // On mobile, ensure lastExpandedSize is at least 30%
+          return Math.max(prev, 30);
+        } else {
+          // On desktop, clamp to reasonable range (16-40%)
+          return Math.max(16, Math.min(prev, 40));
+        }
+      });
     };
 
     window.addEventListener('resize', handleResize);
@@ -214,8 +235,8 @@ export default function Home() {
 
   // Handle expanding the sidebar (via button)
   const handleExpandSidebar = () => {
-    // Expand to last size or default to 18% (safe minimum)
-    const targetSize = lastExpandedSize > 16 ? lastExpandedSize : 18;
+    // Expand to last size, but respect the current minimum size
+    const targetSize = Math.max(lastExpandedSize, sidebarMinSize, sidebarDefaultSize);
     sidebarPanelRef.current?.resize(targetSize);
     setIsSidebarCollapsed(false);
   };
@@ -308,7 +329,7 @@ export default function Home() {
       <FeaturedCarousel />
       
       {/* Publications Section */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-8 sm:mb-12 md:mb-16">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-light mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
@@ -497,8 +518,8 @@ export default function Home() {
           <ResizablePanel 
             ref={sidebarPanelRef} 
             defaultSize={initialSidebarCollapsed ? 1 : sidebarDefaultSize} 
-            minSize={16} 
-            maxSize={40}
+            minSize={sidebarMinSize} 
+            maxSize={50}
             collapsible={true}
             collapsedSize={1}
             className={`transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
@@ -1091,7 +1112,7 @@ export default function Home() {
         borderColor: '#E5E5E7',
         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
       }}>
-        <div className="max-w-[980px] mx-auto px-4 sm:px-6 py-8 sm:py-10 md:py-12">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
           {/* Footer Links */}
           <div className="flex flex-wrap items-center justify-center gap-6 mb-8">
             <a 
