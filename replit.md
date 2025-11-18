@@ -18,7 +18,14 @@ The backend is developed with Express.js and TypeScript on Node.js, providing RE
 The application utilizes Drizzle ORM with PostgreSQL for data persistence. The schema includes tables for publications and categories, leveraging JSON fields for flexible data storage. Drizzle migrations manage schema changes and ensure database evolution.
 
 ## System Design Choices
-The system prioritizes type safety, developer experience, and scalable data management. UI/UX design is heavily inspired by Apple's aesthetic, incorporating SF Pro Display font, #007AFF blue accents, consistent spacing, and a unified visual style. Responsiveness is achieved primarily through CSS-only techniques, avoiding JavaScript for layout adjustments. All text fields are subject to a comprehensive HTML sanitization process during import and display to ensure data cleanliness and prevent rendering issues.
+The system prioritizes type safety, developer experience, and scalable data management. UI/UX design balances Apple's aesthetic principles with practical full-width responsive layout, incorporating SF Pro Display font, #007AFF blue accents, consistent spacing, and a unified visual style. Responsiveness is achieved primarily through CSS-only techniques, avoiding JavaScript for layout adjustments. All text fields are subject to a comprehensive HTML sanitization process during import and display to ensure data cleanliness and prevent rendering issues.
+
+**Mobile Responsiveness & Zoom Behavior:**
+- All content sections (Hero, Featured Carousel, Publications, Footer) use full-width layouts without max-width constraints
+- Viewport meta tag allows unrestricted pinch-to-zoom for accessibility
+- Sidebar auto-collapses on mobile viewports (< 640px) to maximize content space
+- Content properly reflows and fills available width when users zoom in/out on mobile devices
+- Desktop maintains intentional two-column layout (sidebar + publications) for optimal filtering UX
 
 # External Dependencies
 
