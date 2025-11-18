@@ -69,7 +69,7 @@ export default function Home() {
     return typeof window !== 'undefined' && window.innerWidth < 768 ? 40 : 18;
   });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
-    return typeof window !== 'undefined' && window.innerWidth < 1024;
+    return typeof window !== 'undefined' && window.innerWidth < 640;
   });
   const [publicationsHeight, setPublicationsHeight] = useState<number | null>(null);
   const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() => {
@@ -83,7 +83,7 @@ export default function Home() {
   
   // Initialize sidebar collapsed state based on screen size
   const [initialSidebarCollapsed] = useState(() => {
-    return typeof window !== 'undefined' && window.innerWidth < 1024;
+    return typeof window !== 'undefined' && window.innerWidth < 640;
   });
 
   // Update sidebar default size and min size on window resize
@@ -329,13 +329,13 @@ export default function Home() {
       <FeaturedCarousel />
       
       {/* Publications Section */}
-      <div className="w-full py-8 sm:py-12 md:py-16" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-8 sm:mb-12 md:mb-16">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-light mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
             Publications
           </h1>
-          <p className="text-sm sm:text-base md:text-lg px-2 sm:px-4 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
+          <p className="text-sm sm:text-base md:text-lg px-4 sm:px-8 md:px-12 lg:px-16 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
             Browse our comprehensive collection of peer-reviewed research spanning decades of SphygmoCor technology in practice worldwide.
           </p>
         </div>
@@ -866,7 +866,7 @@ export default function Home() {
             {/* Main content area - Apple typography */}
             <section 
               ref={resultsRef}
-              className="flex-1 min-w-0" 
+              className="flex-1 min-w-0 pl-4 sm:pl-6 md:pl-8" 
               id="publications-section" 
               role="main" 
               aria-label="Publications list" 
@@ -1078,7 +1078,7 @@ export default function Home() {
 
         {/* Pagination controls - Apple style */}
         {!isLoading && allPublications.length > 0 && (
-          <div className="mt-6 sm:mt-8">
+          <div className="pl-4 sm:pl-6 md:pl-8 mt-6 sm:mt-8">
             <PaginationControls
               total={totalResults}
               currentPage={currentPage}
@@ -1112,7 +1112,7 @@ export default function Home() {
         borderColor: '#E5E5E7',
         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
       }}>
-        <div className="w-full py-8 sm:py-10 md:py-12">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
           {/* Footer Links */}
           <div className="flex flex-wrap items-center justify-center gap-6 mb-8">
             <a 
