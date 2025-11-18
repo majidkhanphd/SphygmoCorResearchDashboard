@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/navigation";
 import HeroBanner from "@/components/hero-banner";
@@ -65,11 +65,18 @@ export default function Home() {
   const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
   const [sidebarSize, setSidebarSize] = useState(16);
   const [lastExpandedSize, setLastExpandedSize] = useState(18);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth < 640;
+  });
   const [publicationsHeight, setPublicationsHeight] = useState<number | null>(null);
   const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() => {
     // Mobile gets wider sidebar (40%), tablet+ gets narrower (16%)
     return typeof window !== 'undefined' && window.innerWidth < 768 ? 40 : 16;
+  });
+  
+  // Initialize sidebar collapsed state based on screen size
+  const [initialSidebarCollapsed] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth < 640;
   });
 
   // Update sidebar default size on window resize
@@ -82,6 +89,14 @@ export default function Home() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+  
+  // Collapse sidebar on mount if on mobile
+  useLayoutEffect(() => {
+    if (initialSidebarCollapsed && sidebarPanelRef.current) {
+      sidebarPanelRef.current.collapse();
+      setIsSidebarCollapsed(true);
+    }
+  }, [initialSidebarCollapsed]);
 
   // Reset to page 1 when filters or perPage changes
   useEffect(() => {
@@ -293,45 +308,41 @@ export default function Home() {
       <FeaturedCarousel />
       
       {/* Publications Section */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingTop: '48px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
-        {/* Main title - Apple's exact typography */}
-        <div className="text-center" style={{ marginBottom: '64px' }}>
-          <h1 style={{ fontSize: '48px', fontWeight: '300', letterSpacing: '-0.02em', color: '#1D1D1F', marginBottom: '12px', lineHeight: '1.1' }} data-testid="main-title">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+        {/* Main title - Apple's exact typography - Responsive */}
+        <div className="text-center mb-8 sm:mb-12 md:mb-16">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-light mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
             Publications
           </h1>
-          <p
-            style={{ fontSize: '18px', color: '#6E6E73', maxWidth: '820px', margin: '0 auto', lineHeight: '1.4' }}
-            className="ml-[50px] mr-[50px] text-center pl-[30px] pr-[30px]">
+          <p className="text-sm sm:text-base md:text-lg px-4 sm:px-8 md:px-12 lg:px-16 text-center mx-auto max-w-3xl" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
             Browse our comprehensive collection of peer-reviewed research spanning decades of SphygmoCor technology in practice worldwide.
           </p>
         </div>
         
         {/* Page Last Updated */}
-        <div className="text-center" style={{ marginBottom: '32px' }}>
-          <p className="text-sm" style={{ color: '#6E6E73', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} data-testid="last-updated">
+        <div className="text-center mb-6 sm:mb-8">
+          <p className="text-xs sm:text-sm" style={{ color: '#6E6E73', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} data-testid="last-updated">
             Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
         
         {/* Search and Sort Section - Apple style */}
-        <div style={{ marginBottom: '48px' }}>
+        <div className="mb-8 sm:mb-10 md:mb-12">
           {/* Search bar and sort dropdown */}
           <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center mb-6">
             <div className="relative flex-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
-            <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none" style={{ paddingLeft: '16px' }}>
-              <Search className="h-5 w-5" style={{ color: '#6E6E73' }} />
+            <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-3 sm:pl-4">
+              <Search className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: '#6E6E73' }} />
             </div>
               <input
                 type="text"
                 placeholder="Search publications"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full rounded-xl apple-transition apple-focus-ring"
+                className="w-full rounded-xl apple-transition apple-focus-ring py-2 sm:py-3 text-sm sm:text-base"
                 style={{
-                  paddingLeft: '48px',
-                  paddingRight: inputValue ? '48px' : '16px',
-                  paddingTop: '12px',
-                  paddingBottom: '12px',
+                  paddingLeft: '2.5rem',
+                  paddingRight: inputValue ? '2.5rem' : '1rem',
                   fontSize: '17px',
                   fontWeight: '400',
                   lineHeight: '1.4',
@@ -356,13 +367,12 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="absolute inset-y-0 right-0 flex items-center apple-transition apple-focus-ring"
-                  style={{ paddingRight: '16px' }}
+                  className="absolute inset-y-0 right-0 flex items-center apple-transition apple-focus-ring pr-3 sm:pr-4"
                   data-testid="reset-button"
                   aria-label="Clear search"
                 >
                   <X 
-                    className="h-5 w-5 apple-transition" 
+                    className="h-4 w-4 sm:h-5 sm:w-5 apple-transition" 
                     style={{ color: '#6E6E73' }}
                     onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
                     onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#6E6E73'}
@@ -375,10 +385,8 @@ export default function Home() {
             <div className="w-full sm:w-48 flex-shrink-0">
               <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "relevance") => setSortBy(value)}>
                 <SelectTrigger 
-                  className="w-full rounded-xl transition-all duration-200 ease-in-out"
+                  className="w-full rounded-xl transition-all duration-200 ease-in-out py-2 sm:py-3 text-sm sm:text-base"
                   style={{
-                    paddingTop: '12px',
-                    paddingBottom: '12px',
                     fontSize: '17px',
                     fontWeight: '400',
                     lineHeight: '1.4',
@@ -418,8 +426,8 @@ export default function Home() {
             <div className="flex flex-wrap gap-2">
               {debouncedSearchQuery && (
                 <div 
-                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors"
-                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
+                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors text-xs sm:text-sm"
+                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F' }}
                   data-testid="filter-chip-search"
                 >
                   <span>Search: {debouncedSearchQuery}</span>
@@ -434,8 +442,8 @@ export default function Home() {
               )}
               {selectedResearchArea && (
                 <div 
-                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors"
-                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
+                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors text-xs sm:text-sm"
+                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F' }}
                   data-testid="filter-chip-research-area"
                 >
                   <span>Research Area: {getResearchAreaDisplayName(selectedResearchArea)}</span>
@@ -450,8 +458,8 @@ export default function Home() {
               )}
               {selectedVenue && (
                 <div 
-                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors"
-                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
+                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors text-xs sm:text-sm"
+                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F' }}
                   data-testid="filter-chip-venue"
                 >
                   <span>Journal: {selectedVenue}</span>
@@ -466,8 +474,8 @@ export default function Home() {
               )}
               {selectedYear && (
                 <div 
-                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full transition-colors"
-                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F', fontSize: '14px' }}
+                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors text-xs sm:text-sm"
+                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F' }}
                   data-testid="filter-chip-year"
                 >
                   <span>Year: {selectedYear}</span>
@@ -488,7 +496,7 @@ export default function Home() {
         <ResizablePanelGroup direction="horizontal" className="w-full" onLayout={handlePanelLayout}>
           <ResizablePanel 
             ref={sidebarPanelRef} 
-            defaultSize={sidebarDefaultSize} 
+            defaultSize={initialSidebarCollapsed ? 1 : sidebarDefaultSize} 
             minSize={16} 
             maxSize={40}
             collapsible={true}
@@ -837,7 +845,7 @@ export default function Home() {
             {/* Main content area - Apple typography */}
             <section 
               ref={resultsRef}
-              className="flex-1 min-w-0 pl-8" 
+              className="flex-1 min-w-0 pl-4 sm:pl-6 md:pl-8" 
               id="publications-section" 
               role="main" 
               aria-label="Publications list" 
@@ -854,11 +862,11 @@ export default function Home() {
                 ))}
               </div>
             ) : allPublications?.length === 0 ? (
-              <div style={{ paddingTop: '48px', paddingBottom: '48px' }}>
-                <p style={{ color: '#6E6E73', fontSize: '18px', fontWeight: '400', lineHeight: '1.4', marginBottom: '8px' }}>
+              <div className="py-8 sm:py-10 md:py-12">
+                <p className="text-base sm:text-lg mb-2" style={{ color: '#6E6E73', fontWeight: '400', lineHeight: '1.4' }}>
                   No publications found matching your criteria.
                 </p>
-                <p style={{ color: '#6E6E73', fontSize: '16px', fontWeight: '400', lineHeight: '1.4' }}>
+                <p className="text-sm sm:text-base" style={{ color: '#6E6E73', fontWeight: '400', lineHeight: '1.4' }}>
                   Try adjusting your filters or search terms.
                 </p>
               </div>
@@ -884,10 +892,8 @@ export default function Home() {
                       <div 
                         key={publication.id} 
                         data-testid={`publication-${publication.id}`}
-                        className="min-w-0"
+                        className="min-w-0 py-4 sm:py-5 md:py-6"
                         style={{
-                          paddingTop: '24px',
-                          paddingBottom: '24px',
                           borderBottom: '1px solid #E5E5E7',
                           display: 'flex',
                           flexDirection: 'column',
@@ -937,14 +943,10 @@ export default function Home() {
                             </div>
                           )}
                           
-                          {/* Title - Apple's conservative typography */}
-                          <h3 style={{ 
-                            fontSize: '21px', 
-                            fontWeight: '600', 
+                          {/* Title - Apple's conservative typography - Responsive */}
+                          <h3 className="text-lg sm:text-xl font-semibold mb-2" style={{ 
                             lineHeight: '1.3', 
                             color: '#1D1D1F', 
-                            marginBottom: '8px',
-                            margin: '0 0 8px 0',
                             wordWrap: 'break-word',
                             overflowWrap: 'break-word'
                           }}>
@@ -1055,7 +1057,7 @@ export default function Home() {
 
         {/* Pagination controls - Apple style */}
         {!isLoading && allPublications.length > 0 && (
-          <div className="pl-8 mt-8">
+          <div className="pl-4 sm:pl-6 md:pl-8 mt-6 sm:mt-8">
             <PaginationControls
               total={totalResults}
               currentPage={currentPage}
@@ -1084,13 +1086,12 @@ export default function Home() {
         )}
       </div>
       {/* Apple-style Footer */}
-      <footer className="border-t" style={{ 
+      <footer className="border-t mt-8 sm:mt-12 md:mt-16" style={{ 
         backgroundColor: '#F6F6F6', 
         borderColor: '#E5E5E7',
-        marginTop: '48px',
         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
       }}>
-        <div className="max-w-[980px] mx-auto px-6" style={{ paddingTop: '48px', paddingBottom: '48px' }}>
+        <div className="max-w-[980px] mx-auto px-4 sm:px-6 py-8 sm:py-10 md:py-12">
           {/* Footer Links */}
           <div className="flex flex-wrap items-center justify-center gap-6 mb-8">
             <a 
