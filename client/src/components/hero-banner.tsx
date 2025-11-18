@@ -26,9 +26,10 @@ export default function HeroBanner() {
             }}
             data-testid="hero-title"
           >
-            Arterial Intelligence©
-            <br />
             Research
+            <br />
+            Fueled by SphygmoCor<span style={{ fontSize: '0.5em', verticalAlign: 'super' }}>©</span>
+            <br />
           </h1>
         </div>
       </div>
