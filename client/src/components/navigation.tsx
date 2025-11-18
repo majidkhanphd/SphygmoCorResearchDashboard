@@ -4,7 +4,7 @@ import logoPath from "@assets/conneqt_health_wide@4x_1763072530232.png";
 export default function Navigation() {
   return (
     <header className="w-full bg-white border-b border-gray-200" data-testid="ml-header">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         {/* Header with logo and space for future navigation */}
         <div className="flex h-14 items-center justify-between">
           {/* Logo - left aligned */}
