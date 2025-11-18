@@ -329,13 +329,13 @@ export default function Home() {
       <FeaturedCarousel />
       
       {/* Publications Section */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+      <div className="w-full py-8 sm:py-12 md:py-16" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
         {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-8 sm:mb-12 md:mb-16">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-light mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
             Publications
           </h1>
-          <p className="text-sm sm:text-base md:text-lg px-4 sm:px-8 md:px-12 lg:px-16 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
+          <p className="text-sm sm:text-base md:text-lg px-2 sm:px-4 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
             Browse our comprehensive collection of peer-reviewed research spanning decades of SphygmoCor technology in practice worldwide.
           </p>
         </div>
