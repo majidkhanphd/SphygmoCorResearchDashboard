@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { RESEARCH_AREAS, type SuggestedCategory } from "@shared/schema";
+import { RESEARCH_AREAS, type SuggestedCategory, normalizeCategoryToSlug } from "@shared/schema";
 
 let openai: OpenAI | null = null;
 
@@ -97,13 +97,18 @@ export async function generateMLSuggestions(
       const parsed = JSON.parse(content);
       const suggestions = parsed.suggestions || [];
 
-      // Validate and filter suggestions
+      // Validate, normalize to slugs, and filter suggestions
       return suggestions
-        .filter((s: any) => 
+        .map((s: any) => {
+          // Normalize category to slug (e.g., "Chronic Kidney Disease (CKD)" -> "ckd")
+          const slug = normalizeCategoryToSlug(s.category);
+          return slug ? { ...s, category: slug } : null;
+        })
+        .filter((s: any): s is { category: string; confidence: number; reasoning?: string } => 
+          s !== null &&
           s.category && 
           typeof s.confidence === 'number' && 
-          s.confidence >= 0.6 &&
-          RESEARCH_AREAS.includes(s.category)
+          s.confidence >= 0.6
         )
         .slice(0, 3) // Max 3 categories
         .map((s: any) => ({
@@ -144,58 +149,63 @@ export function generateKeywordSuggestions(
   const suggestions: SuggestedCategory[] = [];
 
   // Enhanced keyword matching with weighted phrases and negative keywords
-  const categoryRules = {
-    "Chronic Kidney Disease (CKD)": {
+  // Keys are slugs, not full names
+  const categoryRules: Record<string, {
+    required: string[];
+    weighted: string[];
+    negative: string[];
+  }> = {
+    "ckd": {
       required: ["kidney", "renal", "ckd", "nephro", "dialysis", "egfr"],
       weighted: ["chronic kidney", "renal function", "kidney disease"],
       negative: []
     },
-    "Chronic Obstructive Pulmonary Disease (COPD)": {
+    "copd": {
       required: ["copd", "pulmonary disease", "lung function", "respiratory"],
       weighted: ["chronic obstructive", "copd"],
       negative: []
     },
-    "Early Vascular Aging (EVA)": {
+    "eva": {
       required: ["arterial stiffness", "pulse wave velocity", "pwv", "vascular aging", "augmentation index"],
       weighted: ["arterial stiffness", "pulse wave velocity", "early vascular aging"],
       negative: []
     },
-    "Heart Failure": {
+    "heart-failure": {
       required: ["heart failure", "cardiac failure", "hfpef", "hfref", "ejection fraction"],
       weighted: ["heart failure", "cardiac failure"],
       negative: []
     },
-    "Hypertension": {
+    "hypertension": {
       required: ["hypertension", "blood pressure", "hypertensive", "antihypertensive"],
       weighted: ["hypertension", "blood pressure"],
       negative: []
     },
-    "Longevity": {
+    "longevity": {
       required: ["aging", "longevity", "elderly", "lifespan", "centenarian"],
       weighted: ["longevity", "healthy aging", "lifespan"],
       negative: []
     },
-    "Maternal Health": {
+    "maternal-health": {
       required: ["pregnancy", "pregnant", "maternal", "prenatal", "postnatal", "gestational"],
       weighted: ["pregnancy", "maternal health", "pregnant women"],
       negative: []
     },
-    "Men's Health": {
+    "mens-health": {
       required: ["men only", "male participants", "prostate", "testosterone"],
       weighted: ["men's health", "male-specific"],
       negative: ["men and women", "both sexes", "mixed gender", "both genders"]
     },
-    "Metabolic Health": {
+    "metabolic-health": {
       required: ["diabetes", "metabolic", "glucose", "insulin", "glycemic"],
       weighted: ["metabolic syndrome", "diabetes", "insulin resistance"],
       negative: []
     },
-    "Neuroscience": {
+    "neuroscience": {
       required: ["brain", "cognitive", "neurological", "dementia", "alzheimer", "cerebral"],
       weighted: ["cognitive function", "brain health", "dementia"],
       negative: []
     },
-    "Women's Health": {
+    "womens-health": {
       required: ["women only", "female participants", "menopause", "estrogen", "postmenopausal women"],
       weighted: ["women's health", "female-specific"],
       negative: ["men and women", "both sexes", "mixed gender", "both genders"]

@@ -117,8 +117,117 @@ export const RESEARCH_AREA_DISPLAY_NAMES: Record<string, string> = {
   "womens-health": "Women's Health"
 };
 
+// Reverse mapping from display names to slugs (case-insensitive)
+export const RESEARCH_AREA_NAME_TO_SLUG: Record<string, string> = {
+  "chronic kidney disease (ckd)": "ckd",
+  "chronic kidney disease": "ckd",
+  "ckd": "ckd",
+  "chronic obstructive pulmonary disease (copd)": "copd",
+  "chronic obstructive pulmonary disease": "copd",
+  "copd": "copd",
+  "early vascular aging (eva)": "eva",
+  "early vascular aging": "eva",
+  "eva": "eva",
+  "heart failure": "heart-failure",
+  "hypertension": "hypertension",
+  "longevity": "longevity",
+  "maternal health": "maternal-health",
+  "men's health": "mens-health",
+  "metabolic health": "metabolic-health",
+  "neuroscience": "neuroscience",
+  "women's health": "womens-health"
+};
+
+// Mapping from slugs to uppercase abbreviations or short names for badge display
+export const RESEARCH_AREA_BADGE_NAMES: Record<string, string> = {
+  "ckd": "CKD",
+  "copd": "COPD",
+  "eva": "EVA",
+  "heart-failure": "Heart Failure",
+  "hypertension": "Hypertension",
+  "longevity": "Longevity",
+  "maternal-health": "Maternal Health",
+  "mens-health": "Men's Health",
+  "metabolic-health": "Metabolic Health",
+  "neuroscience": "Neuroscience",
+  "womens-health": "Women's Health"
+};
+
 // Utility function to get display name from research area slug
 export const getResearchAreaDisplayName = (slug: string | null | undefined): string | null => {
   if (!slug) return null;
   return RESEARCH_AREA_DISPLAY_NAMES[slug] || slug;
+};
+
+/**
+ * Normalize a category string to its canonical slug form
+ * Handles various input formats:
+ * - "Chronic Kidney Disease (CKD)" -> "ckd"
+ * - "Early Vascular Aging (EVA)" -> "eva"
+ * - "eva" -> "eva"
+ * - "EVA" -> "eva"
+ * - "Heart Failure" -> "heart-failure"
+ */
+export const normalizeCategoryToSlug = (category: string | null | undefined): string | null => {
+  if (!category) return null;
+  
+  const normalized = category.toLowerCase().trim();
+  
+  // Check direct mapping first
+  if (RESEARCH_AREA_NAME_TO_SLUG[normalized]) {
+    return RESEARCH_AREA_NAME_TO_SLUG[normalized];
+  }
+  
+  // If it's already a slug (contains hyphens), return as-is
+  if (normalized.includes('-')) {
+    return normalized;
+  }
+  
+  // Try to extract abbreviation from parentheses if present
+  const match = category.match(/\(([A-Z]+)\)/);
+  if (match) {
+    const abbrev = match[1].toLowerCase();
+    if (RESEARCH_AREA_NAME_TO_SLUG[abbrev]) {
+      return RESEARCH_AREA_NAME_TO_SLUG[abbrev];
+    }
+  }
+  
+  // Return null if we can't normalize it
+  return null;
+};
+
+/**
+ * Get the badge display name for a category
+ * Returns uppercase abbreviations for CKD, COPD, EVA
+ * Returns title case for others
+ */
+export const getCategoryBadgeName = (category: string | null | undefined): string | null => {
+  if (!category) return null;
+  
+  // First normalize to slug
+  const slug = normalizeCategoryToSlug(category);
+  if (!slug) {
+    // If we can't normalize, try to extract abbreviation from parentheses
+    const match = category.match(/\(([A-Z]+)\)/);
+    if (match) {
+      return match[1]; // Return the abbreviation in uppercase
+    }
+    // Otherwise return the category as-is
+    return category;
+  }
+  
+  // Return the badge name
+  return RESEARCH_AREA_BADGE_NAMES[slug] || slug;
+};
+
+/**
+ * Normalize an array of categories to slugs
+ * Filters out any that can't be normalized
+ */
+export const normalizeCategoriesArray = (categories: string[] | null | undefined): string[] => {
+  if (!categories || !Array.isArray(categories)) return [];
+  
+  return categories
+    .map(cat => normalizeCategoryToSlug(cat))
+    .filter((slug): slug is string => slug !== null);
 };

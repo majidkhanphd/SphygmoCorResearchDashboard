@@ -11,7 +11,7 @@ import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search, X, Star, Ext
 import { useDebounce } from "@/hooks/use-debounce";
 import { searchPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
-import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES, RESEARCH_AREAS } from "@shared/schema";
+import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES, RESEARCH_AREAS, getCategoryBadgeName, normalizeCategoryToSlug } from "@shared/schema";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -33,16 +33,10 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string
 };
 
 const getBadgeDisplayName = (category: string): string => {
-  // Check for specific acronyms that should be all caps
-  if (category === 'ckd') return 'CKD';
-  if (category === 'copd') return 'COPD';
-  if (category === 'eva') return 'EVA';
-  
-  // Get display name from slug
-  const displayName = getResearchAreaDisplayName(category);
-  if (!displayName) return category.replace('-', ' ');
-  
-  return displayName;
+  // Use the new getCategoryBadgeName function which handles all formats
+  // Returns uppercase abbreviations (CKD, EVA, COPD) for those categories
+  const badgeName = getCategoryBadgeName(category);
+  return badgeName || category;
 };
 
 export default function Home() {
@@ -941,17 +935,19 @@ export default function Home() {
                               marginBottom: '12px' 
                             }}>
                               {publication.categories.map((category: string, catIndex: number) => {
-                                const colors = CATEGORY_COLORS[category] || { text: '#6E6E73' };
+                                // Normalize category to slug for consistent color lookup and keys
+                                const categorySlug = normalizeCategoryToSlug(category) || category;
+                                const colors = CATEGORY_COLORS[categorySlug] || { text: '#6E6E73' };
                                 const displayName = getBadgeDisplayName(category);
                                 return (
-                                  <span key={category} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                  <span key={categorySlug} style={{ display: 'inline-flex', alignItems: 'center' }}>
                                     <span
                                       style={{
                                         fontSize: '12px',
                                         fontWeight: '500',
                                         color: colors.text,
                                       }}
-                                      data-testid={`category-badge-${category}`}
+                                      data-testid={`category-badge-${categorySlug}`}
                                     >
                                       {displayName}
                                     </span>
