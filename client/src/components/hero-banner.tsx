@@ -55,6 +55,18 @@ export default function HeroBanner() {
   
   // 6. Pulse wave velocity - smooth sinusoidal pattern
   const pulseWave = "M 0,50 Q 25,30 50,50 Q 75,70 100,50";
+  
+  // Y-position keyframes for pulse dots (extracted from path data)
+  // These represent the Y coordinates at different points along each waveform
+  const normalDotY = [65, 64, 55, 35, 25, 26, 32, 38, 39, 41, 47, 55, 62, 65];
+  const alternansStrongDotY = [65, 64, 50, 30, 20, 21, 27, 33, 34, 36, 42, 52, 61, 65];
+  const alternansWeakDotY = [65, 64.5, 58, 45, 38, 39, 43, 47, 47.5, 49, 53, 58, 63, 65];
+  const bisferiensDotY = [65, 64, 50, 35, 31, 32, 35, 33, 30, 31, 36, 42, 48, 57, 62.5, 65];
+  const parvusDotY = [65, 64.5, 62, 55, 51, 50, 51, 52, 54, 57, 60, 63, 65];
+  const paradoxusHighDotY = [65, 64, 50, 30, 20, 21, 27, 33, 39, 52, 61, 65];
+  const paradoxusMedDotY = [65, 64.2, 55, 40, 33, 34, 38, 42, 46, 56, 62, 65];
+  const paradoxusLowDotY = [65, 64.5, 60, 50, 45, 46, 49, 51, 53, 59, 63, 65];
+  const pulseDotY = [50, 40, 30, 35, 40, 45, 50, 55, 60, 65, 70, 65, 60, 55, 50];
 
   return (
     <motion.section 
@@ -109,17 +121,6 @@ export default function HeroBanner() {
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
             </filter>
-
-            {/* Define paths for pulse dots to follow */}
-            <path id="normalPath" d={normalWaveform} />
-            <path id="alternansStrongPath" d={alternansStrong} />
-            <path id="alternansWeakPath" d={alternansWeak} />
-            <path id="bisferiesPath" d={bisferiens} />
-            <path id="parvusPath" d={parvusTardus} />
-            <path id="paradoxusHighPath" d={paradoxusHigh} />
-            <path id="paradoxusMedPath" d={paradoxusMed} />
-            <path id="paradoxusLowPath" d={paradoxusLow} />
-            <path id="pulseWavePath" d={pulseWave} />
           </defs>
 
           {/* Layer 1: Normal Arterial Waveform with pulse dot */}
@@ -129,8 +130,16 @@ export default function HeroBanner() {
           >
             {/* Create multiple instances for continuous flow */}
             {[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100].map((offset) => (
-              <motion.g key={`normal-${offset}`}>
-                <motion.path
+              <motion.g 
+                key={`normal-${offset}`}
+                animate={{ x: [-100, 0] }}
+                transition={{
+                  duration: 18,
+                  ease: "linear",
+                  repeat: Infinity
+                }}
+              >
+                <path
                   d={normalWaveform}
                   transform={`translate(${offset}, 120)`}
                   fill="none"
@@ -138,23 +147,18 @@ export default function HeroBanner() {
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ opacity: glowOpacity1 }}
-                  animate={{ x: [-100, 0] }}
-                  transition={{
-                    duration: 18,
-                    ease: "linear",
-                    repeat: Infinity
-                  }}
+                  style={{ opacity: glowOpacity1.get() }}
                 />
-                {/* Pulse dot following the normal waveform path */}
+                {/* Pulse dot with Y-axis animation */}
                 <motion.circle
                   r="3"
                   fill="#7fb3b5"
                   filter="url(#subtleGlow)"
-                  initial={{ offsetDistance: '0%', opacity: 0 }}
+                  cx={offset + 50}
+                  cy={120}
                   animate={{ 
-                    offsetDistance: ['0%', '100%'],
-                    opacity: [0, 0.8, 0.8, 0]
+                    y: normalDotY,
+                    opacity: [0, 0.8, 0.8, 0.8, 0.8, 0]
                   }}
                   transition={{
                     duration: 1.8,
@@ -162,13 +166,8 @@ export default function HeroBanner() {
                     repeat: Infinity,
                     delay: offset / 100 * 1.8,
                     opacity: {
-                      times: [0, 0.05, 0.95, 1]
+                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
                     }
-                  }}
-                  style={{
-                    offsetPath: `path('${normalWaveform}')`,
-                    offsetRotate: '0deg',
-                    transform: `translate(${offset}px, 120px)`
                   }}
                 />
               </motion.g>
@@ -181,9 +180,17 @@ export default function HeroBanner() {
             filter="url(#subtleGlow)"
           >
             {[0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000].map((offset, i) => (
-              <motion.g key={`alternans-${offset}`}>
+              <motion.g 
+                key={`alternans-${offset}`}
+                animate={{ x: [-200, 0] }}
+                transition={{
+                  duration: 22,
+                  ease: "linear",
+                  repeat: Infinity
+                }}
+              >
                 {/* Strong beat */}
-                <motion.path
+                <path
                   d={alternansStrong}
                   transform={`translate(${offset}, 180)`}
                   fill="none"
@@ -191,16 +198,10 @@ export default function HeroBanner() {
                   strokeWidth="1.6"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ opacity: glowOpacity2 }}
-                  animate={{ x: [-200, 0] }}
-                  transition={{
-                    duration: 22,
-                    ease: "linear",
-                    repeat: Infinity
-                  }}
+                  style={{ opacity: glowOpacity2.get() }}
                 />
                 {/* Weak beat */}
-                <motion.path
+                <path
                   d={alternansWeak}
                   transform={`translate(${offset + 100}, 180)`}
                   fill="none"
@@ -208,23 +209,18 @@ export default function HeroBanner() {
                   strokeWidth="1.6"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ opacity: glowOpacity2 }}
-                  animate={{ x: [-200, 0] }}
-                  transition={{
-                    duration: 22,
-                    ease: "linear",
-                    repeat: Infinity
-                  }}
+                  style={{ opacity: glowOpacity2.get() }}
                 />
-                {/* Pulse dots for alternans */}
+                {/* Pulse dot for strong beat */}
                 <motion.circle
                   r="2.8"
                   fill="#6b8fa3"
                   filter="url(#subtleGlow)"
-                  initial={{ offsetDistance: '0%', opacity: 0 }}
+                  cx={offset + 50}
+                  cy={180}
                   animate={{ 
-                    offsetDistance: ['0%', '100%'],
-                    opacity: [0, 0.7, 0.7, 0]
+                    y: alternansStrongDotY,
+                    opacity: [0, 0.7, 0.7, 0.7, 0.7, 0]
                   }}
                   transition={{
                     duration: 2.2,
@@ -232,13 +228,29 @@ export default function HeroBanner() {
                     repeat: Infinity,
                     delay: offset / 100 * 1.1,
                     opacity: {
-                      times: [0, 0.05, 0.95, 1]
+                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
                     }
                   }}
-                  style={{
-                    offsetPath: `path('${alternansStrong}')`,
-                    offsetRotate: '0deg',
-                    transform: `translate(${offset}px, 180px)`
+                />
+                {/* Pulse dot for weak beat */}
+                <motion.circle
+                  r="2.5"
+                  fill="#6b8fa3"
+                  filter="url(#subtleGlow)"
+                  cx={offset + 150}
+                  cy={180}
+                  animate={{ 
+                    y: alternansWeakDotY,
+                    opacity: [0, 0.6, 0.6, 0.6, 0.6, 0]
+                  }}
+                  transition={{
+                    duration: 2.2,
+                    ease: "linear",
+                    repeat: Infinity,
+                    delay: offset / 100 * 1.1 + 1.1,
+                    opacity: {
+                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
+                    }
                   }}
                 />
               </motion.g>
@@ -251,8 +263,16 @@ export default function HeroBanner() {
             filter="url(#subtleGlow)"
           >
             {[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100].map((offset) => (
-              <motion.g key={`bisferiens-${offset}`}>
-                <motion.path
+              <motion.g 
+                key={`bisferiens-${offset}`}
+                animate={{ x: [-100, 0] }}
+                transition={{
+                  duration: 26,
+                  ease: "linear",
+                  repeat: Infinity
+                }}
+              >
+                <path
                   d={bisferiens}
                   transform={`translate(${offset}, 240)`}
                   fill="none"
@@ -260,23 +280,18 @@ export default function HeroBanner() {
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ opacity: glowOpacity3 }}
-                  animate={{ x: [-100, 0] }}
-                  transition={{
-                    duration: 26,
-                    ease: "linear",
-                    repeat: Infinity
-                  }}
+                  style={{ opacity: glowOpacity3.get() }}
                 />
-                {/* Pulse dot for bisferiens */}
+                {/* Pulse dot with Y-axis animation */}
                 <motion.circle
                   r="2.5"
                   fill="#a5c1d3"
                   filter="url(#subtleGlow)"
-                  initial={{ offsetDistance: '0%', opacity: 0 }}
+                  cx={offset + 50}
+                  cy={240}
                   animate={{ 
-                    offsetDistance: ['0%', '100%'],
-                    opacity: [0, 0.6, 0.6, 0]
+                    y: bisferiensDotY,
+                    opacity: [0, 0.6, 0.6, 0.6, 0.6, 0]
                   }}
                   transition={{
                     duration: 2.6,
@@ -284,13 +299,8 @@ export default function HeroBanner() {
                     repeat: Infinity,
                     delay: offset / 100 * 2.6,
                     opacity: {
-                      times: [0, 0.05, 0.95, 1]
+                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
                     }
-                  }}
-                  style={{
-                    offsetPath: `path('${bisferiens}')`,
-                    offsetRotate: '0deg',
-                    transform: `translate(${offset}px, 240px)`
                   }}
                 />
               </motion.g>
@@ -303,8 +313,16 @@ export default function HeroBanner() {
             filter="url(#subtleGlow)"
           >
             {[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100].map((offset) => (
-              <motion.g key={`parvus-${offset}`}>
-                <motion.path
+              <motion.g 
+                key={`parvus-${offset}`}
+                animate={{ x: [-100, 0] }}
+                transition={{
+                  duration: 30,
+                  ease: "linear",
+                  repeat: Infinity
+                }}
+              >
+                <path
                   d={parvusTardus}
                   transform={`translate(${offset}, 280)`}
                   fill="none"
@@ -312,23 +330,18 @@ export default function HeroBanner() {
                   strokeWidth="1.4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ opacity: glowOpacity4 }}
-                  animate={{ x: [-100, 0] }}
-                  transition={{
-                    duration: 30,
-                    ease: "linear",
-                    repeat: Infinity
-                  }}
+                  style={{ opacity: glowOpacity4.get() }}
                 />
-                {/* Pulse dot for parvus et tardus */}
+                {/* Pulse dot with Y-axis animation */}
                 <motion.circle
                   r="2.3"
                   fill="#95a8b8"
                   filter="url(#subtleGlow)"
-                  initial={{ offsetDistance: '0%', opacity: 0 }}
+                  cx={offset + 50}
+                  cy={280}
                   animate={{ 
-                    offsetDistance: ['0%', '100%'],
-                    opacity: [0, 0.5, 0.5, 0]
+                    y: parvusDotY,
+                    opacity: [0, 0.5, 0.5, 0.5, 0.5, 0]
                   }}
                   transition={{
                     duration: 3,
@@ -336,13 +349,8 @@ export default function HeroBanner() {
                     repeat: Infinity,
                     delay: offset / 100 * 3,
                     opacity: {
-                      times: [0, 0.05, 0.95, 1]
+                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
                     }
-                  }}
-                  style={{
-                    offsetPath: `path('${parvusTardus}')`,
-                    offsetRotate: '0deg',
-                    transform: `translate(${offset}px, 280px)`
                   }}
                 />
               </motion.g>
@@ -355,8 +363,16 @@ export default function HeroBanner() {
             filter="url(#subtleGlow)"
           >
             {[0, 400, 800, 1200, 1600, 2000, 2400, 2800].map((offset, i) => (
-              <motion.g key={`paradoxus-${offset}`}>
-                <motion.path
+              <motion.g 
+                key={`paradoxus-${offset}`}
+                animate={{ x: [-400, 0] }}
+                transition={{
+                  duration: 24,
+                  ease: "linear",
+                  repeat: Infinity
+                }}
+              >
+                <path
                   d={paradoxusHigh}
                   transform={`translate(${offset}, 160)`}
                   fill="none"
@@ -364,15 +380,9 @@ export default function HeroBanner() {
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ opacity: glowOpacity5 }}
-                  animate={{ x: [-400, 0] }}
-                  transition={{
-                    duration: 24,
-                    ease: "linear",
-                    repeat: Infinity
-                  }}
+                  style={{ opacity: glowOpacity5.get() }}
                 />
-                <motion.path
+                <path
                   d={paradoxusMed}
                   transform={`translate(${offset + 100}, 160)`}
                   fill="none"
@@ -380,15 +390,9 @@ export default function HeroBanner() {
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ opacity: glowOpacity5 }}
-                  animate={{ x: [-400, 0] }}
-                  transition={{
-                    duration: 24,
-                    ease: "linear",
-                    repeat: Infinity
-                  }}
+                  style={{ opacity: glowOpacity5.get() }}
                 />
-                <motion.path
+                <path
                   d={paradoxusLow}
                   transform={`translate(${offset + 200}, 160)`}
                   fill="none"
@@ -396,15 +400,9 @@ export default function HeroBanner() {
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ opacity: glowOpacity5 }}
-                  animate={{ x: [-400, 0] }}
-                  transition={{
-                    duration: 24,
-                    ease: "linear",
-                    repeat: Infinity
-                  }}
+                  style={{ opacity: glowOpacity5.get() }}
                 />
-                <motion.path
+                <path
                   d={paradoxusMed}
                   transform={`translate(${offset + 300}, 160)`}
                   fill="none"
@@ -412,23 +410,18 @@ export default function HeroBanner() {
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ opacity: glowOpacity5 }}
-                  animate={{ x: [-400, 0] }}
-                  transition={{
-                    duration: 24,
-                    ease: "linear",
-                    repeat: Infinity
-                  }}
+                  style={{ opacity: glowOpacity5.get() }}
                 />
-                {/* Pulse dots for paradoxus */}
+                {/* Pulse dot for paradoxus high */}
                 <motion.circle
                   r="2.5"
                   fill="#8a9fb0"
                   filter="url(#subtleGlow)"
-                  initial={{ offsetDistance: '0%', opacity: 0 }}
+                  cx={offset + 50}
+                  cy={160}
                   animate={{ 
-                    offsetDistance: ['0%', '100%'],
-                    opacity: [0, 0.5, 0.5, 0]
+                    y: paradoxusHighDotY,
+                    opacity: [0, 0.5, 0.5, 0.5, 0.5, 0]
                   }}
                   transition={{
                     duration: 2.4,
@@ -436,13 +429,71 @@ export default function HeroBanner() {
                     repeat: Infinity,
                     delay: offset / 100 * 0.6,
                     opacity: {
-                      times: [0, 0.05, 0.95, 1]
+                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
                     }
                   }}
-                  style={{
-                    offsetPath: `path('${paradoxusHigh}')`,
-                    offsetRotate: '0deg',
-                    transform: `translate(${offset}px, 160px)`
+                />
+                {/* Pulse dot for paradoxus med (first) */}
+                <motion.circle
+                  r="2.3"
+                  fill="#8a9fb0"
+                  filter="url(#subtleGlow)"
+                  cx={offset + 150}
+                  cy={160}
+                  animate={{ 
+                    y: paradoxusMedDotY,
+                    opacity: [0, 0.45, 0.45, 0.45, 0.45, 0]
+                  }}
+                  transition={{
+                    duration: 2.4,
+                    ease: "linear",
+                    repeat: Infinity,
+                    delay: offset / 100 * 0.6 + 0.6,
+                    opacity: {
+                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
+                    }
+                  }}
+                />
+                {/* Pulse dot for paradoxus low */}
+                <motion.circle
+                  r="2.1"
+                  fill="#8a9fb0"
+                  filter="url(#subtleGlow)"
+                  cx={offset + 250}
+                  cy={160}
+                  animate={{ 
+                    y: paradoxusLowDotY,
+                    opacity: [0, 0.4, 0.4, 0.4, 0.4, 0]
+                  }}
+                  transition={{
+                    duration: 2.4,
+                    ease: "linear",
+                    repeat: Infinity,
+                    delay: offset / 100 * 0.6 + 1.2,
+                    opacity: {
+                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
+                    }
+                  }}
+                />
+                {/* Pulse dot for paradoxus med (second) */}
+                <motion.circle
+                  r="2.3"
+                  fill="#8a9fb0"
+                  filter="url(#subtleGlow)"
+                  cx={offset + 350}
+                  cy={160}
+                  animate={{ 
+                    y: paradoxusMedDotY,
+                    opacity: [0, 0.45, 0.45, 0.45, 0.45, 0]
+                  }}
+                  transition={{
+                    duration: 2.4,
+                    ease: "linear",
+                    repeat: Infinity,
+                    delay: offset / 100 * 0.6 + 1.8,
+                    opacity: {
+                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
+                    }
                   }}
                 />
               </motion.g>
@@ -455,8 +506,16 @@ export default function HeroBanner() {
             filter="url(#subtleGlow)"
           >
             {[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100].map((offset) => (
-              <motion.g key={`pulse-${offset}`}>
-                <motion.path
+              <motion.g 
+                key={`pulse-${offset}`}
+                animate={{ x: [-100, 0] }}
+                transition={{
+                  duration: 20,
+                  ease: "linear",
+                  repeat: Infinity
+                }}
+              >
+                <path
                   d={pulseWave}
                   transform={`translate(${offset}, 300)`}
                   fill="none"
@@ -464,23 +523,18 @@ export default function HeroBanner() {
                   strokeWidth="1.3"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ opacity: glowOpacity6 }}
-                  animate={{ x: [-100, 0] }}
-                  transition={{
-                    duration: 20,
-                    ease: "linear",
-                    repeat: Infinity
-                  }}
+                  style={{ opacity: glowOpacity6.get() }}
                 />
-                {/* Pulse dot for pulse wave */}
+                {/* Pulse dot with Y-axis animation */}
                 <motion.circle
                   r="2"
                   fill="#b5c8d6"
                   filter="url(#subtleGlow)"
-                  initial={{ offsetDistance: '0%', opacity: 0 }}
+                  cx={offset + 50}
+                  cy={300}
                   animate={{ 
-                    offsetDistance: ['0%', '100%'],
-                    opacity: [0, 0.4, 0.4, 0]
+                    y: pulseDotY,
+                    opacity: [0, 0.4, 0.4, 0.4, 0.4, 0]
                   }}
                   transition={{
                     duration: 2,
@@ -488,13 +542,8 @@ export default function HeroBanner() {
                     repeat: Infinity,
                     delay: offset / 100 * 2,
                     opacity: {
-                      times: [0, 0.05, 0.95, 1]
+                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
                     }
-                  }}
-                  style={{
-                    offsetPath: `path('${pulseWave}')`,
-                    offsetRotate: '0deg',
-                    transform: `translate(${offset}px, 300px)`
                   }}
                 />
               </motion.g>
