@@ -747,6 +747,7 @@ export default function Home() {
                 className="space-y-1 min-w-0 overflow-y-auto sidebar-scrollbar"
                 style={{ 
                   maxHeight: publicationsHeight ? `${publicationsHeight}px` : '60vh',
+                  maxWidth: 'calc(100% - 20px)',
                   paddingRight: '4px',
                   marginRight: '-4px'
                 }}
