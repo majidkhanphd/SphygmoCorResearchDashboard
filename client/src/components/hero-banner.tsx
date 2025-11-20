@@ -14,7 +14,6 @@ export default function HeroBanner() {
   const layer3X = useTransform(smoothMouseX, [0, 1], [-5, 5]);
   const layer4X = useTransform(smoothMouseX, [0, 1], [-8, 8]);
   const layer5X = useTransform(smoothMouseX, [0, 1], [-12, 12]);
-  const layer6X = useTransform(smoothMouseX, [0, 1], [-6, 6]);
   
   // Subtle brightness adjustment based on mouse Y
   const glowOpacity1 = useTransform(smoothMouseY, [0, 1], [0.4, 0.6]);
@@ -22,7 +21,6 @@ export default function HeroBanner() {
   const glowOpacity3 = useTransform(smoothMouseY, [0, 1], [0.3, 0.5]);
   const glowOpacity4 = useTransform(smoothMouseY, [0, 1], [0.3, 0.45]);
   const glowOpacity5 = useTransform(smoothMouseY, [0, 1], [0.25, 0.4]);
-  const glowOpacity6 = useTransform(smoothMouseY, [0, 1], [0.2, 0.35]);
   
   // Handle mouse movement
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -56,17 +54,6 @@ export default function HeroBanner() {
   // 6. Pulse wave velocity - smooth sinusoidal pattern
   const pulseWave = "M 0,50 Q 25,30 50,50 Q 75,70 100,50";
   
-  // Y-position keyframes for pulse dots (extracted from path data)
-  // These represent the Y coordinates at different points along each waveform
-  const normalDotY = [65, 64, 55, 35, 25, 26, 32, 38, 39, 41, 47, 55, 62, 65];
-  const alternansStrongDotY = [65, 64, 50, 30, 20, 21, 27, 33, 34, 36, 42, 52, 61, 65];
-  const alternansWeakDotY = [65, 64.5, 58, 45, 38, 39, 43, 47, 47.5, 49, 53, 58, 63, 65];
-  const bisferiensDotY = [65, 64, 50, 35, 31, 32, 35, 33, 30, 31, 36, 42, 48, 57, 62.5, 65];
-  const parvusDotY = [65, 64.5, 62, 55, 51, 50, 51, 52, 54, 57, 60, 63, 65];
-  const paradoxusHighDotY = [65, 64, 50, 30, 20, 21, 27, 33, 39, 52, 61, 65];
-  const paradoxusMedDotY = [65, 64.2, 55, 40, 33, 34, 38, 42, 46, 56, 62, 65];
-  const paradoxusLowDotY = [65, 64.5, 60, 50, 45, 46, 49, 51, 53, 59, 63, 65];
-  const pulseDotY = [50, 40, 30, 35, 40, 45, 50, 55, 60, 65, 70, 65, 60, 55, 50];
 
   return (
     <motion.section 
@@ -126,7 +113,7 @@ export default function HeroBanner() {
             </filter>
           </defs>
 
-          {/* Layer 1: Normal Arterial Waveform with pulse dot */}
+          {/* Layer 1: Normal Arterial Waveform */}
           <motion.g
             style={{ x: layer1X }}
             filter="url(#subtleGlow)"
@@ -152,32 +139,11 @@ export default function HeroBanner() {
                   strokeLinejoin="round"
                   style={{ opacity: glowOpacity1.get() }}
                 />
-                {/* Pulse dot with Y-axis animation */}
-                <motion.circle
-                  r="3"
-                  fill="#7fb3b5"
-                  filter="url(#subtleGlow)"
-                  cx={offset + 50}
-                  cy={100}
-                  animate={{ 
-                    y: normalDotY,
-                    opacity: [0, 0.8, 0.8, 0.8, 0.8, 0]
-                  }}
-                  transition={{
-                    duration: 1.8,
-                    ease: "linear",
-                    repeat: Infinity,
-                    delay: offset / 100 * 1.8,
-                    opacity: {
-                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
-                    }
-                  }}
-                />
               </motion.g>
             ))}
           </motion.g>
 
-          {/* Layer 2: Pulsus Alternans with pulse dots */}
+          {/* Layer 2: Pulsus Alternans */}
           <motion.g
             style={{ x: layer2X }}
             filter="url(#subtleGlow)"
@@ -214,53 +180,11 @@ export default function HeroBanner() {
                   strokeLinejoin="round"
                   style={{ opacity: glowOpacity2.get() }}
                 />
-                {/* Pulse dot for strong beat */}
-                <motion.circle
-                  r="2.8"
-                  fill="#6b8fa3"
-                  filter="url(#subtleGlow)"
-                  cx={offset + 50}
-                  cy={130}
-                  animate={{ 
-                    y: alternansStrongDotY,
-                    opacity: [0, 0.7, 0.7, 0.7, 0.7, 0]
-                  }}
-                  transition={{
-                    duration: 2.2,
-                    ease: "linear",
-                    repeat: Infinity,
-                    delay: offset / 100 * 1.1,
-                    opacity: {
-                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
-                    }
-                  }}
-                />
-                {/* Pulse dot for weak beat */}
-                <motion.circle
-                  r="2.5"
-                  fill="#6b8fa3"
-                  filter="url(#subtleGlow)"
-                  cx={offset + 150}
-                  cy={130}
-                  animate={{ 
-                    y: alternansWeakDotY,
-                    opacity: [0, 0.6, 0.6, 0.6, 0.6, 0]
-                  }}
-                  transition={{
-                    duration: 2.2,
-                    ease: "linear",
-                    repeat: Infinity,
-                    delay: offset / 100 * 1.1 + 1.1,
-                    opacity: {
-                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
-                    }
-                  }}
-                />
               </motion.g>
             ))}
           </motion.g>
 
-          {/* Layer 3: Pulsus Bisferiens with pulse dots */}
+          {/* Layer 3: Pulsus Bisferiens */}
           <motion.g
             style={{ x: layer3X }}
             filter="url(#subtleGlow)"
@@ -285,32 +209,11 @@ export default function HeroBanner() {
                   strokeLinejoin="round"
                   style={{ opacity: glowOpacity3.get() }}
                 />
-                {/* Pulse dot with Y-axis animation */}
-                <motion.circle
-                  r="2.5"
-                  fill="#a5c1d3"
-                  filter="url(#subtleGlow)"
-                  cx={offset + 50}
-                  cy={160}
-                  animate={{ 
-                    y: bisferiensDotY,
-                    opacity: [0, 0.6, 0.6, 0.6, 0.6, 0]
-                  }}
-                  transition={{
-                    duration: 2.6,
-                    ease: "linear",
-                    repeat: Infinity,
-                    delay: offset / 100 * 2.6,
-                    opacity: {
-                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
-                    }
-                  }}
-                />
               </motion.g>
             ))}
           </motion.g>
 
-          {/* Layer 4: Pulsus Parvus et Tardus with pulse dots */}
+          {/* Layer 4: Pulsus Parvus et Tardus */}
           <motion.g
             style={{ x: layer4X }}
             filter="url(#subtleGlow)"
@@ -335,32 +238,11 @@ export default function HeroBanner() {
                   strokeLinejoin="round"
                   style={{ opacity: glowOpacity4.get() }}
                 />
-                {/* Pulse dot with Y-axis animation */}
-                <motion.circle
-                  r="2.3"
-                  fill="#95a8b8"
-                  filter="url(#subtleGlow)"
-                  cx={offset + 50}
-                  cy={190}
-                  animate={{ 
-                    y: parvusDotY,
-                    opacity: [0, 0.5, 0.5, 0.5, 0.5, 0]
-                  }}
-                  transition={{
-                    duration: 3,
-                    ease: "linear",
-                    repeat: Infinity,
-                    delay: offset / 100 * 3,
-                    opacity: {
-                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
-                    }
-                  }}
-                />
               </motion.g>
             ))}
           </motion.g>
 
-          {/* Layer 5: Pulsus Paradoxus with pulse dots */}
+          {/* Layer 5: Pulsus Paradoxus */}
           <motion.g
             style={{ x: layer5X }}
             filter="url(#subtleGlow)"
@@ -414,140 +296,6 @@ export default function HeroBanner() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   style={{ opacity: glowOpacity5.get() }}
-                />
-                {/* Pulse dot for paradoxus high */}
-                <motion.circle
-                  r="2.5"
-                  fill="#8a9fb0"
-                  filter="url(#subtleGlow)"
-                  cx={offset + 50}
-                  cy={220}
-                  animate={{ 
-                    y: paradoxusHighDotY,
-                    opacity: [0, 0.5, 0.5, 0.5, 0.5, 0]
-                  }}
-                  transition={{
-                    duration: 2.4,
-                    ease: "linear",
-                    repeat: Infinity,
-                    delay: offset / 100 * 0.6,
-                    opacity: {
-                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
-                    }
-                  }}
-                />
-                {/* Pulse dot for paradoxus med (first) */}
-                <motion.circle
-                  r="2.3"
-                  fill="#8a9fb0"
-                  filter="url(#subtleGlow)"
-                  cx={offset + 150}
-                  cy={220}
-                  animate={{ 
-                    y: paradoxusMedDotY,
-                    opacity: [0, 0.45, 0.45, 0.45, 0.45, 0]
-                  }}
-                  transition={{
-                    duration: 2.4,
-                    ease: "linear",
-                    repeat: Infinity,
-                    delay: offset / 100 * 0.6 + 0.6,
-                    opacity: {
-                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
-                    }
-                  }}
-                />
-                {/* Pulse dot for paradoxus low */}
-                <motion.circle
-                  r="2.1"
-                  fill="#8a9fb0"
-                  filter="url(#subtleGlow)"
-                  cx={offset + 250}
-                  cy={220}
-                  animate={{ 
-                    y: paradoxusLowDotY,
-                    opacity: [0, 0.4, 0.4, 0.4, 0.4, 0]
-                  }}
-                  transition={{
-                    duration: 2.4,
-                    ease: "linear",
-                    repeat: Infinity,
-                    delay: offset / 100 * 0.6 + 1.2,
-                    opacity: {
-                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
-                    }
-                  }}
-                />
-                {/* Pulse dot for paradoxus med (second) */}
-                <motion.circle
-                  r="2.3"
-                  fill="#8a9fb0"
-                  filter="url(#subtleGlow)"
-                  cx={offset + 350}
-                  cy={220}
-                  animate={{ 
-                    y: paradoxusMedDotY,
-                    opacity: [0, 0.45, 0.45, 0.45, 0.45, 0]
-                  }}
-                  transition={{
-                    duration: 2.4,
-                    ease: "linear",
-                    repeat: Infinity,
-                    delay: offset / 100 * 0.6 + 1.8,
-                    opacity: {
-                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
-                    }
-                  }}
-                />
-              </motion.g>
-            ))}
-          </motion.g>
-
-          {/* Layer 6: Pulse Wave Velocity with pulse dots */}
-          <motion.g
-            style={{ x: layer6X }}
-            filter="url(#subtleGlow)"
-          >
-            {[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100].map((offset) => (
-              <motion.g 
-                key={`pulse-${offset}`}
-                animate={{ x: [-100, 0] }}
-                transition={{
-                  duration: 20,
-                  ease: "linear",
-                  repeat: Infinity
-                }}
-              >
-                <path
-                  d={pulseWave}
-                  transform={`translate(${offset}, 250)`}
-                  fill="none"
-                  stroke="#b5c8d6"
-                  strokeWidth="1.3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ opacity: glowOpacity6.get() }}
-                />
-                {/* Pulse dot with Y-axis animation */}
-                <motion.circle
-                  r="2"
-                  fill="#b5c8d6"
-                  filter="url(#subtleGlow)"
-                  cx={offset + 50}
-                  cy={250}
-                  animate={{ 
-                    y: pulseDotY,
-                    opacity: [0, 0.4, 0.4, 0.4, 0.4, 0]
-                  }}
-                  transition={{
-                    duration: 2,
-                    ease: "linear",
-                    repeat: Infinity,
-                    delay: offset / 100 * 2,
-                    opacity: {
-                      times: [0, 0.05, 0.2, 0.8, 0.95, 1]
-                    }
-                  }}
                 />
               </motion.g>
             ))}
