@@ -908,7 +908,7 @@ export default function Home() {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.4 }}
                 >
-                  <AnimatePresence mode="wait">
+                  <AnimatePresence>
                   {allPublications?.map((publication: Publication, index) => {
                     const publicationYear = new Date(publication.publicationDate).getFullYear();
                     // Sanitize authors to decode HTML entities
