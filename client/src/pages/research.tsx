@@ -514,7 +514,7 @@ export default function Home() {
             ref={sidebarPanelRef} 
             defaultSize={initialSidebarCollapsed ? 1 : sidebarDefaultSize} 
             minSize={sidebarMinSize} 
-            maxSize={50}
+            maxSize={25}
             collapsible={true}
             collapsedSize={1}
             className={`transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
