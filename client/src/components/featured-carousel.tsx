@@ -104,7 +104,7 @@ export default function FeaturedCarousel() {
       data-testid="featured-carousel-section"
     >
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6 text-center">
+        <div className="relative text-center mb-6">
           <h2 
             className="text-4xl sm:text-5xl font-light tracking-tight text-foreground"
             data-testid="featured-heading"
@@ -113,7 +113,7 @@ export default function FeaturedCarousel() {
           </h2>
           
           {featuredPublications.length > 1 && (
-            <div className="hidden lg:flex items-center gap-2">
+            <div className="hidden lg:flex items-center gap-2 absolute top-1/2 right-0 -translate-y-1/2 z-10">
               <button
                 onClick={scrollPrev}
                 disabled={!canScrollPrev}
