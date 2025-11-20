@@ -9,14 +9,20 @@ export default function HeroBanner() {
   const smoothMouseY = useSpring(mouseY, { stiffness: 50, damping: 20 });
   
   // Parallax transforms for different layers
-  const layer1X = useTransform(smoothMouseX, [0, 1], [-20, 20]);
+  const layer1X = useTransform(smoothMouseX, [0, 1], [-15, 15]);
   const layer2X = useTransform(smoothMouseX, [0, 1], [-10, 10]);
   const layer3X = useTransform(smoothMouseX, [0, 1], [-5, 5]);
+  const layer4X = useTransform(smoothMouseX, [0, 1], [-8, 8]);
+  const layer5X = useTransform(smoothMouseX, [0, 1], [-12, 12]);
+  const layer6X = useTransform(smoothMouseX, [0, 1], [-6, 6]);
   
   // Subtle brightness adjustment based on mouse Y
-  const glowOpacity1 = useTransform(smoothMouseY, [0, 1], [0.5, 0.7]);
-  const glowOpacity2 = useTransform(smoothMouseY, [0, 1], [0.3, 0.5]);
-  const glowOpacity3 = useTransform(smoothMouseY, [0, 1], [0.25, 0.4]);
+  const glowOpacity1 = useTransform(smoothMouseY, [0, 1], [0.4, 0.6]);
+  const glowOpacity2 = useTransform(smoothMouseY, [0, 1], [0.35, 0.55]);
+  const glowOpacity3 = useTransform(smoothMouseY, [0, 1], [0.3, 0.5]);
+  const glowOpacity4 = useTransform(smoothMouseY, [0, 1], [0.3, 0.45]);
+  const glowOpacity5 = useTransform(smoothMouseY, [0, 1], [0.25, 0.4]);
+  const glowOpacity6 = useTransform(smoothMouseY, [0, 1], [0.2, 0.35]);
   
   // Handle mouse movement
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -27,11 +33,34 @@ export default function HeroBanner() {
     mouseY.set(y);
   };
 
+  // Medically accurate arterial waveform paths based on clinical references
+  
+  // 1. Normal arterial waveform - smooth with subtle dicrotic notch
+  const normalWaveform = "M 0,65 C 8,64 16,55 24,35 C 28,28 32,25 36,26 C 40,27 44,32 48,38 C 50,40 52,39 54,41 C 60,47 68,55 80,62 L 100,65";
+  
+  // 2. Pulsus alternans - alternating strong and weak beats
+  const alternansStrong = "M 0,65 C 8,64 16,50 24,30 C 28,23 32,20 36,21 C 40,22 44,27 48,33 C 50,35 52,34 54,36 C 60,42 68,52 80,61 L 100,65";
+  const alternansWeak = "M 0,65 C 8,64.5 16,58 24,45 C 28,40 32,38 36,39 C 40,40 44,43 48,47 C 50,48 52,47.5 54,49 C 60,53 68,58 80,63 L 100,65";
+  
+  // 3. Pulsus bisferiens - double systolic peak (aortic regurgitation pattern)
+  const bisferiens = "M 0,65 C 8,64 14,50 18,35 C 20,32 22,31 24,32 C 26,33 28,35 30,33 C 32,31 34,30 36,31 C 38,32 42,36 48,42 C 54,48 68,57 80,62.5 L 100,65";
+  
+  // 4. Pulsus parvus et tardus - low amplitude, slow rising (aortic stenosis)
+  const parvusTardus = "M 0,65 C 15,64.5 30,62 45,55 C 55,51 60,50 65,51 C 70,52 75,54 80,57 C 85,60 92,63 100,65";
+  
+  // 5. Pulsus paradoxus - respiratory variation in amplitude
+  const paradoxusHigh = "M 0,65 C 8,64 16,50 24,30 C 28,23 32,20 36,21 C 40,22 44,27 48,33 C 54,39 68,52 80,61 L 100,65";
+  const paradoxusMed = "M 0,65 C 8,64.2 16,55 24,40 C 28,35 32,33 36,34 C 40,35 44,38 48,42 C 54,46 68,56 80,62 L 100,65";
+  const paradoxusLow = "M 0,65 C 8,64.5 16,60 24,50 C 28,46 32,45 36,46 C 40,47 44,49 48,51 C 54,53 68,59 80,63 L 100,65";
+  
+  // 6. Pulse wave velocity - smooth sinusoidal pattern
+  const pulseWave = "M 0,50 Q 25,30 50,50 Q 75,70 100,50";
+
   return (
     <motion.section 
       className="w-full relative overflow-hidden"
       style={{
-        background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 25%, #465769 50%, #556b7d 100%)',
+        background: 'linear-gradient(135deg, #2a3f54 0%, #34495e 25%, #3d5066 50%, #455a6d 100%)',
         minHeight: '420px'
       }}
       data-testid="hero-banner"
@@ -46,235 +75,455 @@ export default function HeroBanner() {
         className="absolute inset-0"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
+            linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px)
           `,
-          backgroundSize: '50px 50px',
+          backgroundSize: '60px 60px',
           x: layer3X,
-          opacity: 0.5
+          opacity: 0.4
         }}
         animate={{
-          backgroundPosition: ['0px 0px', '50px 50px']
+          backgroundPosition: ['0px 0px', '60px 60px']
         }}
         transition={{
-          duration: 30,
+          duration: 40,
           ease: "linear",
           repeat: Infinity
         }}
         aria-hidden="true"
       />
 
-      {/* SVG Container for Waveforms */}
+      {/* SVG Container for all 6 distinct waveforms */}
       <div className="absolute inset-0" aria-hidden="true">
         <svg
           className="absolute inset-0 w-full h-full"
-          viewBox="0 0 2000 400"
+          viewBox="0 0 3200 400"
           preserveAspectRatio="xMidYMid slice"
-          style={{ filter: 'blur(0.5px)' }}
         >
           <defs>
-            {/* Soft glow filter */}
-            <filter id="softGlow">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            {/* Very subtle glow filter */}
+            <filter id="subtleGlow">
+              <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
               <feMerge>
                 <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
             </filter>
+
+            {/* Define paths for pulse dots to follow */}
+            <path id="normalPath" d={normalWaveform} />
+            <path id="alternansStrongPath" d={alternansStrong} />
+            <path id="alternansWeakPath" d={alternansWeak} />
+            <path id="bisferiesPath" d={bisferiens} />
+            <path id="parvusPath" d={parvusTardus} />
+            <path id="paradoxusHighPath" d={paradoxusHigh} />
+            <path id="paradoxusMedPath" d={paradoxusMed} />
+            <path id="paradoxusLowPath" d={paradoxusLow} />
+            <path id="pulseWavePath" d={pulseWave} />
           </defs>
 
-          {/* Layer 1: Normal Arterial Waveform with dicrotic notch */}
+          {/* Layer 1: Normal Arterial Waveform with pulse dot */}
           <motion.g
             style={{ x: layer1X }}
-            filter="url(#softGlow)"
+            filter="url(#subtleGlow)"
           >
-            {/* Repeating normal waveform pattern */}
-            {[0, 280, 560, 840, 1120, 1400, 1680, 1960, 2240].map((offset, i) => (
-              <motion.path
-                key={`normal-${i}`}
-                d={`M${offset},280 Q${offset+10},275 ${offset+20},240 Q${offset+30},180 ${offset+40},120 Q${offset+50},80 ${offset+60},70 Q${offset+70},68 ${offset+80},70 Q${offset+85},72 ${offset+90},78 L${offset+92},76 Q${offset+94},74 ${offset+96},77 Q${offset+100},82 ${offset+110},100 Q${offset+130},140 ${offset+160},200 Q${offset+200},250 ${offset+240},270 L${offset+280},280`}
-                fill="none"
-                stroke="#88c2c4"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ opacity: glowOpacity1 }}
-                animate={{ x: [-280, 0] }}
-                transition={{
-                  duration: 20,
-                  ease: "linear",
-                  repeat: Infinity
-                }}
-              />
-            ))}
-          </motion.g>
-
-          {/* Layer 2: Pulsus Alternans - alternating strong/weak beats */}
-          <motion.g
-            style={{ x: layer2X }}
-            filter="url(#softGlow)"
-          >
-            {[0, 560, 1120, 1680, 2240].map((offset, i) => (
-              <motion.g key={`alternans-${i}`}>
-                {/* Strong beat */}
+            {/* Create multiple instances for continuous flow */}
+            {[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100].map((offset) => (
+              <motion.g key={`normal-${offset}`}>
                 <motion.path
-                  d={`M${offset},260 Q${offset+10},255 ${offset+20},220 Q${offset+30},160 ${offset+40},100 Q${offset+50},60 ${offset+60},50 Q${offset+70},48 ${offset+80},50 Q${offset+85},52 ${offset+90},58 L${offset+92},56 Q${offset+94},54 ${offset+96},57 Q${offset+100},62 ${offset+110},80 Q${offset+130},120 ${offset+160},180 Q${offset+200},230 ${offset+240},250 L${offset+280},260`}
+                  d={normalWaveform}
+                  transform={`translate(${offset}, 120)`}
                   fill="none"
-                  stroke="#4f6b93"
-                  strokeWidth="1.5"
+                  stroke="#7fb3b5"
+                  strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  style={{ opacity: glowOpacity2 }}
-                  animate={{ x: [-560, 0] }}
+                  style={{ opacity: glowOpacity1 }}
+                  animate={{ x: [-100, 0] }}
                   transition={{
-                    duration: 25,
+                    duration: 18,
                     ease: "linear",
                     repeat: Infinity
                   }}
                 />
-                {/* Weak beat */}
-                <motion.path
-                  d={`M${offset+280},260 Q${offset+290},258 ${offset+300},240 Q${offset+310},200 ${offset+320},160 Q${offset+330},130 ${offset+340},120 Q${offset+350},118 ${offset+360},120 Q${offset+365},122 ${offset+370},126 L${offset+372},125 Q${offset+374},124 ${offset+376},126 Q${offset+380},130 ${offset+390},145 Q${offset+410},180 ${offset+440},220 Q${offset+480},250 ${offset+520},258 L${offset+560},260`}
-                  fill="none"
-                  stroke="#4f6b93"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ opacity: glowOpacity2 }}
-                  animate={{ x: [-560, 0] }}
+                {/* Pulse dot following the normal waveform path */}
+                <motion.circle
+                  r="3"
+                  fill="#7fb3b5"
+                  filter="url(#subtleGlow)"
+                  initial={{ offsetDistance: '0%', opacity: 0 }}
+                  animate={{ 
+                    offsetDistance: ['0%', '100%'],
+                    opacity: [0, 0.8, 0.8, 0]
+                  }}
                   transition={{
-                    duration: 25,
+                    duration: 1.8,
                     ease: "linear",
-                    repeat: Infinity
+                    repeat: Infinity,
+                    delay: offset / 100 * 1.8,
+                    opacity: {
+                      times: [0, 0.05, 0.95, 1]
+                    }
+                  }}
+                  style={{
+                    offsetPath: `path('${normalWaveform}')`,
+                    offsetRotate: '0deg',
+                    transform: `translate(${offset}px, 120px)`
                   }}
                 />
               </motion.g>
             ))}
           </motion.g>
 
-          {/* Layer 3: Pulsus Bisferiens - double systolic peaks */}
+          {/* Layer 2: Pulsus Alternans with pulse dots */}
           <motion.g
-            style={{ x: layer3X }}
-            filter="url(#softGlow)"
+            style={{ x: layer2X }}
+            filter="url(#subtleGlow)"
           >
-            {[0, 280, 560, 840, 1120, 1400, 1680, 1960, 2240].map((offset, i) => (
-              <motion.path
-                key={`bisferiens-${i}`}
-                d={`M${offset},300 Q${offset+10},295 ${offset+20},260 Q${offset+30},200 ${offset+40},140 Q${offset+50},100 ${offset+55},90 Q${offset+60},88 ${offset+65},92 Q${offset+70},96 ${offset+75},90 Q${offset+80},88 ${offset+85},92 Q${offset+90},96 ${offset+100},110 Q${offset+120},150 ${offset+150},210 Q${offset+190},270 ${offset+230},290 L${offset+280},300`}
-                fill="none"
-                stroke="#bccde5"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ opacity: glowOpacity3 }}
-                animate={{ x: [-280, 0] }}
-                transition={{
-                  duration: 30,
-                  ease: "linear",
-                  repeat: Infinity
-                }}
-              />
+            {[0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000].map((offset, i) => (
+              <motion.g key={`alternans-${offset}`}>
+                {/* Strong beat */}
+                <motion.path
+                  d={alternansStrong}
+                  transform={`translate(${offset}, 180)`}
+                  fill="none"
+                  stroke="#6b8fa3"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ opacity: glowOpacity2 }}
+                  animate={{ x: [-200, 0] }}
+                  transition={{
+                    duration: 22,
+                    ease: "linear",
+                    repeat: Infinity
+                  }}
+                />
+                {/* Weak beat */}
+                <motion.path
+                  d={alternansWeak}
+                  transform={`translate(${offset + 100}, 180)`}
+                  fill="none"
+                  stroke="#6b8fa3"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ opacity: glowOpacity2 }}
+                  animate={{ x: [-200, 0] }}
+                  transition={{
+                    duration: 22,
+                    ease: "linear",
+                    repeat: Infinity
+                  }}
+                />
+                {/* Pulse dots for alternans */}
+                <motion.circle
+                  r="2.8"
+                  fill="#6b8fa3"
+                  filter="url(#subtleGlow)"
+                  initial={{ offsetDistance: '0%', opacity: 0 }}
+                  animate={{ 
+                    offsetDistance: ['0%', '100%'],
+                    opacity: [0, 0.7, 0.7, 0]
+                  }}
+                  transition={{
+                    duration: 2.2,
+                    ease: "linear",
+                    repeat: Infinity,
+                    delay: offset / 100 * 1.1,
+                    opacity: {
+                      times: [0, 0.05, 0.95, 1]
+                    }
+                  }}
+                  style={{
+                    offsetPath: `path('${alternansStrong}')`,
+                    offsetRotate: '0deg',
+                    transform: `translate(${offset}px, 180px)`
+                  }}
+                />
+              </motion.g>
             ))}
           </motion.g>
 
-          {/* Animated pulse dots that follow the waveforms */}
-          <motion.circle
-            cx={0}
-            cy={280}
-            r="4"
-            fill="#88c2c4"
-            filter="url(#softGlow)"
-            animate={{
-              opacity: [0, 1, 1, 0],
-              cx: [0, 2000],
-              cy: [280, 240, 120, 70, 78, 100, 200, 270, 280]
-            }}
-            transition={{
-              duration: 20,
-              ease: "linear",
-              repeat: Infinity,
-              opacity: {
-                times: [0, 0.05, 0.95, 1]
-              },
-              cy: {
-                times: [0, 0.1, 0.2, 0.25, 0.3, 0.4, 0.6, 0.8, 1]
-              }
-            }}
-          />
-          
-          <motion.circle
-            cx={0}
-            cy={260}
-            r="3.5"
-            fill="#4f6b93"
-            filter="url(#softGlow)"
-            animate={{
-              opacity: [0, 0.8, 0.8, 0],
-              cx: [0, 2000],
-              cy: [260, 220, 100, 50, 58, 80, 180, 250, 260]
-            }}
-            transition={{
-              duration: 25,
-              ease: "linear",
-              repeat: Infinity,
-              opacity: {
-                times: [0, 0.05, 0.95, 1]
-              },
-              cy: {
-                times: [0, 0.1, 0.2, 0.25, 0.3, 0.4, 0.6, 0.8, 1]
-              },
-              delay: 2
-            }}
-          />
-          
-          <motion.circle
-            cx={0}
-            cy={300}
-            r="3"
-            fill="#bccde5"
-            filter="url(#softGlow)"
-            animate={{
-              opacity: [0, 0.6, 0.6, 0],
-              cx: [0, 2000],
-              cy: [300, 260, 140, 90, 92, 110, 210, 290, 300]
-            }}
-            transition={{
-              duration: 30,
-              ease: "linear",
-              repeat: Infinity,
-              opacity: {
-                times: [0, 0.05, 0.95, 1]
-              },
-              cy: {
-                times: [0, 0.1, 0.2, 0.25, 0.3, 0.4, 0.6, 0.8, 1]
-              },
-              delay: 4
-            }}
-          />
+          {/* Layer 3: Pulsus Bisferiens with pulse dots */}
+          <motion.g
+            style={{ x: layer3X }}
+            filter="url(#subtleGlow)"
+          >
+            {[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100].map((offset) => (
+              <motion.g key={`bisferiens-${offset}`}>
+                <motion.path
+                  d={bisferiens}
+                  transform={`translate(${offset}, 240)`}
+                  fill="none"
+                  stroke="#a5c1d3"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ opacity: glowOpacity3 }}
+                  animate={{ x: [-100, 0] }}
+                  transition={{
+                    duration: 26,
+                    ease: "linear",
+                    repeat: Infinity
+                  }}
+                />
+                {/* Pulse dot for bisferiens */}
+                <motion.circle
+                  r="2.5"
+                  fill="#a5c1d3"
+                  filter="url(#subtleGlow)"
+                  initial={{ offsetDistance: '0%', opacity: 0 }}
+                  animate={{ 
+                    offsetDistance: ['0%', '100%'],
+                    opacity: [0, 0.6, 0.6, 0]
+                  }}
+                  transition={{
+                    duration: 2.6,
+                    ease: "linear",
+                    repeat: Infinity,
+                    delay: offset / 100 * 2.6,
+                    opacity: {
+                      times: [0, 0.05, 0.95, 1]
+                    }
+                  }}
+                  style={{
+                    offsetPath: `path('${bisferiens}')`,
+                    offsetRotate: '0deg',
+                    transform: `translate(${offset}px, 240px)`
+                  }}
+                />
+              </motion.g>
+            ))}
+          </motion.g>
+
+          {/* Layer 4: Pulsus Parvus et Tardus with pulse dots */}
+          <motion.g
+            style={{ x: layer4X }}
+            filter="url(#subtleGlow)"
+          >
+            {[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100].map((offset) => (
+              <motion.g key={`parvus-${offset}`}>
+                <motion.path
+                  d={parvusTardus}
+                  transform={`translate(${offset}, 280)`}
+                  fill="none"
+                  stroke="#95a8b8"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ opacity: glowOpacity4 }}
+                  animate={{ x: [-100, 0] }}
+                  transition={{
+                    duration: 30,
+                    ease: "linear",
+                    repeat: Infinity
+                  }}
+                />
+                {/* Pulse dot for parvus et tardus */}
+                <motion.circle
+                  r="2.3"
+                  fill="#95a8b8"
+                  filter="url(#subtleGlow)"
+                  initial={{ offsetDistance: '0%', opacity: 0 }}
+                  animate={{ 
+                    offsetDistance: ['0%', '100%'],
+                    opacity: [0, 0.5, 0.5, 0]
+                  }}
+                  transition={{
+                    duration: 3,
+                    ease: "linear",
+                    repeat: Infinity,
+                    delay: offset / 100 * 3,
+                    opacity: {
+                      times: [0, 0.05, 0.95, 1]
+                    }
+                  }}
+                  style={{
+                    offsetPath: `path('${parvusTardus}')`,
+                    offsetRotate: '0deg',
+                    transform: `translate(${offset}px, 280px)`
+                  }}
+                />
+              </motion.g>
+            ))}
+          </motion.g>
+
+          {/* Layer 5: Pulsus Paradoxus with pulse dots */}
+          <motion.g
+            style={{ x: layer5X }}
+            filter="url(#subtleGlow)"
+          >
+            {[0, 400, 800, 1200, 1600, 2000, 2400, 2800].map((offset, i) => (
+              <motion.g key={`paradoxus-${offset}`}>
+                <motion.path
+                  d={paradoxusHigh}
+                  transform={`translate(${offset}, 160)`}
+                  fill="none"
+                  stroke="#8a9fb0"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ opacity: glowOpacity5 }}
+                  animate={{ x: [-400, 0] }}
+                  transition={{
+                    duration: 24,
+                    ease: "linear",
+                    repeat: Infinity
+                  }}
+                />
+                <motion.path
+                  d={paradoxusMed}
+                  transform={`translate(${offset + 100}, 160)`}
+                  fill="none"
+                  stroke="#8a9fb0"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ opacity: glowOpacity5 }}
+                  animate={{ x: [-400, 0] }}
+                  transition={{
+                    duration: 24,
+                    ease: "linear",
+                    repeat: Infinity
+                  }}
+                />
+                <motion.path
+                  d={paradoxusLow}
+                  transform={`translate(${offset + 200}, 160)`}
+                  fill="none"
+                  stroke="#8a9fb0"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ opacity: glowOpacity5 }}
+                  animate={{ x: [-400, 0] }}
+                  transition={{
+                    duration: 24,
+                    ease: "linear",
+                    repeat: Infinity
+                  }}
+                />
+                <motion.path
+                  d={paradoxusMed}
+                  transform={`translate(${offset + 300}, 160)`}
+                  fill="none"
+                  stroke="#8a9fb0"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ opacity: glowOpacity5 }}
+                  animate={{ x: [-400, 0] }}
+                  transition={{
+                    duration: 24,
+                    ease: "linear",
+                    repeat: Infinity
+                  }}
+                />
+                {/* Pulse dots for paradoxus */}
+                <motion.circle
+                  r="2.5"
+                  fill="#8a9fb0"
+                  filter="url(#subtleGlow)"
+                  initial={{ offsetDistance: '0%', opacity: 0 }}
+                  animate={{ 
+                    offsetDistance: ['0%', '100%'],
+                    opacity: [0, 0.5, 0.5, 0]
+                  }}
+                  transition={{
+                    duration: 2.4,
+                    ease: "linear",
+                    repeat: Infinity,
+                    delay: offset / 100 * 0.6,
+                    opacity: {
+                      times: [0, 0.05, 0.95, 1]
+                    }
+                  }}
+                  style={{
+                    offsetPath: `path('${paradoxusHigh}')`,
+                    offsetRotate: '0deg',
+                    transform: `translate(${offset}px, 160px)`
+                  }}
+                />
+              </motion.g>
+            ))}
+          </motion.g>
+
+          {/* Layer 6: Pulse Wave Velocity with pulse dots */}
+          <motion.g
+            style={{ x: layer6X }}
+            filter="url(#subtleGlow)"
+          >
+            {[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100].map((offset) => (
+              <motion.g key={`pulse-${offset}`}>
+                <motion.path
+                  d={pulseWave}
+                  transform={`translate(${offset}, 300)`}
+                  fill="none"
+                  stroke="#b5c8d6"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ opacity: glowOpacity6 }}
+                  animate={{ x: [-100, 0] }}
+                  transition={{
+                    duration: 20,
+                    ease: "linear",
+                    repeat: Infinity
+                  }}
+                />
+                {/* Pulse dot for pulse wave */}
+                <motion.circle
+                  r="2"
+                  fill="#b5c8d6"
+                  filter="url(#subtleGlow)"
+                  initial={{ offsetDistance: '0%', opacity: 0 }}
+                  animate={{ 
+                    offsetDistance: ['0%', '100%'],
+                    opacity: [0, 0.4, 0.4, 0]
+                  }}
+                  transition={{
+                    duration: 2,
+                    ease: "linear",
+                    repeat: Infinity,
+                    delay: offset / 100 * 2,
+                    opacity: {
+                      times: [0, 0.05, 0.95, 1]
+                    }
+                  }}
+                  style={{
+                    offsetPath: `path('${pulseWave}')`,
+                    offsetRotate: '0deg',
+                    transform: `translate(${offset}px, 300px)`
+                  }}
+                />
+              </motion.g>
+            ))}
+          </motion.g>
         </svg>
       </div>
 
-      {/* Soft gradient orbs for depth */}
+      {/* Very subtle gradient orbs for depth */}
       <motion.div 
-        className="absolute inset-0 opacity-20" 
+        className="absolute inset-0 opacity-15" 
         aria-hidden="true"
         style={{ x: layer1X }}
       >
         <motion.div 
           className="absolute rounded-full blur-3xl"
           style={{
-            width: '400px',
-            height: '400px',
-            background: 'radial-gradient(circle, rgba(136, 194, 196, 0.2) 0%, transparent 70%)',
-            top: '-10%',
-            left: '10%'
+            width: '500px',
+            height: '500px',
+            background: 'radial-gradient(circle, rgba(127, 179, 181, 0.1) 0%, transparent 70%)',
+            top: '-15%',
+            left: '5%'
           }}
           animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.2, 0.3, 0.2]
+            scale: [1, 1.05, 1],
+            opacity: [0.1, 0.15, 0.1]
           }}
           transition={{
-            duration: 8,
+            duration: 10,
             ease: "easeInOut",
             repeat: Infinity
           }}
@@ -282,26 +531,26 @@ export default function HeroBanner() {
         <motion.div 
           className="absolute rounded-full blur-3xl"
           style={{
-            width: '350px',
-            height: '350px',
-            background: 'radial-gradient(circle, rgba(79, 107, 147, 0.15) 0%, transparent 70%)',
-            bottom: '0%',
-            right: '15%'
+            width: '400px',
+            height: '400px',
+            background: 'radial-gradient(circle, rgba(107, 143, 163, 0.08) 0%, transparent 70%)',
+            bottom: '-5%',
+            right: '10%'
           }}
           animate={{
-            scale: [1, 1.15, 1],
-            opacity: [0.15, 0.25, 0.15]
+            scale: [1, 1.08, 1],
+            opacity: [0.08, 0.12, 0.08]
           }}
           transition={{
-            duration: 10,
+            duration: 12,
             ease: "easeInOut",
             repeat: Infinity,
-            delay: 2
+            delay: 3
           }}
         />
       </motion.div>
       
-      {/* Content container with frosted glass effect */}
+      {/* Content container with improved readability */}
       <div className="relative w-full px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32 z-10">
         <motion.div 
           className="text-center w-full"
@@ -313,10 +562,10 @@ export default function HeroBanner() {
           <div 
             className="inline-block rounded-2xl px-8 py-6"
             style={{
-              background: 'rgba(30, 41, 59, 0.4)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)'
+              background: 'rgba(25, 35, 48, 0.5)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
             }}
           >
             {/* Main heading */}
@@ -326,8 +575,8 @@ export default function HeroBanner() {
                 fontSize: 'clamp(36px, 5vw, 64px)', 
                 letterSpacing: '-0.03em',
                 lineHeight: '1.2',
-                color: '#f5f7fb',
-                textShadow: '0 2px 10px rgba(0, 0, 0, 0.3)'
+                color: '#ffffff',
+                textShadow: '0 2px 12px rgba(0, 0, 0, 0.4)'
               }}
               data-testid="hero-title"
             >
