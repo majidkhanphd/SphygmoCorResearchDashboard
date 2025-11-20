@@ -744,9 +744,10 @@ export default function Home() {
               )}
               
               <div 
-                className="space-y-1 min-w-0 overflow-y-auto"
+                className="space-y-1 min-w-0 overflow-y-auto sidebar-scrollbar"
                 style={{ 
-                  maxHeight: publicationsHeight ? `${publicationsHeight}px` : '60vh'
+                  maxHeight: publicationsHeight ? `${publicationsHeight}px` : '60vh',
+                  paddingRight: '8px'
                 }}
               >
                 <button
