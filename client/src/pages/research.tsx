@@ -668,11 +668,16 @@ export default function Home() {
                 >
                   All years {totalYearCount > 0 && `(${totalYearCount})`}
                 </button>
+                <AnimatePresence>
                 {visibleYears.map((year) => {
                   const count = filterCounts.years[year] || 0;
                   return (
-                    <button
+                    <motion.button
                       key={year}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
                       onClick={() => handleYearChange(year)}
                       className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                         selectedYear === year
@@ -685,9 +690,10 @@ export default function Home() {
                       aria-label={`Filter by ${year}${count > 0 ? ` (${count} publications)` : ''}`}
                     >
                       {year} {count > 0 && `(${count})`}
-                    </button>
+                    </motion.button>
                   );
                 })}
+                </AnimatePresence>
                 {availableYears.length > 5 && (
                   <button
                     onClick={() => setShowAllYears(!showAllYears)}
@@ -756,6 +762,7 @@ export default function Home() {
                 >
                   All Journals
                 </button>
+                <AnimatePresence>
                 {visibleVenues.map((venue) => {
                   const count = filterCounts.venues[venue] || 0;
                   const hasChildren = isParentJournal(venue);
@@ -763,11 +770,17 @@ export default function Home() {
                   const childJournals = hasChildren ? getChildJournals(venue) : [];
                   
                   return (
-                    <div key={venue}>
+                    <motion.div 
+                      key={venue}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                    >
                       {/* Parent or regular journal */}
                       <div className="flex items-center">
                         {hasChildren && (
-                          <button
+                          <motion.button
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleParentJournal(venue);
@@ -776,13 +789,11 @@ export default function Home() {
                             style={{ color: '#6E6E73' }}
                             aria-label={isExpanded ? `Collapse ${venue}` : `Expand ${venue}`}
                             data-testid={`toggle-journal-${venue.replace(/\s+/g, '-').toLowerCase()}`}
+                            animate={{ rotate: isExpanded ? 90 : 0 }}
+                            transition={{ duration: 0.2, ease: "easeInOut" }}
                           >
-                            {isExpanded ? (
-                              <ChevronDown className="h-3 w-3" />
-                            ) : (
-                              <ChevronRight className="h-3 w-3" />
-                            )}
-                          </button>
+                            <ChevronRight className="h-3 w-3" />
+                          </motion.button>
                         )}
                         <button
                           onClick={() => handleVenueChange(venue)}
@@ -801,32 +812,48 @@ export default function Home() {
                       </div>
                       
                       {/* Child journals (shown when expanded) */}
-                      {hasChildren && isExpanded && childJournals.map((childJournal) => {
-                        // Child journals won't have their own counts in the venues list
-                        // since they're aggregated under the parent
-                        return (
-                          <button
-                            key={childJournal}
-                            onClick={() => handleVenueChange(childJournal)}
-                            className={`block text-sm w-full text-left py-1 ml-8 apple-transition apple-focus-ring break-words ${
-                              selectedVenue === childJournal
-                                ? "font-medium"
-                                : "hover:opacity-80"
-                            }`}
-                            style={{ 
-                              color: selectedVenue === childJournal ? '#1D1D1F' : '#86868B',
-                              fontSize: '13px'
-                            }}
-                            data-testid={`venue-child-${childJournal.replace(/\s+/g, '-').toLowerCase()}`}
-                            aria-pressed={selectedVenue === childJournal}
-                          >
-                            {childJournal}
-                          </button>
-                        );
-                      })}
-                    </div>
+                      <AnimatePresence>
+                      {hasChildren && isExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2, ease: "easeInOut" }}
+                        >
+                          {childJournals.map((childJournal) => {
+                            // Child journals won't have their own counts in the venues list
+                            // since they're aggregated under the parent
+                            return (
+                              <motion.button
+                                key={childJournal}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.15, ease: "easeInOut" }}
+                                onClick={() => handleVenueChange(childJournal)}
+                                className={`block text-sm w-full text-left py-1 ml-8 apple-transition apple-focus-ring break-words ${
+                                  selectedVenue === childJournal
+                                    ? "font-medium"
+                                    : "hover:opacity-80"
+                                }`}
+                                style={{ 
+                                  color: selectedVenue === childJournal ? '#1D1D1F' : '#86868B',
+                                  fontSize: '13px'
+                                }}
+                                data-testid={`venue-child-${childJournal.replace(/\s+/g, '-').toLowerCase()}`}
+                                aria-pressed={selectedVenue === childJournal}
+                              >
+                                {childJournal}
+                              </motion.button>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                      </AnimatePresence>
+                    </motion.div>
                   );
                 })}
+                </AnimatePresence>
                 {venues.length > 10 && (
                   <button
                     onClick={() => setShowAllVenues(!showAllVenues)}
