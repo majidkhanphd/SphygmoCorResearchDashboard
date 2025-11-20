@@ -3,120 +3,178 @@ export default function HeroBanner() {
     <section 
       className="w-full relative overflow-hidden"
       style={{
-        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
+        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+        minHeight: '400px'
       }}
       data-testid="hero-banner"
     >
-      {/* Animated gradient orbs */}
+      {/* Animated grid overlay - like a cardiac monitor */}
+      <div 
+        className="absolute inset-0 opacity-10"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px',
+          animation: 'grid-scroll 20s linear infinite'
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Multiple EKG Waveform Layers */}
       <div className="absolute inset-0" aria-hidden="true">
-        {/* Orb 1 - Blue */}
-        <div 
-          className="absolute rounded-full blur-3xl animate-float-slow"
+        {/* Primary EKG Wave - Bright Green/Cyan with Glow */}
+        <svg
+          className="absolute inset-0 w-full h-full"
+          viewBox="0 0 2400 400"
+          preserveAspectRatio="none"
           style={{
-            width: '600px',
-            height: '600px',
-            background: 'radial-gradient(circle, rgba(0, 122, 255, 0.15) 0%, transparent 70%)',
-            top: '-20%',
-            left: '-10%',
-            animation: 'float-slow 20s ease-in-out infinite',
-            willChange: 'transform'
+            filter: 'drop-shadow(0 0 8px rgba(0, 255, 200, 0.8))'
+          }}
+        >
+          <path
+            d="M0,200 L180,200 L200,120 L215,200 L230,80 L245,200 L260,220 L280,200 L460,200 L480,120 L495,200 L510,80 L525,200 L540,220 L560,200 L740,200 L760,120 L775,200 L790,80 L805,200 L820,220 L840,200 L1020,200 L1040,120 L1055,200 L1070,80 L1085,200 L1100,220 L1120,200 L1300,200 L1320,120 L1335,200 L1350,80 L1365,200 L1380,220 L1400,200 L1580,200 L1600,120 L1615,200 L1630,80 L1645,200 L1660,220 L1680,200 L1860,200 L1880,120 L1895,200 L1910,80 L1925,200 L1940,220 L1960,200 L2140,200 L2160,120 L2175,200 L2190,80 L2205,200 L2220,220 L2240,200 L2400,200"
+            fill="none"
+            stroke="#00ffc8"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              animation: 'ekg-flow 8s linear infinite'
+            }}
+          />
+        </svg>
+
+        {/* Secondary Wave - Blue with Glow */}
+        <svg
+          className="absolute inset-0 w-full h-full"
+          viewBox="0 0 2400 400"
+          preserveAspectRatio="none"
+          style={{
+            filter: 'drop-shadow(0 0 6px rgba(0, 122, 255, 0.6))',
+            opacity: 0.7
+          }}
+        >
+          <path
+            d="M0,240 L180,240 L200,180 L215,240 L230,150 L245,240 L260,260 L280,240 L460,240 L480,180 L495,240 L510,150 L525,240 L540,260 L560,240 L740,240 L760,180 L775,240 L790,150 L805,240 L820,260 L840,240 L1020,240 L1040,180 L1055,240 L1070,150 L1085,240 L1100,260 L1120,240 L1300,240 L1320,180 L1335,240 L1350,150 L1365,240 L1380,260 L1400,240 L1580,240 L1600,180 L1615,240 L1630,150 L1645,240 L1660,260 L1680,240 L1860,240 L1880,180 L1895,240 L1910,150 L1925,240 L1940,260 L1960,240 L2140,240 L2160,180 L2175,240 L2190,150 L2205,240 L2220,260 L2240,240 L2400,240"
+            fill="none"
+            stroke="#007aff"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              animation: 'ekg-flow 10s linear infinite'
+            }}
+          />
+        </svg>
+
+        {/* Tertiary Wave - Purple with Glow */}
+        <svg
+          className="absolute inset-0 w-full h-full"
+          viewBox="0 0 2400 400"
+          preserveAspectRatio="none"
+          style={{
+            filter: 'drop-shadow(0 0 5px rgba(138, 43, 226, 0.5))',
+            opacity: 0.5
+          }}
+        >
+          <path
+            d="M0,160 L180,160 L200,100 L215,160 L230,60 L245,160 L260,180 L280,160 L460,160 L480,100 L495,160 L510,60 L525,160 L540,180 L560,160 L740,160 L760,100 L775,160 L790,60 L805,160 L820,180 L840,160 L1020,160 L1040,100 L1055,160 L1070,60 L1085,160 L1100,180 L1120,160 L1300,160 L1320,100 L1335,160 L1350,60 L1365,160 L1380,180 L1400,160 L1580,160 L1600,100 L1615,160 L1630,60 L1645,160 L1660,180 L1680,160 L1860,160 L1880,100 L1895,160 L1910,60 L1925,160 L1940,180 L1960,160 L2140,160 L2160,100 L2175,160 L2190,60 L2205,160 L2220,180 L2240,160 L2400,160"
+            fill="none"
+            stroke="#8a2be2"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              animation: 'ekg-flow 12s linear infinite reverse'
+            }}
+          />
+        </svg>
+
+        {/* Animated Pulse Dots Following the Waves */}
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: '12px',
+            height: '12px',
+            background: 'radial-gradient(circle, #00ffc8 0%, transparent 70%)',
+            boxShadow: '0 0 20px #00ffc8',
+            animation: 'pulse-dot 8s linear infinite',
+            top: '50%',
+            left: '0',
+            transform: 'translate(-50%, -50%)'
           }}
         />
-        
-        {/* Orb 2 - Purple */}
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: '10px',
+            height: '10px',
+            background: 'radial-gradient(circle, #007aff 0%, transparent 70%)',
+            boxShadow: '0 0 15px #007aff',
+            animation: 'pulse-dot 10s linear infinite',
+            top: '60%',
+            left: '0',
+            transform: 'translate(-50%, -50%)',
+            opacity: 0.7
+          }}
+        />
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: '8px',
+            height: '8px',
+            background: 'radial-gradient(circle, #8a2be2 0%, transparent 70%)',
+            boxShadow: '0 0 12px #8a2be2',
+            animation: 'pulse-dot 12s linear infinite',
+            top: '40%',
+            left: '0',
+            transform: 'translate(-50%, -50%)',
+            opacity: 0.5
+          }}
+        />
+      </div>
+
+      {/* Floating Gradient Orbs - Softer for background depth */}
+      <div className="absolute inset-0 opacity-30" aria-hidden="true">
         <div 
           className="absolute rounded-full blur-3xl"
           style={{
             width: '500px',
             height: '500px',
-            background: 'radial-gradient(circle, rgba(138, 43, 226, 0.12) 0%, transparent 70%)',
-            top: '20%',
-            right: '-5%',
-            animation: 'float-medium 15s ease-in-out infinite',
-            animationDelay: '2s',
-            willChange: 'transform'
+            background: 'radial-gradient(circle, rgba(0, 255, 200, 0.15) 0%, transparent 70%)',
+            top: '-20%',
+            left: '-10%',
+            animation: 'float-slow 20s ease-in-out infinite'
           }}
         />
-        
-        {/* Orb 3 - Light Blue */}
-        <div 
-          className="absolute rounded-full blur-3xl"
-          style={{
-            width: '450px',
-            height: '450px',
-            background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)',
-            bottom: '-10%',
-            left: '30%',
-            animation: 'float-fast 12s ease-in-out infinite',
-            animationDelay: '4s',
-            willChange: 'transform'
-          }}
-        />
-        
-        {/* Orb 4 - Soft Red */}
         <div 
           className="absolute rounded-full blur-3xl"
           style={{
             width: '400px',
             height: '400px',
-            background: 'radial-gradient(circle, rgba(239, 68, 68, 0.08) 0%, transparent 70%)',
-            top: '50%',
-            right: '20%',
-            animation: 'float-medium 18s ease-in-out infinite',
-            animationDelay: '6s',
-            willChange: 'transform'
+            background: 'radial-gradient(circle, rgba(0, 122, 255, 0.12) 0%, transparent 70%)',
+            bottom: '-10%',
+            right: '-5%',
+            animation: 'float-medium 15s ease-in-out infinite',
+            animationDelay: '3s'
           }}
         />
       </div>
-
-      {/* SVG Pulse Wave Animation */}
-      <div className="absolute inset-0 opacity-20" aria-hidden="true">
-        <svg
-          className="w-full h-full"
-          viewBox="0 0 1200 400"
-          preserveAspectRatio="none"
-          style={{
-            animation: 'pulse-wave 8s ease-in-out infinite',
-            willChange: 'transform'
-          }}
-        >
-          {/* Arterial waveform pattern */}
-          <path
-            d="M0,200 L100,200 L120,150 L140,180 L160,120 L180,200 L300,200 L320,150 L340,180 L360,120 L380,200 L500,200 L520,150 L540,180 L560,120 L580,200 L700,200 L720,150 L740,180 L760,120 L780,200 L900,200 L920,150 L940,180 L960,120 L980,200 L1200,200"
-            fill="none"
-            stroke="rgba(0, 122, 255, 0.3)"
-            strokeWidth="2"
-            style={{
-              animation: 'wave-flow 15s linear infinite',
-              willChange: 'transform'
-            }}
-          />
-          
-          {/* Secondary wave for depth */}
-          <path
-            d="M0,220 L100,220 L120,170 L140,200 L160,140 L180,220 L300,220 L320,170 L340,200 L360,140 L380,220 L500,220 L520,170 L540,200 L560,140 L580,220 L700,220 L720,170 L740,200 L760,140 L780,220 L900,220 L920,170 L940,200 L960,140 L980,220 L1200,220"
-            fill="none"
-            stroke="rgba(138, 43, 226, 0.2)"
-            strokeWidth="1.5"
-            style={{
-              animation: 'wave-flow 20s linear infinite reverse',
-              willChange: 'transform'
-            }}
-          />
-        </svg>
-      </div>
       
       {/* Content container */}
-      <div className="relative w-full px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
+      <div className="relative w-full px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32 z-10">
         <div className="text-center w-full">
-          {/* Main heading - using clamp for responsive sizing */}
+          {/* Main heading */}
           <h1 
-            className="text-foreground font-light tracking-tight"
+            className="font-light tracking-tight"
             style={{ 
               fontSize: 'clamp(36px, 5vw, 64px)', 
               letterSpacing: '-0.03em',
               lineHeight: '1.2',
-              textShadow: '0 2px 10px rgba(255, 255, 255, 0.8)'
+              color: '#ffffff',
+              textShadow: '0 2px 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 255, 200, 0.3)'
             }}
             data-testid="hero-title"
           >
@@ -130,6 +188,41 @@ export default function HeroBanner() {
 
       {/* CSS Animations */}
       <style>{`
+        @keyframes ekg-flow {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-280px);
+          }
+        }
+
+        @keyframes pulse-dot {
+          0% {
+            left: -5%;
+            opacity: 0;
+          }
+          5% {
+            opacity: 1;
+          }
+          95% {
+            opacity: 1;
+          }
+          100% {
+            left: 105%;
+            opacity: 0;
+          }
+        }
+
+        @keyframes grid-scroll {
+          0% {
+            transform: translateX(0) translateY(0);
+          }
+          100% {
+            transform: translateX(40px) translateY(40px);
+          }
+        }
+
         @keyframes float-slow {
           0%, 100% {
             transform: translate(0, 0) scale(1);
@@ -148,39 +241,6 @@ export default function HeroBanner() {
           }
           50% {
             transform: translate(-40px, 40px) scale(1.08);
-          }
-        }
-
-        @keyframes float-fast {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-          }
-          25% {
-            transform: translate(25px, 25px) scale(1.03);
-          }
-          50% {
-            transform: translate(-30px, -20px) scale(0.97);
-          }
-          75% {
-            transform: translate(20px, -30px) scale(1.02);
-          }
-        }
-
-        @keyframes pulse-wave {
-          0%, 100% {
-            opacity: 0.15;
-          }
-          50% {
-            opacity: 0.25;
-          }
-        }
-
-        @keyframes wave-flow {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-100px);
           }
         }
       `}</style>
