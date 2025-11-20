@@ -73,9 +73,12 @@ export default function HeroBanner() {
       className="w-full relative overflow-hidden"
       style={{
         background: 'linear-gradient(135deg, #2a3f54 0%, #34495e 25%, #3d5066 50%, #455a6d 100%)',
-        minHeight: '420px'
+        minHeight: '295px'
       }}
       data-testid="hero-banner"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => {
         mouseX.set(0.5);
@@ -141,7 +144,7 @@ export default function HeroBanner() {
               >
                 <path
                   d={normalWaveform}
-                  transform={`translate(${offset}, 120)`}
+                  transform={`translate(${offset}, 100)`}
                   fill="none"
                   stroke="#7fb3b5"
                   strokeWidth="1.8"
@@ -155,7 +158,7 @@ export default function HeroBanner() {
                   fill="#7fb3b5"
                   filter="url(#subtleGlow)"
                   cx={offset + 50}
-                  cy={120}
+                  cy={100}
                   animate={{ 
                     y: normalDotY,
                     opacity: [0, 0.8, 0.8, 0.8, 0.8, 0]
@@ -192,7 +195,7 @@ export default function HeroBanner() {
                 {/* Strong beat */}
                 <path
                   d={alternansStrong}
-                  transform={`translate(${offset}, 180)`}
+                  transform={`translate(${offset}, 130)`}
                   fill="none"
                   stroke="#6b8fa3"
                   strokeWidth="1.6"
@@ -203,7 +206,7 @@ export default function HeroBanner() {
                 {/* Weak beat */}
                 <path
                   d={alternansWeak}
-                  transform={`translate(${offset + 100}, 180)`}
+                  transform={`translate(${offset + 100}, 130)`}
                   fill="none"
                   stroke="#6b8fa3"
                   strokeWidth="1.6"
@@ -217,7 +220,7 @@ export default function HeroBanner() {
                   fill="#6b8fa3"
                   filter="url(#subtleGlow)"
                   cx={offset + 50}
-                  cy={180}
+                  cy={130}
                   animate={{ 
                     y: alternansStrongDotY,
                     opacity: [0, 0.7, 0.7, 0.7, 0.7, 0]
@@ -238,7 +241,7 @@ export default function HeroBanner() {
                   fill="#6b8fa3"
                   filter="url(#subtleGlow)"
                   cx={offset + 150}
-                  cy={180}
+                  cy={130}
                   animate={{ 
                     y: alternansWeakDotY,
                     opacity: [0, 0.6, 0.6, 0.6, 0.6, 0]
@@ -274,7 +277,7 @@ export default function HeroBanner() {
               >
                 <path
                   d={bisferiens}
-                  transform={`translate(${offset}, 240)`}
+                  transform={`translate(${offset}, 160)`}
                   fill="none"
                   stroke="#a5c1d3"
                   strokeWidth="1.5"
@@ -288,7 +291,7 @@ export default function HeroBanner() {
                   fill="#a5c1d3"
                   filter="url(#subtleGlow)"
                   cx={offset + 50}
-                  cy={240}
+                  cy={160}
                   animate={{ 
                     y: bisferiensDotY,
                     opacity: [0, 0.6, 0.6, 0.6, 0.6, 0]
@@ -324,7 +327,7 @@ export default function HeroBanner() {
               >
                 <path
                   d={parvusTardus}
-                  transform={`translate(${offset}, 280)`}
+                  transform={`translate(${offset}, 190)`}
                   fill="none"
                   stroke="#95a8b8"
                   strokeWidth="1.4"
@@ -338,7 +341,7 @@ export default function HeroBanner() {
                   fill="#95a8b8"
                   filter="url(#subtleGlow)"
                   cx={offset + 50}
-                  cy={280}
+                  cy={190}
                   animate={{ 
                     y: parvusDotY,
                     opacity: [0, 0.5, 0.5, 0.5, 0.5, 0]
@@ -374,7 +377,7 @@ export default function HeroBanner() {
               >
                 <path
                   d={paradoxusHigh}
-                  transform={`translate(${offset}, 160)`}
+                  transform={`translate(${offset}, 220)`}
                   fill="none"
                   stroke="#8a9fb0"
                   strokeWidth="1.5"
@@ -384,7 +387,7 @@ export default function HeroBanner() {
                 />
                 <path
                   d={paradoxusMed}
-                  transform={`translate(${offset + 100}, 160)`}
+                  transform={`translate(${offset + 100}, 220)`}
                   fill="none"
                   stroke="#8a9fb0"
                   strokeWidth="1.5"
@@ -394,7 +397,7 @@ export default function HeroBanner() {
                 />
                 <path
                   d={paradoxusLow}
-                  transform={`translate(${offset + 200}, 160)`}
+                  transform={`translate(${offset + 200}, 220)`}
                   fill="none"
                   stroke="#8a9fb0"
                   strokeWidth="1.5"
@@ -404,7 +407,7 @@ export default function HeroBanner() {
                 />
                 <path
                   d={paradoxusMed}
-                  transform={`translate(${offset + 300}, 160)`}
+                  transform={`translate(${offset + 300}, 220)`}
                   fill="none"
                   stroke="#8a9fb0"
                   strokeWidth="1.5"
@@ -418,7 +421,7 @@ export default function HeroBanner() {
                   fill="#8a9fb0"
                   filter="url(#subtleGlow)"
                   cx={offset + 50}
-                  cy={160}
+                  cy={220}
                   animate={{ 
                     y: paradoxusHighDotY,
                     opacity: [0, 0.5, 0.5, 0.5, 0.5, 0]
@@ -439,7 +442,7 @@ export default function HeroBanner() {
                   fill="#8a9fb0"
                   filter="url(#subtleGlow)"
                   cx={offset + 150}
-                  cy={160}
+                  cy={220}
                   animate={{ 
                     y: paradoxusMedDotY,
                     opacity: [0, 0.45, 0.45, 0.45, 0.45, 0]
@@ -460,7 +463,7 @@ export default function HeroBanner() {
                   fill="#8a9fb0"
                   filter="url(#subtleGlow)"
                   cx={offset + 250}
-                  cy={160}
+                  cy={220}
                   animate={{ 
                     y: paradoxusLowDotY,
                     opacity: [0, 0.4, 0.4, 0.4, 0.4, 0]
@@ -481,7 +484,7 @@ export default function HeroBanner() {
                   fill="#8a9fb0"
                   filter="url(#subtleGlow)"
                   cx={offset + 350}
-                  cy={160}
+                  cy={220}
                   animate={{ 
                     y: paradoxusMedDotY,
                     opacity: [0, 0.45, 0.45, 0.45, 0.45, 0]
@@ -517,7 +520,7 @@ export default function HeroBanner() {
               >
                 <path
                   d={pulseWave}
-                  transform={`translate(${offset}, 300)`}
+                  transform={`translate(${offset}, 250)`}
                   fill="none"
                   stroke="#b5c8d6"
                   strokeWidth="1.3"
@@ -531,7 +534,7 @@ export default function HeroBanner() {
                   fill="#b5c8d6"
                   filter="url(#subtleGlow)"
                   cx={offset + 50}
-                  cy={300}
+                  cy={250}
                   animate={{ 
                     y: pulseDotY,
                     opacity: [0, 0.4, 0.4, 0.4, 0.4, 0]
@@ -600,7 +603,7 @@ export default function HeroBanner() {
       </motion.div>
       
       {/* Content container with improved readability */}
-      <div className="relative w-full px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32 z-10">
+      <div className="relative w-full px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-22 z-10">
         <motion.div 
           className="text-center w-full"
           initial={{ opacity: 0, y: 20 }}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/navigation";
 import HeroBanner from "@/components/hero-banner";
 import FeaturedCarousel from "@/components/featured-carousel";
@@ -574,12 +575,17 @@ export default function Home() {
                 >
                   All
                 </button>
+                <AnimatePresence>
                 {visibleAreas.map(([slug, displayName]) => {
                   const count = filterCounts.areas[slug] || 0;
                   const categoryColor = CATEGORY_COLORS[slug];
                   return (
-                    <button
+                    <motion.button
                       key={slug}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
                       onClick={() => handleResearchAreaChange(slug)}
                       className={`flex items-center text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                         selectedResearchArea === slug
@@ -595,9 +601,10 @@ export default function Home() {
                         <span style={{ color: categoryColor.text, marginRight: '6px', fontSize: '10px' }}>●</span>
                       )}
                       <span>{displayName} {count > 0 && `(${count})`}</span>
-                    </button>
+                    </motion.button>
                   );
                 })}
+                </AnimatePresence>
                 {researchAreas.length > 5 && (
                   <button
                     onClick={() => setShowAllAreas(!showAllAreas)}
@@ -888,7 +895,7 @@ export default function Home() {
             ) : (
               <>
                 {/* Publications List - Single Column Layout */}
-                <div 
+                <motion.div 
                   className="min-w-0"
                   style={{ 
                     display: 'flex',
@@ -897,14 +904,18 @@ export default function Home() {
                     margin: 0 
                   }} 
                   data-testid="publications-list"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.4 }}
                 >
+                  <AnimatePresence mode="wait">
                   {allPublications?.map((publication: Publication, index) => {
                     const publicationYear = new Date(publication.publicationDate).getFullYear();
                     // Sanitize authors to decode HTML entities
                     const formattedAuthors = sanitizeText(publication.authors);
                     
                     return (
-                      <div 
+                      <motion.div 
                         key={publication.id} 
                         data-testid={`publication-${publication.id}`}
                         className="min-w-0 py-4 sm:py-5 md:py-6"
@@ -916,6 +927,16 @@ export default function Home() {
                           maxWidth: '100%',
                           overflow: 'hidden'
                         }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ 
+                          duration: 0.4,
+                          delay: index * 0.05,
+                          ease: [0.25, 0.46, 0.45, 0.94]
+                        }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.1 }}
                       >
                         {/* Publication entry - no card styling */}
                         <div 
@@ -1062,10 +1083,11 @@ export default function Home() {
                             {formattedAuthors}
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     );
                   })}
-                </div>
+                  </AnimatePresence>
+                </motion.div>
               </>
             )}
           </section>

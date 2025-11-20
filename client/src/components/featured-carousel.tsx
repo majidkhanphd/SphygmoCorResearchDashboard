@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getFeaturedPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
@@ -99,12 +100,20 @@ export default function FeaturedCarousel() {
   }
 
   return (
-    <section 
+    <motion.section 
       className="w-full bg-background py-8 sm:py-10" 
       data-testid="featured-carousel-section"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
     >
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="relative text-center mb-6">
+        <motion.div 
+          className="relative text-center mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
           <h2 
             className="text-4xl sm:text-5xl font-light tracking-tight text-foreground"
             data-testid="featured-heading"
@@ -144,31 +153,37 @@ export default function FeaturedCarousel() {
               </button>
             </div>
           )}
-        </div>
+        </motion.div>
 
         <div className="relative">
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-6">
               {featuredPublications.map((publication: Publication, index: number) => (
-                <div
+                <motion.div
                   key={publication.id}
                   className="flex-[0_0_100%] md:flex-[0_0_calc(50%-12px)] lg:flex-[0_0_calc(33.333%-16px)] min-w-0"
                   data-testid={`featured-card-${index}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    duration: 0.5,
+                    delay: index * 0.1,
+                    ease: [0.25, 0.46, 0.45, 0.94]
+                  }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
                 >
-                  <div 
+                  <motion.div 
                     className="rounded-xl h-full flex flex-col"
                     style={{
                       backgroundColor: '#FFFFFF',
                       border: '1px solid #E5E5E7',
                       padding: '24px',
                       boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-                      transition: 'box-shadow 0.2s ease',
                     }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
+                    whileHover={{ 
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                      transition: { duration: 0.2 }
                     }}
                   >
                     <div className="flex flex-wrap items-center gap-1 mb-3">
@@ -288,8 +303,8 @@ export default function FeaturedCarousel() {
                         <ChevronDown className="h-4 w-4" />
                       )}
                     </button>
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -328,6 +343,6 @@ export default function FeaturedCarousel() {
           )}
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
