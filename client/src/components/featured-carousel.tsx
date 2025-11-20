@@ -104,7 +104,7 @@ export default function FeaturedCarousel() {
       data-testid="featured-carousel-section"
     >
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 text-center">
           <h2 
             className="text-4xl sm:text-5xl font-light tracking-tight text-foreground"
             data-testid="featured-heading"
