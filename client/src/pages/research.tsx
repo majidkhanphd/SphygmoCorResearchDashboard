@@ -57,7 +57,7 @@ export default function Home() {
     return saved ? parseInt(saved) : 25;
   });
   const resultsRef = useRef<HTMLDivElement>(null);
-  const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
+  const sidebarDivRef = useRef<HTMLDivElement>(null);
   const [sidebarSize, setSidebarSize] = useState(16);
   const [lastExpandedSize, setLastExpandedSize] = useState(() => {
     // Mobile gets wider default (40%), desktop gets narrower (18%)
@@ -87,14 +87,17 @@ export default function Home() {
 
   // Collapse sidebar on mount for mobile devices
   useEffect(() => {
-    if (initialSidebarCollapsed && sidebarPanelRef.current) {
-      // Ensure sidebar is collapsed on mobile
-      setTimeout(() => {
-        sidebarPanelRef.current?.collapse();
-        setIsSidebarCollapsed(true);
-      }, 100);
+    if (initialSidebarCollapsed) {
+      setIsSidebarCollapsed(true);
     }
   }, [initialSidebarCollapsed]);
+
+  // Handle window resize to update mobile state
+  useEffect(() => {
+    if (isSidebarCollapsed && !isMobileScreen) {
+      setIsSidebarCollapsed(false);
+    }
+  }, [isMobileScreen]);
 
   // Update sidebar default size and min size on window resize
   useEffect(() => {
@@ -220,40 +223,13 @@ export default function Home() {
     resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // Handle sidebar resize to store last expanded size and sync collapsed state
-  const handlePanelLayout = (sizes: number[]) => {
-    const currentSidebarSize = sizes[0];
-    setSidebarSize(currentSidebarSize);
-
-    // Check actual collapsed state from the panel
-    const actuallyCollapsed = sidebarPanelRef.current?.isCollapsed() ?? false;
-
-    // Sync React state with panel state
-    if (actuallyCollapsed !== isSidebarCollapsed) {
-      setIsSidebarCollapsed(actuallyCollapsed);
-    }
-
-    // Store last expanded size when panel is open and reasonably wide
-    if (!actuallyCollapsed && currentSidebarSize > 16) {
-      setLastExpandedSize(currentSidebarSize);
-    }
-  };
-
   // Handle collapsing the sidebar (via button)
   const handleCollapseSidebar = () => {
-    sidebarPanelRef.current?.collapse();
     setIsSidebarCollapsed(true);
   };
 
   // Handle expanding the sidebar (via button)
   const handleExpandSidebar = () => {
-    // First expand the panel from collapsed state
-    sidebarPanelRef.current?.expand();
-    // Then resize to the desired size
-    const targetSize = Math.max(lastExpandedSize, sidebarMinSize, sidebarDefaultSize);
-    setTimeout(() => {
-      sidebarPanelRef.current?.resize(targetSize);
-    }, 50);
     setIsSidebarCollapsed(false);
   };
 
@@ -551,7 +527,7 @@ export default function Home() {
           {/* Main content with sidebar and publications */}
           <div className="w-full flex" style={{ gap: '0px' }}>
           <div 
-            ref={sidebarPanelRef}
+            ref={sidebarDivRef}
             className={`transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
             style={{ 
               width: isSidebarCollapsed ? '0%' : `${sidebarDefaultSize}%`,
@@ -559,6 +535,7 @@ export default function Home() {
               maxWidth: isMobileScreen ? '30%' : '25%',
               flexShrink: 0
             }}
+            data-testid="sidebar-panel"
           >
             {/* Left sidebar - Apple ML Research Style */}
             <div className={`${isSidebarCollapsed ? 'w-0 overflow-hidden' : 'block w-full'}`}>
