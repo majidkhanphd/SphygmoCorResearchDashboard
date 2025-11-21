@@ -549,7 +549,7 @@ export default function Home() {
         )}
 
           {/* Main content with sidebar and publications */}
-          <ResizablePanelGroup direction="horizontal" className="w-full" onLayout={handlePanelLayout}>
+          <ResizablePanelGroup direction="horizontal" className="w-full h-auto" onLayout={handlePanelLayout}>
           <ResizablePanel 
             ref={sidebarPanelRef} 
             defaultSize={initialSidebarCollapsed ? 1 : sidebarDefaultSize} 
@@ -938,11 +938,11 @@ export default function Home() {
             }} 
           />
           
-          <ResizablePanel defaultSize={72}>
+          <ResizablePanel defaultSize={72} className="h-auto">
             {/* Main content area - Apple typography */}
             <section 
               ref={resultsRef}
-              className="flex-1 min-w-0 pl-4 sm:pl-6 md:pl-8" 
+              className="flex-1 min-w-0 pl-4 sm:pl-6 md:pl-8 h-auto" 
               id="publications-section" 
               role="main" 
               aria-label="Publications list" 
