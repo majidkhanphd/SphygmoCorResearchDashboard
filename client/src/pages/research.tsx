@@ -57,7 +57,7 @@ export default function Home() {
     return saved ? parseInt(saved) : 25;
   });
   const resultsRef = useRef<HTMLDivElement>(null);
-  const sidebarDivRef = useRef<HTMLDivElement>(null);
+  const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
   const [sidebarSize, setSidebarSize] = useState(16);
   const [lastExpandedSize, setLastExpandedSize] = useState(() => {
     // Mobile gets wider default (40%), desktop gets narrower (18%)
@@ -126,13 +126,16 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  // Collapse sidebar on mount if on mobile
-  useLayoutEffect(() => {
-    if (initialSidebarCollapsed && sidebarPanelRef.current) {
-      sidebarPanelRef.current.collapse();
+  // Auto-collapse sidebar on mobile screens
+  useEffect(() => {
+    if (isMobileScreen && sidebarPanelRef.current && !isSidebarCollapsed) {
+      sidebarPanelRef.current?.collapse();
       setIsSidebarCollapsed(true);
+    } else if (!isMobileScreen && isSidebarCollapsed && sidebarPanelRef.current) {
+      sidebarPanelRef.current?.expand();
+      setIsSidebarCollapsed(false);
     }
-  }, [initialSidebarCollapsed]);
+  }, [isMobileScreen]);
 
   // Reset to page 1 when filters or perPage changes
   useEffect(() => {
@@ -225,11 +228,17 @@ export default function Home() {
 
   // Handle collapsing the sidebar (via button)
   const handleCollapseSidebar = () => {
+    sidebarPanelRef.current?.collapse();
     setIsSidebarCollapsed(true);
   };
 
   // Handle expanding the sidebar (via button)
   const handleExpandSidebar = () => {
+    sidebarPanelRef.current?.expand();
+    const targetSize = Math.max(lastExpandedSize, sidebarMinSize, sidebarDefaultSize);
+    setTimeout(() => {
+      sidebarPanelRef.current?.resize(targetSize);
+    }, 50);
     setIsSidebarCollapsed(false);
   };
 
@@ -527,6 +536,7 @@ export default function Home() {
           {/* Main content with sidebar and publications */}
           <ResizablePanelGroup direction="horizontal" className="w-full" style={{ height: 'auto' }}>
           <ResizablePanel 
+            ref={sidebarPanelRef}
             defaultSize={initialSidebarCollapsed ? 1 : sidebarDefaultSize} 
             minSize={sidebarMinSize} 
             maxSize={isMobileScreen ? 30 : 25}
