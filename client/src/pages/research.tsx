@@ -348,7 +348,7 @@ export default function Home() {
       <FeaturedCarousel />
       
       {/* Publications Section */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-2 sm:py-3 md:py-4" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-1 sm:py-2 md:py-2" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-4 sm:mb-6 md:mb-8">
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-light mb-2 sm:mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
