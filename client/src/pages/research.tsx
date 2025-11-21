@@ -85,6 +85,17 @@ export default function Home() {
     return typeof window !== 'undefined' && window.innerWidth < 640;
   });
 
+  // Collapse sidebar on mount for mobile devices
+  useEffect(() => {
+    if (initialSidebarCollapsed && sidebarPanelRef.current) {
+      // Ensure sidebar is collapsed on mobile
+      setTimeout(() => {
+        sidebarPanelRef.current?.collapse();
+        setIsSidebarCollapsed(true);
+      }, 100);
+    }
+  }, [initialSidebarCollapsed]);
+
   // Update sidebar default size and min size on window resize
   useEffect(() => {
     const handleResize = () => {
@@ -236,9 +247,13 @@ export default function Home() {
 
   // Handle expanding the sidebar (via button)
   const handleExpandSidebar = () => {
-    // Expand to last size, but respect the current minimum size
+    // First expand the panel from collapsed state
+    sidebarPanelRef.current?.expand();
+    // Then resize to the desired size
     const targetSize = Math.max(lastExpandedSize, sidebarMinSize, sidebarDefaultSize);
-    sidebarPanelRef.current?.resize(targetSize);
+    setTimeout(() => {
+      sidebarPanelRef.current?.resize(targetSize);
+    }, 50);
     setIsSidebarCollapsed(false);
   };
 
@@ -294,14 +309,19 @@ export default function Home() {
   useEffect(() => {
     const updateHeight = () => {
       if (resultsRef.current) {
-        const rect = resultsRef.current.getBoundingClientRect();
-        // Use the visible viewport height, not the scrollable content height
-        setPublicationsHeight(rect.height);
+        // Get the actual scrollHeight to include all content
+        const scrollHeight = resultsRef.current.scrollHeight;
+        // Include padding if needed
+        const computedStyle = window.getComputedStyle(resultsRef.current);
+        const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+        const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+        const totalHeight = scrollHeight + paddingTop + paddingBottom;
+        setPublicationsHeight(totalHeight);
       }
     };
 
-    // Initial measurement
-    updateHeight();
+    // Initial measurement after a small delay to ensure content is rendered
+    setTimeout(updateHeight, 100);
 
     // Update on window resize
     window.addEventListener('resize', updateHeight);
@@ -544,19 +564,24 @@ export default function Home() {
             collapsedSize={1}
             className={`transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
             style={{ 
-              ...(isSidebarCollapsed ? { width: '0px', minWidth: '0px' } : {}),
-              maxHeight: publicationsHeight ? `${publicationsHeight}px` : 'auto'
+              ...(isSidebarCollapsed ? { width: '0px', minWidth: '0px' } : {})
             }}
           >
             {/* Left sidebar - Apple ML Research Style */}
-            <div className={`${isSidebarCollapsed ? 'hidden' : 'block'}`}>
-            <aside className="min-w-0 pr-2 relative" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
+            <div className={`${isSidebarCollapsed ? 'w-0 overflow-hidden' : 'block'}`}>
+            <aside className="min-w-0 pr-2 relative overflow-y-auto" data-testid="filters-panel" aria-expanded={!isSidebarCollapsed} style={{ 
+              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', 
+              overflowWrap: 'anywhere', 
+              wordBreak: 'break-word',
+              maxHeight: publicationsHeight ? `${publicationsHeight}px` : 'auto'
+            }} role="complementary" aria-label="Research filters">
             {/* Collapse button - top right of sidebar */}
             {!isSidebarCollapsed && (
               <button
                 onClick={handleCollapseSidebar}
                 className="absolute top-0 right-2 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
                 aria-label="Collapse sidebar"
+                aria-expanded={!isSidebarCollapsed}
                 data-testid="collapse-sidebar-button"
                 title="Collapse sidebar"
               >
