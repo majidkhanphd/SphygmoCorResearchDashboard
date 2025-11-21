@@ -351,10 +351,10 @@ export default function Home() {
       <div className="w-full px-4 sm:px-6 lg:px-8 py-1 sm:py-2 md:py-2" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-4 sm:mb-6 md:mb-8">
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-light mb-2 sm:mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
+          <h1 className="text-sm sm:text-2xl md:text-3xl font-light mb-2 sm:mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
             Publications
           </h1>
-          <p className="text-xs sm:text-base md:text-lg px-2 sm:px-8 md:px-12 lg:px-16 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
+          <p className="text-xs sm:text-sm md:text-sm px-2 sm:px-8 md:px-12 lg:px-16 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
             Browse our comprehensive collection of peer-reviewed research spanning decades of SphygmoCor technology in practice worldwide.
           </p>
         </div>

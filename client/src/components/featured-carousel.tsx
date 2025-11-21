@@ -115,7 +115,7 @@ export default function FeaturedCarousel() {
           transition={{ duration: 0.6, delay: 0.1 }}
         >
           <h2 
-            className="text-4xl sm:text-5xl font-light tracking-tight text-foreground"
+            className="text-2xl sm:text-3xl font-light tracking-tight text-foreground"
             data-testid="featured-heading"
           >
             Featured Research
@@ -178,7 +178,7 @@ export default function FeaturedCarousel() {
                     style={{
                       backgroundColor: '#FFFFFF',
                       border: '1px solid #E5E5E7',
-                      padding: '24px',
+                      padding: '16px',
                       boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
                     }}
                     whileHover={{ 
@@ -213,7 +213,7 @@ export default function FeaturedCarousel() {
                     <h3
                       className="mb-2"
                       style={{
-                        fontSize: '18px',
+                        fontSize: '13px',
                         fontWeight: '600',
                         color: '#1D1D1F',
                         lineHeight: '1.3',
@@ -226,7 +226,7 @@ export default function FeaturedCarousel() {
                     <p
                       className="mb-2"
                       style={{
-                        fontSize: '13px',
+                        fontSize: '11px',
                         fontWeight: '500',
                         color: '#6E6E73',
                       }}
@@ -238,7 +238,7 @@ export default function FeaturedCarousel() {
                     <p
                       className="mb-2"
                       style={{
-                        fontSize: '13px',
+                        fontSize: '11px',
                         color: '#6E6E73',
                       }}
                       data-testid={`card-journal-${index}`}
@@ -266,7 +266,7 @@ export default function FeaturedCarousel() {
                       <p
                         className="mb-3"
                         style={{
-                          fontSize: '13px',
+                          fontSize: '11px',
                           color: '#6E6E73',
                           lineHeight: '1.5',
                         }}
@@ -285,7 +285,7 @@ export default function FeaturedCarousel() {
                         backgroundColor: 'transparent',
                         border: '1px solid #E5E5E7',
                         cursor: 'pointer',
-                        fontSize: '13px',
+                        fontSize: '11px',
                         fontWeight: '500'
                       }}
                       onMouseEnter={(e) => {
