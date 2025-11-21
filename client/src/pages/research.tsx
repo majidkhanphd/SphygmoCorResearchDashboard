@@ -66,6 +66,9 @@ export default function Home() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth < 640;
   });
+  const [isMobileScreen, setIsMobileScreen] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth < 640;
+  });
   const [publicationsHeight, setPublicationsHeight] = useState<number | null>(null);
   const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() => {
     // Mobile gets narrower sidebar (30%), tablet+ gets narrower (16%)
@@ -85,10 +88,12 @@ export default function Home() {
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
+      const isSmall = window.innerWidth < 640;
       const newDefaultSize = isMobile ? 30 : 16;
       const newMinSize = isMobile ? 25 : 16;
       setSidebarDefaultSize(newDefaultSize);
       setSidebarMinSize(newMinSize);
+      setIsMobileScreen(isSmall);
       
       // Update lastExpandedSize to respect new breakpoint
       setLastExpandedSize(prev => {
@@ -1136,9 +1141,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* Floating expand button when sidebar is collapsed */}
-        {isSidebarCollapsed && (
-          <button
+        {/* Floating expand button when sidebar is collapsed on mobile */}
+        {isSidebarCollapsed && isMobileScreen && (
+          <motion.button
             onClick={handleExpandSidebar}
             className="fixed z-50 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3 bg-white border border-gray-200 hover:bg-gray-50"
             style={{
@@ -1146,11 +1151,15 @@ export default function Home() {
               top: '50%',
               transform: 'translateY(-50%)'
             }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
             aria-label="Expand sidebar"
             data-testid="expand-sidebar-button"
           >
             <ChevronRight className="h-5 w-5" style={{ color: '#007AFF' }} />
-          </button>
+          </motion.button>
         )}
       </div>
       {/* Apple-style Footer */}
