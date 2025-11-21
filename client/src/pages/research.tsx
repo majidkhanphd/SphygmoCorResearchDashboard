@@ -1165,11 +1165,13 @@ export default function Home() {
           {isSidebarCollapsed && isMobileScreen && isPublicationsSectionVisible && (
             <motion.button
               onClick={handleExpandSidebar}
-              className="fixed z-50 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3 bg-white border border-gray-200 hover:bg-gray-50"
+              className="fixed z-50 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3 bg-white border-2 border-gray-200 hover:bg-gray-50 flex items-center justify-center"
               style={{
                 left: '16px',
                 top: '50%',
-                transform: 'translateY(-50%)'
+                transform: 'translateY(-50%)',
+                width: '44px',
+                height: '44px'
               }}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -1178,7 +1180,7 @@ export default function Home() {
               aria-label="Expand sidebar"
               data-testid="expand-sidebar-button"
             >
-              <ChevronRight className="h-5 w-5" style={{ color: '#007AFF' }} />
+              <ChevronRight size={24} style={{ color: '#007AFF', strokeWidth: 2 }} />
             </motion.button>
           )}
         </AnimatePresence>
