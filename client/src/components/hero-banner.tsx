@@ -360,7 +360,7 @@ export default function HeroBanner() {
         >
           {/* Semi-transparent backdrop for text readability */}
           <div 
-            className="inline-block rounded-2xl px-8 py-6"
+            className="inline-block rounded-2xl px-4 sm:px-8 py-3 sm:py-6"
             style={{
               background: 'rgba(25, 35, 48, 0.5)',
               backdropFilter: 'blur(12px)',

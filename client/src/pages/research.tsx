@@ -69,6 +69,7 @@ export default function Home() {
   const [isMobileScreen, setIsMobileScreen] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth < 640;
   });
+  const [isPublicationsSectionVisible, setIsPublicationsSectionVisible] = useState(false);
   const [publicationsHeight, setPublicationsHeight] = useState<number | null>(null);
   const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() => {
     // Mobile gets narrower sidebar (30%), tablet+ gets narrower (16%)
@@ -289,7 +290,7 @@ export default function Home() {
   // Calculate total count for all years
   const totalYearCount = Object.values(filterCounts.years).reduce((sum, count) => sum + (count as number), 0);
 
-  // Track visible publications section height for dynamic journal list sizing
+  // Track visible publications section height for dynamic journal list sizing and visibility
   useEffect(() => {
     const updateHeight = () => {
       if (resultsRef.current) {
@@ -316,6 +317,24 @@ export default function Home() {
       observer.disconnect();
     };
   }, [allPublications, perPage, currentPage]);
+
+  // Track if publications section is visible in viewport for expand button
+  useEffect(() => {
+    const intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        setIsPublicationsSectionVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    if (resultsRef.current) {
+      intersectionObserver.observe(resultsRef.current);
+    }
+
+    return () => {
+      intersectionObserver.disconnect();
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -1141,26 +1160,28 @@ export default function Home() {
           </div>
         )}
 
-        {/* Floating expand button when sidebar is collapsed on mobile */}
-        {isSidebarCollapsed && isMobileScreen && (
-          <motion.button
-            onClick={handleExpandSidebar}
-            className="fixed z-50 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3 bg-white border border-gray-200 hover:bg-gray-50"
-            style={{
-              left: '16px',
-              top: '50%',
-              transform: 'translateY(-50%)'
-            }}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-            aria-label="Expand sidebar"
-            data-testid="expand-sidebar-button"
-          >
-            <ChevronRight className="h-5 w-5" style={{ color: '#007AFF' }} />
-          </motion.button>
-        )}
+        {/* Floating expand button when sidebar is collapsed on mobile and publications are visible */}
+        <AnimatePresence>
+          {isSidebarCollapsed && isMobileScreen && isPublicationsSectionVisible && (
+            <motion.button
+              onClick={handleExpandSidebar}
+              className="fixed z-50 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3 bg-white border border-gray-200 hover:bg-gray-50"
+              style={{
+                left: '16px',
+                top: '50%',
+                transform: 'translateY(-50%)'
+              }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+              aria-label="Expand sidebar"
+              data-testid="expand-sidebar-button"
+            >
+              <ChevronRight className="h-5 w-5" style={{ color: '#007AFF' }} />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
       {/* Apple-style Footer */}
       <footer className="border-t mt-8 sm:mt-12 md:mt-16" style={{ 
