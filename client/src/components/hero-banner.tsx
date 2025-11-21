@@ -60,7 +60,7 @@ export default function HeroBanner() {
       className="w-full relative overflow-hidden"
       style={{
         background: 'linear-gradient(135deg, #2a3f54 0%, #34495e 25%, #3d5066 50%, #455a6d 100%)',
-        minHeight: '295px'
+        minHeight: 'clamp(200px, 40vh, 295px)'
       }}
       data-testid="hero-banner"
       initial={{ opacity: 0 }}

@@ -68,12 +68,12 @@ export default function Home() {
   });
   const [publicationsHeight, setPublicationsHeight] = useState<number | null>(null);
   const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() => {
-    // Mobile gets wider sidebar (40%), tablet+ gets narrower (16%)
-    return typeof window !== 'undefined' && window.innerWidth < 768 ? 40 : 16;
+    // Mobile gets narrower sidebar (30%), tablet+ gets narrower (16%)
+    return typeof window !== 'undefined' && window.innerWidth < 768 ? 30 : 16;
   });
   const [sidebarMinSize, setSidebarMinSize] = useState(() => {
-    // Mobile needs larger minimum (30%), desktop can be narrower (16%)
-    return typeof window !== 'undefined' && window.innerWidth < 768 ? 30 : 16;
+    // Mobile needs larger minimum (25%), desktop can be narrower (16%)
+    return typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 16;
   });
   
   // Initialize sidebar collapsed state based on screen size
@@ -85,16 +85,16 @@ export default function Home() {
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
-      const newDefaultSize = isMobile ? 40 : 16;
-      const newMinSize = isMobile ? 30 : 16;
+      const newDefaultSize = isMobile ? 30 : 16;
+      const newMinSize = isMobile ? 25 : 16;
       setSidebarDefaultSize(newDefaultSize);
       setSidebarMinSize(newMinSize);
       
       // Update lastExpandedSize to respect new breakpoint
       setLastExpandedSize(prev => {
         if (isMobile) {
-          // On mobile, ensure lastExpandedSize is at least 30%
-          return Math.max(prev, 30);
+          // On mobile, ensure lastExpandedSize is at least 25%
+          return Math.max(prev, 25);
         } else {
           // On desktop, clamp to reasonable range (16-40%)
           return Math.max(16, Math.min(prev, 40));
@@ -327,10 +327,10 @@ export default function Home() {
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-8 sm:mb-12 md:mb-16">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-light mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-light mb-2 sm:mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
             Publications
           </h1>
-          <p className="text-sm sm:text-base md:text-lg px-4 sm:px-8 md:px-12 lg:px-16 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
+          <p className="text-xs sm:text-base md:text-lg px-2 sm:px-8 md:px-12 lg:px-16 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
             Browse our comprehensive collection of peer-reviewed research spanning decades of SphygmoCor technology in practice worldwide.
           </p>
         </div>
@@ -343,9 +343,9 @@ export default function Home() {
         </div>
         
         {/* Search and Sort Section - Apple style */}
-        <div className="mb-8 sm:mb-10 md:mb-12">
+        <div className="mb-6 sm:mb-10 md:mb-12">
           {/* Search bar and sort dropdown */}
-          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center mb-6">
+          <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row items-stretch sm:items-center mb-6">
             <div className="relative flex-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
             <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-3 sm:pl-4">
               <Search className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: '#6E6E73' }} />
@@ -799,7 +799,7 @@ export default function Home() {
                         )}
                         <button
                           onClick={() => handleVenueChange(venue)}
-                          className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
+                          className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 apple-transition apple-focus-ring break-words ${
                             selectedVenue === venue
                               ? "font-medium"
                               : "hover:opacity-80"
@@ -833,7 +833,7 @@ export default function Home() {
                                 exit={{ opacity: 0, x: -10 }}
                                 transition={{ duration: 0.15, ease: "easeInOut" }}
                                 onClick={() => handleVenueChange(childJournal)}
-                                className={`block text-sm w-full text-left py-1 ml-8 apple-transition apple-focus-ring break-words ${
+                                className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 ml-6 sm:ml-8 apple-transition apple-focus-ring break-words ${
                                   selectedVenue === childJournal
                                     ? "font-medium"
                                     : "hover:opacity-80"
