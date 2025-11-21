@@ -858,7 +858,7 @@ export default function Home() {
                                 exit={{ opacity: 0, x: -10 }}
                                 transition={{ duration: 0.15, ease: "easeInOut" }}
                                 onClick={() => handleVenueChange(childJournal)}
-                                className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 ml-6 sm:ml-8 apple-transition apple-focus-ring break-words ${
+                                className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 ml-3 sm:ml-8 apple-transition apple-focus-ring break-words whitespace-normal overflow-hidden ${
                                   selectedVenue === childJournal
                                     ? "font-medium"
                                     : "hover:opacity-80"
