@@ -542,6 +542,8 @@ export default function Home() {
             maxSize={isMobileScreen ? 30 : 25}
             collapsible={true}
             collapsedSize={1}
+            onCollapse={() => setIsSidebarCollapsed(true)}
+            onExpand={() => setIsSidebarCollapsed(false)}
             className={`transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
             style={{ 
               ...(isSidebarCollapsed ? { width: '0px', minWidth: '0px' } : {})
