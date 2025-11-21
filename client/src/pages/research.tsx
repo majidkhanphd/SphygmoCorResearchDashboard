@@ -85,20 +85,6 @@ export default function Home() {
     return typeof window !== 'undefined' && window.innerWidth < 640;
   });
 
-  // Collapse sidebar on mount for mobile devices
-  useEffect(() => {
-    if (initialSidebarCollapsed) {
-      setIsSidebarCollapsed(true);
-    }
-  }, [initialSidebarCollapsed]);
-
-  // Handle window resize to update mobile state
-  useEffect(() => {
-    if (isSidebarCollapsed && !isMobileScreen) {
-      setIsSidebarCollapsed(false);
-    }
-  }, [isMobileScreen]);
-
   // Update sidebar default size and min size on window resize
   useEffect(() => {
     const handleResize = () => {
@@ -126,16 +112,13 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  // Auto-collapse sidebar on mobile screens
-  useEffect(() => {
-    if (isMobileScreen && sidebarPanelRef.current && !isSidebarCollapsed) {
-      sidebarPanelRef.current?.collapse();
+  // Collapse sidebar on mount if on mobile
+  useLayoutEffect(() => {
+    if (initialSidebarCollapsed && sidebarPanelRef.current) {
+      sidebarPanelRef.current.collapse();
       setIsSidebarCollapsed(true);
-    } else if (!isMobileScreen && isSidebarCollapsed && sidebarPanelRef.current) {
-      sidebarPanelRef.current?.expand();
-      setIsSidebarCollapsed(false);
     }
-  }, [isMobileScreen]);
+  }, [initialSidebarCollapsed]);
 
   // Reset to page 1 when filters or perPage changes
   useEffect(() => {
@@ -226,6 +209,25 @@ export default function Home() {
     resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  // Handle sidebar resize to store last expanded size and sync collapsed state
+  const handlePanelLayout = (sizes: number[]) => {
+    const currentSidebarSize = sizes[0];
+    setSidebarSize(currentSidebarSize);
+
+    // Check actual collapsed state from the panel
+    const actuallyCollapsed = sidebarPanelRef.current?.isCollapsed() ?? false;
+
+    // Sync React state with panel state
+    if (actuallyCollapsed !== isSidebarCollapsed) {
+      setIsSidebarCollapsed(actuallyCollapsed);
+    }
+
+    // Store last expanded size when panel is open and reasonably wide
+    if (!actuallyCollapsed && currentSidebarSize > 16) {
+      setLastExpandedSize(currentSidebarSize);
+    }
+  };
+
   // Handle collapsing the sidebar (via button)
   const handleCollapseSidebar = () => {
     sidebarPanelRef.current?.collapse();
@@ -234,11 +236,9 @@ export default function Home() {
 
   // Handle expanding the sidebar (via button)
   const handleExpandSidebar = () => {
-    sidebarPanelRef.current?.expand();
+    // Expand to last size, but respect the current minimum size
     const targetSize = Math.max(lastExpandedSize, sidebarMinSize, sidebarDefaultSize);
-    setTimeout(() => {
-      sidebarPanelRef.current?.resize(targetSize);
-    }, 50);
+    sidebarPanelRef.current?.resize(targetSize);
     setIsSidebarCollapsed(false);
   };
 
@@ -290,18 +290,18 @@ export default function Home() {
   // Calculate total count for all years
   const totalYearCount = Object.values(filterCounts.years).reduce((sum, count) => sum + (count as number), 0);
 
-  // Track visible publications section height for expand button visibility
+  // Track visible publications section height for dynamic journal list sizing and visibility
   useEffect(() => {
     const updateHeight = () => {
       if (resultsRef.current) {
-        // Get viewport height of the publications section for expand button timing
         const rect = resultsRef.current.getBoundingClientRect();
+        // Use the visible viewport height, not the scrollable content height
         setPublicationsHeight(rect.height);
       }
     };
 
-    // Initial measurement after a small delay to ensure content is rendered
-    setTimeout(updateHeight, 100);
+    // Initial measurement
+    updateHeight();
 
     // Update on window resize
     window.addEventListener('resize', updateHeight);
@@ -348,27 +348,26 @@ export default function Home() {
       <FeaturedCarousel />
       
       {/* Publications Section */}
-      <div className="w-full flex justify-center" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
-        <div className="w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-1 sm:py-2 md:py-2">
-          {/* Main title - Apple's exact typography - Responsive */}
-          <div className="text-center mb-4 sm:mb-6 md:mb-8">
-            <h1 className="text-sm sm:text-2xl md:text-3xl font-light mb-2 sm:mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
-              Publications
-            </h1>
-            <p className="text-xs sm:text-sm md:text-sm px-2 sm:px-8 md:px-12 lg:px-16 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
-              Browse our comprehensive collection of peer-reviewed research spanning decades of SphygmoCor technology in practice worldwide.
-            </p>
-          </div>
-          
-          {/* Page Last Updated */}
-          <div className="text-center mb-6 sm:mb-8">
-            <p className="text-xs sm:text-sm" style={{ color: '#6E6E73', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} data-testid="last-updated">
-              Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-          </div>
-          
-          {/* Search and Sort Section - Apple style */}
-          <div className="mb-6 sm:mb-10 md:mb-12">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-1 sm:py-2 md:py-2" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+        {/* Main title - Apple's exact typography - Responsive */}
+        <div className="text-center mb-4 sm:mb-6 md:mb-8">
+          <h1 className="text-sm sm:text-2xl md:text-3xl font-light mb-2 sm:mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
+            Publications
+          </h1>
+          <p className="text-xs sm:text-sm md:text-sm px-2 sm:px-8 md:px-12 lg:px-16 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
+            Browse our comprehensive collection of peer-reviewed research spanning decades of SphygmoCor technology in practice worldwide.
+          </p>
+        </div>
+        
+        {/* Page Last Updated */}
+        <div className="text-center mb-6 sm:mb-8">
+          <p className="text-xs sm:text-sm" style={{ color: '#6E6E73', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} data-testid="last-updated">
+            Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+        </div>
+        
+        {/* Search and Sort Section - Apple style */}
+        <div className="mb-6 sm:mb-10 md:mb-12">
           {/* Search bar and sort dropdown */}
           <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row items-stretch sm:items-center mb-6">
             <div className="relative flex-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
@@ -533,32 +532,29 @@ export default function Home() {
           </div>
         )}
 
-          {/* Main content with sidebar and publications */}
-          <ResizablePanelGroup direction="horizontal" className="w-full" style={{ height: 'auto' }}>
+        {/* Main content with sidebar and publications */}
+        <ResizablePanelGroup direction="horizontal" className="w-full" onLayout={handlePanelLayout}>
           <ResizablePanel 
-            ref={sidebarPanelRef}
+            ref={sidebarPanelRef} 
             defaultSize={initialSidebarCollapsed ? 1 : sidebarDefaultSize} 
             minSize={sidebarMinSize} 
             maxSize={isMobileScreen ? 30 : 25}
             collapsible={true}
             collapsedSize={1}
             className={`transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
+            style={{ 
+              ...(isSidebarCollapsed ? { width: '0px', minWidth: '0px' } : {})
+            }}
           >
             {/* Left sidebar - Apple ML Research Style */}
-            <div className={`${isSidebarCollapsed ? 'w-0 overflow-hidden' : 'block'} h-full`}>
-            <aside className="min-w-0 pr-2 relative overflow-y-auto" data-testid="filters-panel" aria-expanded={!isSidebarCollapsed} style={{ 
-              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', 
-              overflowWrap: 'anywhere', 
-              wordBreak: 'break-word',
-              height: '100%'
-            }} role="complementary" aria-label="Research filters">
+            <div className={`${isSidebarCollapsed ? 'hidden' : 'block'}`}>
+            <aside className="min-w-0 pr-2 relative" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word' }} role="complementary" aria-label="Research filters">
             {/* Collapse button - top right of sidebar */}
             {!isSidebarCollapsed && (
               <button
                 onClick={handleCollapseSidebar}
                 className="absolute top-0 right-2 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
                 aria-label="Collapse sidebar"
-                aria-expanded={!isSidebarCollapsed}
                 data-testid="collapse-sidebar-button"
                 title="Collapse sidebar"
               >
@@ -861,7 +857,7 @@ export default function Home() {
                                 exit={{ opacity: 0, x: -10 }}
                                 transition={{ duration: 0.15, ease: "easeInOut" }}
                                 onClick={() => handleVenueChange(childJournal)}
-                                className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 ml-3 sm:ml-8 apple-transition apple-focus-ring break-words whitespace-normal overflow-hidden ${
+                                className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 ml-6 sm:ml-8 apple-transition apple-focus-ring break-words ${
                                   selectedVenue === childJournal
                                     ? "font-medium"
                                     : "hover:opacity-80"
@@ -920,7 +916,7 @@ export default function Home() {
             }} 
           />
           
-          <ResizablePanel defaultSize={72} className="h-auto">
+          <ResizablePanel defaultSize={72}>
             {/* Main content area - Apple typography */}
             <section 
               ref={resultsRef}
@@ -1163,34 +1159,32 @@ export default function Home() {
             />
           </div>
         )}
-        </div>
+
+        {/* Floating expand button when sidebar is collapsed on mobile and publications are visible */}
+        <AnimatePresence>
+          {isSidebarCollapsed && isMobileScreen && isPublicationsSectionVisible && (
+            <motion.button
+              onClick={handleExpandSidebar}
+              className="fixed z-50 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3 bg-white border-2 border-gray-200 hover:bg-gray-50 flex items-center justify-center"
+              style={{
+                left: '16px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '44px',
+                height: '44px'
+              }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+              aria-label="Expand sidebar"
+              data-testid="expand-sidebar-button"
+            >
+              <ChevronRight size={24} style={{ color: '#007AFF', strokeWidth: 2 }} />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
-
-      {/* Floating expand button when sidebar is collapsed on mobile and publications are visible */}
-      <AnimatePresence>
-        {isSidebarCollapsed && isMobileScreen && isPublicationsSectionVisible && (
-          <motion.button
-            onClick={handleExpandSidebar}
-            className="fixed z-50 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3 bg-white border-2 border-gray-200 hover:bg-gray-50 flex items-center justify-center"
-            style={{
-              left: '16px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: '44px',
-              height: '44px'
-            }}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-            aria-label="Expand sidebar"
-            data-testid="expand-sidebar-button"
-          >
-            <ChevronRight size={24} style={{ color: '#007AFF', strokeWidth: 2 }} />
-          </motion.button>
-        )}
-      </AnimatePresence>
-
       {/* Apple-style Footer */}
       <footer className="border-t mt-8 sm:mt-12 md:mt-16" style={{ 
         backgroundColor: '#F6F6F6', 

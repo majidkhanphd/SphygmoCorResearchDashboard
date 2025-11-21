@@ -101,13 +101,13 @@ export default function FeaturedCarousel() {
 
   return (
     <motion.section 
-      className="w-full bg-background py-8 sm:py-10 flex justify-center" 
+      className="w-full bg-background py-8 sm:py-10" 
       data-testid="featured-carousel-section"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
     >
-      <div className="w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <motion.div 
           className="relative text-center mb-6"
           initial={{ opacity: 0, y: 20 }}
