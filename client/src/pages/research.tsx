@@ -348,7 +348,8 @@ export default function Home() {
       <FeaturedCarousel />
       
       {/* Publications Section */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-1 sm:py-2 md:py-2" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+      <div className="w-full flex justify-center" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+        <div className="w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-1 sm:py-2 md:py-2">
         {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-4 sm:mb-6 md:mb-8">
           <h1 className="text-sm sm:text-2xl md:text-3xl font-light mb-2 sm:mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
@@ -1159,32 +1160,34 @@ export default function Home() {
             />
           </div>
         )}
-
-        {/* Floating expand button when sidebar is collapsed on mobile and publications are visible */}
-        <AnimatePresence>
-          {isSidebarCollapsed && isMobileScreen && isPublicationsSectionVisible && (
-            <motion.button
-              onClick={handleExpandSidebar}
-              className="fixed z-50 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3 bg-white border-2 border-gray-200 hover:bg-gray-50 flex items-center justify-center"
-              style={{
-                left: '16px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '44px',
-                height: '44px'
-              }}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-              aria-label="Expand sidebar"
-              data-testid="expand-sidebar-button"
-            >
-              <ChevronRight size={24} style={{ color: '#007AFF', strokeWidth: 2 }} />
-            </motion.button>
-          )}
-        </AnimatePresence>
+        </div>
       </div>
+
+      {/* Floating expand button when sidebar is collapsed on mobile and publications are visible */}
+      <AnimatePresence>
+        {isSidebarCollapsed && isMobileScreen && isPublicationsSectionVisible && (
+          <motion.button
+            onClick={handleExpandSidebar}
+            className="fixed z-50 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3 bg-white border-2 border-gray-200 hover:bg-gray-50 flex items-center justify-center"
+            style={{
+              left: '16px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: '44px',
+              height: '44px'
+            }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+            aria-label="Expand sidebar"
+            data-testid="expand-sidebar-button"
+          >
+            <ChevronRight size={24} style={{ color: '#007AFF', strokeWidth: 2 }} />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       {/* Apple-style Footer */}
       <footer className="border-t mt-8 sm:mt-12 md:mt-16" style={{ 
         backgroundColor: '#F6F6F6', 
