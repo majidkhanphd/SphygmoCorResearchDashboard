@@ -350,25 +350,25 @@ export default function Home() {
       {/* Publications Section */}
       <div className="w-full flex justify-center" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         <div className="w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-1 sm:py-2 md:py-2">
-        {/* Main title - Apple's exact typography - Responsive */}
-        <div className="text-center mb-4 sm:mb-6 md:mb-8">
-          <h1 className="text-sm sm:text-2xl md:text-3xl font-light mb-2 sm:mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
-            Publications
-          </h1>
-          <p className="text-xs sm:text-sm md:text-sm px-2 sm:px-8 md:px-12 lg:px-16 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
-            Browse our comprehensive collection of peer-reviewed research spanning decades of SphygmoCor technology in practice worldwide.
-          </p>
-        </div>
-        
-        {/* Page Last Updated */}
-        <div className="text-center mb-6 sm:mb-8">
-          <p className="text-xs sm:text-sm" style={{ color: '#6E6E73', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} data-testid="last-updated">
-            Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
-        </div>
-        
-        {/* Search and Sort Section - Apple style */}
-        <div className="mb-6 sm:mb-10 md:mb-12">
+          {/* Main title - Apple's exact typography - Responsive */}
+          <div className="text-center mb-4 sm:mb-6 md:mb-8">
+            <h1 className="text-sm sm:text-2xl md:text-3xl font-light mb-2 sm:mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
+              Publications
+            </h1>
+            <p className="text-xs sm:text-sm md:text-sm px-2 sm:px-8 md:px-12 lg:px-16 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
+              Browse our comprehensive collection of peer-reviewed research spanning decades of SphygmoCor technology in practice worldwide.
+            </p>
+          </div>
+          
+          {/* Page Last Updated */}
+          <div className="text-center mb-6 sm:mb-8">
+            <p className="text-xs sm:text-sm" style={{ color: '#6E6E73', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} data-testid="last-updated">
+              Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+          
+          {/* Search and Sort Section - Apple style */}
+          <div className="mb-6 sm:mb-10 md:mb-12">
           {/* Search bar and sort dropdown */}
           <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row items-stretch sm:items-center mb-6">
             <div className="relative flex-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
@@ -533,8 +533,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* Main content with sidebar and publications */}
-        <ResizablePanelGroup direction="horizontal" className="w-full" onLayout={handlePanelLayout}>
+          {/* Main content with sidebar and publications */}
+          <ResizablePanelGroup direction="horizontal" className="w-full" onLayout={handlePanelLayout}>
           <ResizablePanel 
             ref={sidebarPanelRef} 
             defaultSize={initialSidebarCollapsed ? 1 : sidebarDefaultSize} 
@@ -544,7 +544,8 @@ export default function Home() {
             collapsedSize={1}
             className={`transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
             style={{ 
-              ...(isSidebarCollapsed ? { width: '0px', minWidth: '0px' } : {})
+              ...(isSidebarCollapsed ? { width: '0px', minWidth: '0px' } : {}),
+              maxHeight: publicationsHeight ? `${publicationsHeight}px` : 'auto'
             }}
           >
             {/* Left sidebar - Apple ML Research Style */}
