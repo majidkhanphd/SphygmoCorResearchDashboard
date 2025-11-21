@@ -72,8 +72,8 @@ export default function Home() {
   const [isPublicationsSectionVisible, setIsPublicationsSectionVisible] = useState(false);
   const [publicationsHeight, setPublicationsHeight] = useState<number | null>(null);
   const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() => {
-    // Mobile gets narrower sidebar (30%), tablet+ gets narrower (16%)
-    return typeof window !== 'undefined' && window.innerWidth < 768 ? 30 : 16;
+    // Mobile gets wider sidebar (36%), tablet+ gets narrower (16%)
+    return typeof window !== 'undefined' && window.innerWidth < 768 ? 36 : 16;
   });
   const [sidebarMinSize, setSidebarMinSize] = useState(() => {
     // Mobile needs larger minimum (25%), desktop can be narrower (16%)
@@ -90,7 +90,7 @@ export default function Home() {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
       const isSmall = window.innerWidth < 640;
-      const newDefaultSize = isMobile ? 30 : 16;
+      const newDefaultSize = isMobile ? 36 : 16;
       const newMinSize = isMobile ? 25 : 16;
       setSidebarDefaultSize(newDefaultSize);
       setSidebarMinSize(newMinSize);
@@ -538,7 +538,7 @@ export default function Home() {
             ref={sidebarPanelRef} 
             defaultSize={initialSidebarCollapsed ? 1 : sidebarDefaultSize} 
             minSize={sidebarMinSize} 
-            maxSize={25}
+            maxSize={isMobileScreen ? 30 : 25}
             collapsible={true}
             collapsedSize={1}
             className={`transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
