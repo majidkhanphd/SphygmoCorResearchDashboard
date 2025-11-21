@@ -348,7 +348,8 @@ export default function Home() {
       <FeaturedCarousel />
       
       {/* Publications Section */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-1 sm:py-2 md:py-2" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+      <div className="w-full py-1 sm:py-2 md:py-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-4 sm:mb-6 md:mb-8">
           <h1 className="text-sm sm:text-2xl md:text-3xl font-light mb-2 sm:mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
@@ -1184,6 +1185,7 @@ export default function Home() {
             </motion.button>
           )}
         </AnimatePresence>
+      </div>
       </div>
       {/* Apple-style Footer */}
       <footer className="border-t mt-8 sm:mt-12 md:mt-16" style={{ 
