@@ -216,14 +216,18 @@ export default function Home() {
 
     // Check actual collapsed state from the panel
     const actuallyCollapsed = sidebarPanelRef.current?.isCollapsed() ?? false;
+    
+    // Also check if size is at collapsed size (1%)
+    const isAtCollapsedSize = currentSidebarSize <= 1;
 
-    // Sync React state with panel state
-    if (actuallyCollapsed !== isSidebarCollapsed) {
-      setIsSidebarCollapsed(actuallyCollapsed);
+    // Sync React state with panel state - check both conditions
+    const shouldBeCollapsed = actuallyCollapsed || isAtCollapsedSize;
+    if (shouldBeCollapsed !== isSidebarCollapsed) {
+      setIsSidebarCollapsed(shouldBeCollapsed);
     }
 
     // Store last expanded size when panel is open and reasonably wide
-    if (!actuallyCollapsed && currentSidebarSize > 16) {
+    if (!shouldBeCollapsed && currentSidebarSize > 16) {
       setLastExpandedSize(currentSidebarSize);
     }
   };
@@ -542,8 +546,6 @@ export default function Home() {
             maxSize={isMobileScreen ? 30 : 25}
             collapsible={true}
             collapsedSize={1}
-            onCollapse={() => setIsSidebarCollapsed(true)}
-            onExpand={() => setIsSidebarCollapsed(false)}
             className={`transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
             style={{ 
               ...(isSidebarCollapsed ? { width: '0px', minWidth: '0px' } : {})
