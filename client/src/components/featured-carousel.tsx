@@ -83,7 +83,7 @@ export default function FeaturedCarousel() {
   if (isLoading) {
     return (
       <section className="w-full bg-background py-8 sm:py-10" data-testid="featured-carousel-section">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Skeleton className="h-10 w-64 mb-8" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Skeleton className="h-80 w-full rounded-xl" />
@@ -107,7 +107,7 @@ export default function FeaturedCarousel() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
     >
-      <div className="w-full px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div 
           className="relative text-center mb-6"
           initial={{ opacity: 0, y: 20 }}
