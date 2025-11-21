@@ -525,20 +525,17 @@ export default function Home() {
         )}
 
           {/* Main content with sidebar and publications */}
-          <div className="w-full flex" style={{ gap: '0px' }}>
-          <div 
-            ref={sidebarDivRef}
+          <ResizablePanelGroup direction="horizontal" className="w-full" style={{ height: 'auto' }}>
+          <ResizablePanel 
+            defaultSize={initialSidebarCollapsed ? 1 : sidebarDefaultSize} 
+            minSize={sidebarMinSize} 
+            maxSize={isMobileScreen ? 30 : 25}
+            collapsible={true}
+            collapsedSize={1}
             className={`transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
-            style={{ 
-              width: isSidebarCollapsed ? '0%' : `${sidebarDefaultSize}%`,
-              minWidth: isSidebarCollapsed ? '0px' : '200px',
-              maxWidth: isMobileScreen ? '30%' : '25%',
-              flexShrink: 0
-            }}
-            data-testid="sidebar-panel"
           >
             {/* Left sidebar - Apple ML Research Style */}
-            <div className={`${isSidebarCollapsed ? 'w-0 overflow-hidden' : 'block w-full'}`}>
+            <div className={`${isSidebarCollapsed ? 'w-0 overflow-hidden' : 'block'} h-full`}>
             <aside className="min-w-0 pr-2 relative overflow-y-auto" data-testid="filters-panel" aria-expanded={!isSidebarCollapsed} style={{ 
               fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', 
               overflowWrap: 'anywhere', 
@@ -901,13 +898,23 @@ export default function Home() {
             </section>
           </aside>
           </div>
-          </div>
+          </ResizablePanel>
           
-          <div className="flex-1 min-w-0">
+          <ResizableHandle 
+            withHandle 
+            style={{ 
+              width: '8px',
+              cursor: 'col-resize',
+              backgroundColor: 'rgba(0, 0, 0, 0.05)',
+              transition: 'background-color 0.2s'
+            }} 
+          />
+          
+          <ResizablePanel defaultSize={72} className="h-auto">
             {/* Main content area - Apple typography */}
             <section 
               ref={resultsRef}
-              className="flex-1 min-w-0 pl-4 sm:pl-6 md:pl-8 w-full" 
+              className="flex-1 min-w-0 pl-4 sm:pl-6 md:pl-8" 
               id="publications-section" 
               role="main" 
               aria-label="Publications list" 
@@ -1131,8 +1138,8 @@ export default function Home() {
               </>
             )}
           </section>
-          </div>
-        </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
 
         {/* Pagination controls - Apple style */}
         {!isLoading && allPublications.length > 0 && (
