@@ -305,18 +305,13 @@ export default function Home() {
   // Calculate total count for all years
   const totalYearCount = Object.values(filterCounts.years).reduce((sum, count) => sum + (count as number), 0);
 
-  // Track visible publications section height for dynamic journal list sizing and visibility
+  // Track visible publications section height for expand button visibility
   useEffect(() => {
     const updateHeight = () => {
       if (resultsRef.current) {
-        // Get the actual scrollHeight to include all content
-        const scrollHeight = resultsRef.current.scrollHeight;
-        // Include padding if needed
-        const computedStyle = window.getComputedStyle(resultsRef.current);
-        const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
-        const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
-        const totalHeight = scrollHeight + paddingTop + paddingBottom;
-        setPublicationsHeight(totalHeight);
+        // Get viewport height of the publications section for expand button timing
+        const rect = resultsRef.current.getBoundingClientRect();
+        setPublicationsHeight(rect.height);
       }
     };
 
@@ -573,7 +568,7 @@ export default function Home() {
               fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', 
               overflowWrap: 'anywhere', 
               wordBreak: 'break-word',
-              maxHeight: publicationsHeight ? `${publicationsHeight}px` : 'auto'
+              height: '100%'
             }} role="complementary" aria-label="Research filters">
             {/* Collapse button - top right of sidebar */}
             {!isSidebarCollapsed && (
