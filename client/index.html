@@ -41,5 +41,25 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function () {
+        function sendHeight() {
+          const height = Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight,
+            document.body.offsetHeight,
+            document.documentElement.offsetHeight
+          );
+          parent.postMessage({ type: "CONNEQT_IFRAME_HEIGHT", height }, "*");
+        }
+
+        window.addEventListener("load", sendHeight);
+        window.addEventListener("resize", sendHeight);
+
+        // If your app content changes after load (SPA / React), watch for changes:
+        const ro = new ResizeObserver(sendHeight);
+        ro.observe(document.documentElement);
+      })();
+    </script>
   </body>
 </html>

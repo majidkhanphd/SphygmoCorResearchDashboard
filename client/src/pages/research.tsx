@@ -1,7 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import HeroBanner from "@/components/hero-banner";
 import FeaturedCarousel from "@/components/featured-carousel";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { Button } from "@/components/ui/button";
@@ -345,10 +344,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      
-      {/* Hero Banner - Full width */}
-      <HeroBanner />
-      
       {/* Featured Research Carousel */}
       <FeaturedCarousel />
       
