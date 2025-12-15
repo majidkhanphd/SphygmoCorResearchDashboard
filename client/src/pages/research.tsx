@@ -1191,350 +1191,235 @@ export default function Home() {
         </AnimatePresence>
       </div>
       </div>
-      {/* CONNEQT Health Footer */}
-      <footer className="border-t mt-8 sm:mt-12 md:mt-16" style={{ 
-        backgroundColor: '#242422', 
-        borderColor: '#333',
-        fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Oxygen-Sans", Ubuntu, sans-serif'
-      }}>
-        {/* Newsletter Signup Section */}
-        <div className="w-full py-12 sm:py-16" style={{ backgroundColor: '#AF87FF' }}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h3 className="text-xl sm:text-2xl font-semibold text-white mb-4" data-testid="footer-newsletter-heading">
-              Sign Up for Insights & Early Offers
-            </h3>
-            <p className="text-white/90 text-sm sm:text-base mb-6 max-w-2xl mx-auto">
-              Stay updated with the latest cardiovascular research, SphygmoCor technology updates, and exclusive early access to new features.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-3 rounded-md text-sm border-0 outline-none"
-                style={{ backgroundColor: '#FFFFFF', color: '#242422' }}
-                data-testid="footer-newsletter-input"
-              />
-              <button
-                type="button"
-                className="px-6 py-3 rounded-md text-sm font-medium transition-all duration-200 hover:opacity-90"
-                style={{ backgroundColor: '#242422', color: '#FFFFFF' }}
-                data-testid="footer-newsletter-button"
-                onClick={() => {
-                  window.open('https://conneqthealth.com/#newsletter', '_blank', 'noopener,noreferrer');
-                }}
-              >
-                Subscribe
-              </button>
+      {/* FDA Clearance Timeline Section */}
+      <section className="w-full py-16 sm:py-20" style={{ backgroundColor: '#FAFAFA', fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-center text-2xl sm:text-3xl md:text-4xl font-light mb-12 sm:mb-16" style={{ color: '#242422', lineHeight: '1.3' }}>
+            Backed by Over 50 Years of Research, 20+ Years of Commercial Use, and 5x FDA-Clearances to Date<sup>†</sup>
+          </h2>
+          
+          {/* FDA Timeline Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6 mb-8">
+            {/* 2002 */}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-1 mb-3">
+                <span className="px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
+                <span className="text-xs" style={{ color: '#6B7280' }}>CLEARED</span>
+              </div>
+              <div className="text-2xl font-semibold mb-2" style={{ color: '#242422' }}>2002</div>
+              <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.4' }}>
+                510K Clearance:<br />SphygmoCor Px
+              </div>
+            </div>
+            
+            {/* 2007 */}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-1 mb-3">
+                <span className="px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
+                <span className="text-xs" style={{ color: '#6B7280' }}>CLEARED</span>
+              </div>
+              <div className="text-2xl font-semibold mb-2" style={{ color: '#242422' }}>2007</div>
+              <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.4' }}>
+                510K Clearance:<br />SphygmoCor CvMS
+              </div>
+            </div>
+            
+            {/* 2012 */}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-1 mb-3">
+                <span className="px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
+                <span className="text-xs" style={{ color: '#6B7280' }}>CLEARED</span>
+              </div>
+              <div className="text-2xl font-semibold mb-2" style={{ color: '#242422' }}>2012</div>
+              <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.4' }}>
+                510K Clearance:<br />SphygmoCor XCEL
+              </div>
+            </div>
+            
+            {/* 2016 Oscar */}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-1 mb-3">
+                <span className="px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
+                <span className="text-xs" style={{ color: '#6B7280' }}>CLEARED</span>
+              </div>
+              <div className="text-2xl font-semibold mb-2" style={{ color: '#242422' }}>2016</div>
+              <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.4' }}>
+                Oscar 2 ABPM with<br />SphygmoCor
+              </div>
+            </div>
+            
+            {/* 2016 AMA */}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-1 mb-3">
+                <span className="px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#1F2937', color: 'white' }}>AMA</span>
+                <span className="text-xs invisible">CLEARED</span>
+              </div>
+              <div className="text-2xl font-semibold mb-2" style={{ color: '#242422' }}>2016</div>
+              <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.4' }}>
+                CPT Code<br />Approval
+              </div>
+            </div>
+            
+            {/* 2023 */}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-1 mb-3">
+                <span className="px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
+                <span className="text-xs" style={{ color: '#6B7280' }}>CLEARED</span>
+              </div>
+              <div className="text-2xl font-semibold mb-2" style={{ color: '#242422' }}>2023</div>
+              <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.4' }}>
+                CONNEQT Pulse
+              </div>
             </div>
           </div>
+          
+          {/* Footnote */}
+          <p className="text-xs mt-8" style={{ color: '#9CA3AF' }}>
+            †SphygmoCor technology.
+          </p>
         </div>
+      </section>
 
+      {/* CONNEQT Health Footer */}
+      <footer style={{ 
+        backgroundColor: '#F5F0E8', 
+        fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif'
+      }}>
         {/* Main Footer Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-          {/* Footer Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-            {/* Company Column */}
-            <div>
-              <h4 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Company</h4>
-              <ul className="space-y-3">
-                <li>
-                  <a 
-                    href="https://conneqthealth.com/about/" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: '#7B99A8', textDecoration: 'none' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#7B99A8'}
-                    data-testid="footer-link-about"
-                  >
-                    About Us
-                  </a>
-                </li>
-                <li>
-                  <a 
-                    href="https://conneqthealth.com/contact/" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: '#7B99A8', textDecoration: 'none' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#7B99A8'}
-                    data-testid="footer-link-contact"
-                  >
-                    Contact
-                  </a>
-                </li>
-                <li>
-                  <a 
-                    href="https://conneqthealth.com/careers/" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: '#7B99A8', textDecoration: 'none' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#7B99A8'}
-                    data-testid="footer-link-careers"
-                  >
-                    Careers
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Products Column */}
-            <div>
-              <h4 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Products</h4>
-              <ul className="space-y-3">
-                <li>
-                  <a 
-                    href="https://conneqthealth.com/sphygmocor/" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: '#7B99A8', textDecoration: 'none' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#7B99A8'}
-                    data-testid="footer-link-sphygmocor"
-                  >
-                    SphygmoCor
-                  </a>
-                </li>
-                <li>
-                  <a 
-                    href="https://conneqthealth.com/solutions/" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: '#7B99A8', textDecoration: 'none' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#7B99A8'}
-                    data-testid="footer-link-solutions"
-                  >
-                    Solutions
-                  </a>
-                </li>
-                <li>
-                  <a 
-                    href="https://conneqthealth.com/clinical-applications/" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: '#7B99A8', textDecoration: 'none' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#7B99A8'}
-                    data-testid="footer-link-clinical"
-                  >
-                    Clinical Applications
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Resources Column */}
-            <div>
-              <h4 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Resources</h4>
-              <ul className="space-y-3">
-                <li>
-                  <a 
-                    href="/" 
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: '#7B99A8', textDecoration: 'none' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#7B99A8'}
-                    data-testid="footer-link-research"
-                  >
-                    Research Publications
-                  </a>
-                </li>
-                <li>
-                  <a 
-                    href="https://conneqthealth.com/education/" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: '#7B99A8', textDecoration: 'none' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#7B99A8'}
-                    data-testid="footer-link-education"
-                  >
-                    Education
-                  </a>
-                </li>
-                <li>
-                  <a 
-                    href="https://conneqthealth.com/support/" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: '#7B99A8', textDecoration: 'none' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#7B99A8'}
-                    data-testid="footer-link-support"
-                  >
-                    Support
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Legal Column */}
-            <div>
-              <h4 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Legal</h4>
-              <ul className="space-y-3">
-                <li>
-                  <a 
-                    href="https://conneqthealth.com/privacy-policy/" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: '#7B99A8', textDecoration: 'none' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#7B99A8'}
-                    data-testid="footer-link-privacy"
-                  >
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a 
-                    href="https://conneqthealth.com/terms-of-use/" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: '#7B99A8', textDecoration: 'none' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#7B99A8'}
-                    data-testid="footer-link-terms"
-                  >
-                    Terms of Use
-                  </a>
-                </li>
-                <li>
-                  <a 
-                    href="https://conneqthealth.com/cookie-policy/" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: '#7B99A8', textDecoration: 'none' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#7B99A8'}
-                    data-testid="footer-link-cookies"
-                  >
-                    Cookie Policy
-                  </a>
-                </li>
-              </ul>
-            </div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 text-center">
+          {/* CONNEQT Health Logo */}
+          <div className="mb-8">
+            <a 
+              href="https://conneqthealth.com" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block"
+              data-testid="footer-logo"
+            >
+              <div style={{ letterSpacing: '0.3em', fontSize: '24px', fontWeight: '400', color: '#242422' }}>
+                CONNEQT<span style={{ fontSize: '10px', verticalAlign: 'super' }}>®</span>
+              </div>
+              <div style={{ letterSpacing: '0.4em', fontSize: '12px', fontWeight: '300', color: '#6B7280', marginTop: '2px' }}>
+                Health
+              </div>
+            </a>
           </div>
 
-          {/* Divider */}
-          <div className="border-t mb-8" style={{ borderColor: '#444' }}></div>
+          {/* Purple CTA Button */}
+          <a
+            href="https://conneqthealth.com/#newsletter"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block px-8 py-3 rounded-[5px] text-sm font-medium transition-all duration-200 hover:opacity-90 mb-10"
+            style={{ backgroundColor: '#AF87FF', color: '#FFFFFF', textDecoration: 'none' }}
+            data-testid="footer-newsletter-button"
+          >
+            Sign Up for Insights & Early Offers
+          </a>
 
-          {/* Bottom Section */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            {/* Logo and Copyright */}
-            <div className="flex flex-col items-center md:items-start gap-2">
-              <a 
-                href="https://conneqthealth.com" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xl font-bold transition-colors duration-200"
-                style={{ color: '#FFFFFF', textDecoration: 'none' }}
-                data-testid="footer-logo"
-              >
-                CONNEQT<span style={{ color: '#AF87FF' }}>Health</span>
-              </a>
-              <p className="text-xs" style={{ color: '#7B99A8' }} data-testid="footer-copyright">
-                © {new Date().getFullYear()} CONNEQT Health. All rights reserved.
-              </p>
-            </div>
+          {/* Navigation Links - Row 1 */}
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4">
+            <a href="https://conneqthealth.com/why-conneqt/" target="_blank" rel="noopener noreferrer" className="text-sm transition-colors duration-200" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Why CONNEQT</a>
+            <a href="https://conneqthealth.com/how-it-works/" target="_blank" rel="noopener noreferrer" className="text-sm transition-colors duration-200" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>How it Works</a>
+            <a href="https://conneqthealth.com/onboarding/" target="_blank" rel="noopener noreferrer" className="text-sm transition-colors duration-200" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Onboarding</a>
+            <a href="https://conneqthealth.com/insights/" target="_blank" rel="noopener noreferrer" className="text-sm transition-colors duration-200" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Insights</a>
+            <a href="https://conneqthealth.com/in-the-news/" target="_blank" rel="noopener noreferrer" className="text-sm transition-colors duration-200" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>In the News</a>
+            <a href="https://conneqthealth.com/support/" target="_blank" rel="noopener noreferrer" className="text-sm transition-colors duration-200" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Support</a>
+            <a href="https://conneqthealth.com/join-us/" target="_blank" rel="noopener noreferrer" className="text-sm transition-colors duration-200" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Join Us</a>
+            <a href="https://conneqthealth.com/corporate-investors/" target="_blank" rel="noopener noreferrer" className="text-sm transition-colors duration-200" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Corporate & Investors</a>
+          </div>
 
-            {/* Social Links */}
-            <div className="flex items-center gap-4">
-              <a 
-                href="https://www.linkedin.com/company/conneqthealth/" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
-                style={{ backgroundColor: '#333', color: '#7B99A8' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#AF87FF';
-                  e.currentTarget.style.color = '#FFFFFF';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#333';
-                  e.currentTarget.style.color = '#7B99A8';
-                }}
-                data-testid="footer-social-linkedin"
-                aria-label="LinkedIn"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-              </a>
-              <a 
-                href="https://twitter.com/conneqthealth" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
-                style={{ backgroundColor: '#333', color: '#7B99A8' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#AF87FF';
-                  e.currentTarget.style.color = '#FFFFFF';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#333';
-                  e.currentTarget.style.color = '#7B99A8';
-                }}
-                data-testid="footer-social-twitter"
-                aria-label="Twitter"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                </svg>
-              </a>
-              <a 
-                href="https://www.youtube.com/@conneqthealth" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
-                style={{ backgroundColor: '#333', color: '#7B99A8' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#AF87FF';
-                  e.currentTarget.style.color = '#FFFFFF';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#333';
-                  e.currentTarget.style.color = '#7B99A8';
-                }}
-                data-testid="footer-social-youtube"
-                aria-label="YouTube"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                </svg>
-              </a>
-            </div>
+          {/* Navigation Links - Row 2 */}
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-10">
+            <a href="https://conneqthealth.com/affiliate-program/" target="_blank" rel="noopener noreferrer" className="text-sm transition-colors duration-200" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Affiliate Program</a>
+            <a href="https://conneqthealth.com/privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-sm transition-colors duration-200" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Privacy Policy</a>
+            <a href="https://conneqthealth.com/editorial-guidelines/" target="_blank" rel="noopener noreferrer" className="text-sm transition-colors duration-200" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Editorial Guidelines</a>
+          </div>
 
-            {/* Location */}
-            <div className="text-center md:text-right">
-              <p className="text-xs" style={{ color: '#7B99A8' }} data-testid="footer-location">
-                United States | Australia | Worldwide
-              </p>
-              <a 
-                href="https://conneqthealth.com" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs transition-colors duration-200"
-                style={{ color: '#AF87FF', textDecoration: 'none' }}
-                onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#FFFFFF'}
-                onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                data-testid="footer-website-link"
-              >
-                conneqthealth.com
-              </a>
+          {/* Social Media Icons */}
+          <div className="flex justify-center gap-4 mb-10">
+            <a 
+              href="https://twitter.com/conneqthealth" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 rounded-[5px] flex items-center justify-center transition-all duration-200"
+              style={{ border: '1px solid #D1D5DB', color: '#4B5563', backgroundColor: 'transparent' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#AF87FF';
+                e.currentTarget.style.color = '#AF87FF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#D1D5DB';
+                e.currentTarget.style.color = '#4B5563';
+              }}
+              data-testid="footer-social-twitter"
+              aria-label="X (Twitter)"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </a>
+            <a 
+              href="https://www.instagram.com/conneqthealth/" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 rounded-[5px] flex items-center justify-center transition-all duration-200"
+              style={{ border: '1px solid #D1D5DB', color: '#4B5563', backgroundColor: 'transparent' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#AF87FF';
+                e.currentTarget.style.color = '#AF87FF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#D1D5DB';
+                e.currentTarget.style.color = '#4B5563';
+              }}
+              data-testid="footer-social-instagram"
+              aria-label="Instagram"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+            </a>
+            <a 
+              href="https://www.linkedin.com/company/conneqthealth/" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 rounded-[5px] flex items-center justify-center transition-all duration-200"
+              style={{ border: '1px solid #D1D5DB', color: '#4B5563', backgroundColor: 'transparent' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#AF87FF';
+                e.currentTarget.style.color = '#AF87FF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#D1D5DB';
+                e.currentTarget.style.color = '#4B5563';
+              }}
+              data-testid="footer-social-linkedin"
+              aria-label="LinkedIn"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+              </svg>
+            </a>
+          </div>
+
+          {/* Partner Logos */}
+          <div className="mb-6">
+            <div className="flex flex-wrap justify-center items-center gap-8 mb-4">
+              <div className="text-xs font-medium" style={{ color: '#6B7280' }}>DTRA</div>
+              <div className="text-xs" style={{ color: '#6B7280' }}>American Heart Association<br/>Center for Health<br/>Technology & Innovation</div>
+              <div className="text-xs font-medium" style={{ color: '#6B7280' }}>AdvaMed</div>
             </div>
+            <p className="text-xs" style={{ color: '#9CA3AF' }}>
+              CONNEQT is pleased to be a member of these esteemed professional organizations.
+            </p>
+          </div>
+
+          {/* Copyright */}
+          <div className="border-t pt-6" style={{ borderColor: '#E5E7EB' }}>
+            <p className="text-xs" style={{ color: '#9CA3AF', lineHeight: '1.6' }}>
+              Copyright © {new Date().getFullYear()} CONNEQT Health. All Rights Reserved. CONNEQT and the CONNEQT logo are either registered trademarks or trademarks of CONNEQT Health in the United States and/or other countries.
+            </p>
           </div>
         </div>
       </footer>
