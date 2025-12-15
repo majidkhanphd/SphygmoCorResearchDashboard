@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/navigation";
 import HeroBanner from "@/components/hero-banner";
 import FeaturedCarousel from "@/components/featured-carousel";
+import { CollapsibleSection } from "@/components/collapsible-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -273,7 +274,8 @@ export default function Home() {
     const countB = backendFilterCounts.venues[b] || 0;
     return countB - countA; // Sort descending by count
   });
-  const visibleVenues = showAllVenues ? venues : venues.slice(0, 10);
+  const initialVenues = venues.slice(0, 10);
+  const hiddenVenues = venues.slice(10);
 
   // Get research areas from schema - sorted by count (descending)
   const researchAreas = Object.entries(RESEARCH_AREA_DISPLAY_NAMES).sort((a, b) => {
@@ -281,7 +283,8 @@ export default function Home() {
     const countB = filterCounts.areas[b[0]] || 0;
     return countB - countA; // Sort descending by count
   });
-  const visibleAreas = showAllAreas ? researchAreas : researchAreas.slice(0, 5);
+  const initialAreas = researchAreas.slice(0, 5);
+  const hiddenAreas = researchAreas.slice(5);
 
   // Get years from 2000 to present
   const currentYear = new Date().getFullYear();
@@ -289,7 +292,8 @@ export default function Home() {
     { length: currentYear - 2000 + 1 }, 
     (_, i) => currentYear - i
   );
-  const visibleYears = showAllYears ? availableYears : availableYears.slice(0, 5);
+  const initialYears = availableYears.slice(0, 5);
+  const hiddenYears = availableYears.slice(5);
   
   // Calculate total count for all years
   const totalYearCount = Object.values(filterCounts.years).reduce((sum, count) => sum + (count as number), 0);
@@ -604,25 +608,19 @@ export default function Home() {
                 >
                   All
                 </button>
-                <AnimatePresence mode="popLayout" initial={false}>
-                {visibleAreas.map(([slug, displayName]) => {
+                {initialAreas.map(([slug, displayName]) => {
                   const count = filterCounts.areas[slug] || 0;
                   const categoryColor = CATEGORY_COLORS[slug];
                   return (
-                    <motion.button
+                    <button
                       key={slug}
-                      layout
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                       onClick={() => handleResearchAreaChange(slug)}
                       className={`flex items-center text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                         selectedResearchArea === slug
                           ? "font-medium"
                           : "hover:opacity-80"
                       }`}
-                      style={{ overflow: "hidden", color: selectedResearchArea === slug ? '#1D1D1F' : '#6E6E73' }}
+                      style={{ color: selectedResearchArea === slug ? '#1D1D1F' : '#6E6E73' }}
                       data-testid={`area-${slug}`}
                       aria-pressed={selectedResearchArea === slug}
                       aria-label={`Filter by ${displayName}${count > 0 ? ` (${count} publications)` : ''}`}
@@ -631,29 +629,58 @@ export default function Home() {
                         <span style={{ color: categoryColor.text, marginRight: '6px', fontSize: '10px' }}>●</span>
                       )}
                       <span>{displayName} {count > 0 && `(${count})`}</span>
-                    </motion.button>
+                    </button>
                   );
                 })}
-                </AnimatePresence>
-                {researchAreas.length > 5 && (
-                  <button
-                    onClick={() => setShowAllAreas(!showAllAreas)}
-                    className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
-                    style={{ color: '#AF87FF' }}
-                    data-testid="toggle-areas"
-                    aria-expanded={showAllAreas}
-                    aria-label={showAllAreas ? "Show fewer research areas" : "Show more research areas"}
-                  >
-                    {showAllAreas ? (
-                      <>
-                        Less <ChevronUp className="ml-1 h-4 w-4" />
-                      </>
-                    ) : (
-                      <>
-                        More <ChevronDown className="ml-1 h-4 w-4" />
-                      </>
-                    )}
-                  </button>
+                {hiddenAreas.length > 0 && (
+                  <>
+                    <CollapsibleSection isExpanded={showAllAreas}>
+                      <div className="space-y-1">
+                        {hiddenAreas.map(([slug, displayName]) => {
+                          const count = filterCounts.areas[slug] || 0;
+                          const categoryColor = CATEGORY_COLORS[slug];
+                          return (
+                            <button
+                              key={slug}
+                              onClick={() => handleResearchAreaChange(slug)}
+                              className={`flex items-center text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
+                                selectedResearchArea === slug
+                                  ? "font-medium"
+                                  : "hover:opacity-80"
+                              }`}
+                              style={{ color: selectedResearchArea === slug ? '#1D1D1F' : '#6E6E73' }}
+                              data-testid={`area-${slug}`}
+                              aria-pressed={selectedResearchArea === slug}
+                              aria-label={`Filter by ${displayName}${count > 0 ? ` (${count} publications)` : ''}`}
+                            >
+                              {categoryColor && (
+                                <span style={{ color: categoryColor.text, marginRight: '6px', fontSize: '10px' }}>●</span>
+                              )}
+                              <span>{displayName} {count > 0 && `(${count})`}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </CollapsibleSection>
+                    <button
+                      onClick={() => setShowAllAreas(!showAllAreas)}
+                      className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
+                      style={{ color: '#AF87FF' }}
+                      data-testid="toggle-areas"
+                      aria-expanded={showAllAreas}
+                      aria-label={showAllAreas ? "Show fewer research areas" : "Show more research areas"}
+                    >
+                      {showAllAreas ? (
+                        <>
+                          Less <ChevronUp className="ml-1 h-4 w-4" />
+                        </>
+                      ) : (
+                        <>
+                          More <ChevronDown className="ml-1 h-4 w-4" />
+                        </>
+                      )}
+                    </button>
+                  </>
                 )}
               </div>
             </section>
@@ -698,52 +725,71 @@ export default function Home() {
                 >
                   All years {totalYearCount > 0 && `(${totalYearCount})`}
                 </button>
-                <AnimatePresence mode="popLayout" initial={false}>
-                {visibleYears.map((year) => {
+                {initialYears.map((year) => {
                   const count = filterCounts.years[year] || 0;
                   return (
-                    <motion.button
+                    <button
                       key={year}
-                      layout
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                       onClick={() => handleYearChange(year)}
                       className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                         selectedYear === year
                           ? "font-medium"
                           : "hover:opacity-80"
                       }`}
-                      style={{ overflow: "hidden", color: selectedYear === year ? '#1D1D1F' : '#6E6E73' }}
+                      style={{ color: selectedYear === year ? '#1D1D1F' : '#6E6E73' }}
                       data-testid={`year-${year}`}
                       aria-pressed={selectedYear === year}
                       aria-label={`Filter by ${year}${count > 0 ? ` (${count} publications)` : ''}`}
                     >
                       {year} {count > 0 && `(${count})`}
-                    </motion.button>
+                    </button>
                   );
                 })}
-                </AnimatePresence>
-                {availableYears.length > 5 && (
-                  <button
-                    onClick={() => setShowAllYears(!showAllYears)}
-                    className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
-                    style={{ color: '#AF87FF' }}
-                    data-testid="toggle-years"
-                    aria-expanded={showAllYears}
-                    aria-label={showAllYears ? "Show fewer years" : "Show more years"}
-                  >
-                    {showAllYears ? (
-                      <>
-                        Less <ChevronUp className="ml-1 h-4 w-4" />
-                      </>
-                    ) : (
-                      <>
-                        More <ChevronDown className="ml-1 h-4 w-4" />
-                      </>
-                    )}
-                  </button>
+                {hiddenYears.length > 0 && (
+                  <>
+                    <CollapsibleSection isExpanded={showAllYears}>
+                      <div className="space-y-1">
+                        {hiddenYears.map((year) => {
+                          const count = filterCounts.years[year] || 0;
+                          return (
+                            <button
+                              key={year}
+                              onClick={() => handleYearChange(year)}
+                              className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
+                                selectedYear === year
+                                  ? "font-medium"
+                                  : "hover:opacity-80"
+                              }`}
+                              style={{ color: selectedYear === year ? '#1D1D1F' : '#6E6E73' }}
+                              data-testid={`year-${year}`}
+                              aria-pressed={selectedYear === year}
+                              aria-label={`Filter by ${year}${count > 0 ? ` (${count} publications)` : ''}`}
+                            >
+                              {year} {count > 0 && `(${count})`}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </CollapsibleSection>
+                    <button
+                      onClick={() => setShowAllYears(!showAllYears)}
+                      className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
+                      style={{ color: '#AF87FF' }}
+                      data-testid="toggle-years"
+                      aria-expanded={showAllYears}
+                      aria-label={showAllYears ? "Show fewer years" : "Show more years"}
+                    >
+                      {showAllYears ? (
+                        <>
+                          Less <ChevronUp className="ml-1 h-4 w-4" />
+                        </>
+                      ) : (
+                        <>
+                          More <ChevronDown className="ml-1 h-4 w-4" />
+                        </>
+                      )}
+                    </button>
+                  </>
                 )}
               </div>
             </section>
@@ -795,24 +841,14 @@ export default function Home() {
                 >
                   All Journals
                 </button>
-                <AnimatePresence mode="popLayout" initial={false}>
-                {visibleVenues.map((venue) => {
+                {initialVenues.map((venue) => {
                   const count = filterCounts.venues[venue] || 0;
                   const hasChildren = isParentJournal(venue);
                   const isExpanded = expandedParentJournals.has(venue);
                   const childJournals = hasChildren ? getChildJournals(venue) : [];
                   
                   return (
-                    <motion.div 
-                      key={venue}
-                      layout
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      style={{ overflow: "hidden" }}
-                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                    >
-                      {/* Parent or regular journal */}
+                    <div key={venue}>
                       <div className="flex items-center">
                         {hasChildren && (
                           <motion.button
@@ -825,7 +861,7 @@ export default function Home() {
                             aria-label={isExpanded ? `Collapse ${venue}` : `Expand ${venue}`}
                             data-testid={`toggle-journal-${venue.replace(/\s+/g, '-').toLowerCase()}`}
                             animate={{ rotate: isExpanded ? 90 : 0 }}
-                            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                            transition={{ type: "spring", damping: 20, stiffness: 300 }}
                           >
                             <ChevronRight className="h-3 w-3" />
                           </motion.button>
@@ -846,24 +882,12 @@ export default function Home() {
                         </button>
                       </div>
                       
-                      {/* Child journals (shown when expanded) */}
-                      <AnimatePresence mode="popLayout" initial={false}>
-                      {hasChildren && isExpanded && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          style={{ overflow: "hidden" }}
-                          transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                        >
-                          {childJournals.map((childJournal) => {
-                            return (
-                              <motion.button
+                      {hasChildren && (
+                        <CollapsibleSection isExpanded={isExpanded}>
+                          <div className="space-y-1">
+                            {childJournals.map((childJournal) => (
+                              <button
                                 key={childJournal}
-                                initial={{ opacity: 0, x: -8 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -8 }}
-                                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                                 onClick={() => handleVenueChange(childJournal)}
                                 className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 ml-6 sm:ml-8 apple-transition apple-focus-ring break-words ${
                                   selectedVenue === childJournal
@@ -878,35 +902,108 @@ export default function Home() {
                                 aria-pressed={selectedVenue === childJournal}
                               >
                                 {childJournal}
-                              </motion.button>
-                            );
-                          })}
-                        </motion.div>
+                              </button>
+                            ))}
+                          </div>
+                        </CollapsibleSection>
                       )}
-                      </AnimatePresence>
-                    </motion.div>
+                    </div>
                   );
                 })}
-                </AnimatePresence>
-                {venues.length > 10 && (
-                  <button
-                    onClick={() => setShowAllVenues(!showAllVenues)}
-                    className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
-                    style={{ color: '#AF87FF' }}
-                    data-testid="toggle-venues"
-                    aria-expanded={showAllVenues}
-                    aria-label={showAllVenues ? "Show fewer journals" : "Show more journals"}
-                  >
-                    {showAllVenues ? (
-                      <>
-                        Less <ChevronUp className="ml-1 h-4 w-4" />
-                      </>
-                    ) : (
-                      <>
-                        More <ChevronDown className="ml-1 h-4 w-4" />
-                      </>
-                    )}
-                  </button>
+                {hiddenVenues.length > 0 && (
+                  <>
+                    <CollapsibleSection isExpanded={showAllVenues}>
+                      <div className="space-y-1">
+                        {hiddenVenues.map((venue) => {
+                          const count = filterCounts.venues[venue] || 0;
+                          const hasChildren = isParentJournal(venue);
+                          const isExpanded = expandedParentJournals.has(venue);
+                          const childJournals = hasChildren ? getChildJournals(venue) : [];
+                          
+                          return (
+                            <div key={venue}>
+                              <div className="flex items-center">
+                                {hasChildren && (
+                                  <motion.button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleParentJournal(venue);
+                                    }}
+                                    className="flex-shrink-0 mr-1 apple-transition apple-focus-ring"
+                                    style={{ color: '#6E6E73' }}
+                                    aria-label={isExpanded ? `Collapse ${venue}` : `Expand ${venue}`}
+                                    data-testid={`toggle-journal-${venue.replace(/\s+/g, '-').toLowerCase()}`}
+                                    animate={{ rotate: isExpanded ? 90 : 0 }}
+                                    transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                                  >
+                                    <ChevronRight className="h-3 w-3" />
+                                  </motion.button>
+                                )}
+                                <button
+                                  onClick={() => handleVenueChange(venue)}
+                                  className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 apple-transition apple-focus-ring break-words ${
+                                    selectedVenue === venue
+                                      ? "font-medium"
+                                      : "hover:opacity-80"
+                                  } ${!hasChildren ? 'ml-4' : ''}`}
+                                  style={{ color: selectedVenue === venue ? '#1D1D1F' : '#6E6E73' }}
+                                  data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
+                                  aria-pressed={selectedVenue === venue}
+                                  aria-label={`Filter by ${venue}${count > 0 ? ` (${count} publications)` : ''}`}
+                                >
+                                  {venue} {count > 0 && `(${count})`}
+                                </button>
+                              </div>
+                              
+                              {hasChildren && (
+                                <CollapsibleSection isExpanded={isExpanded}>
+                                  <div className="space-y-1">
+                                    {childJournals.map((childJournal) => (
+                                      <button
+                                        key={childJournal}
+                                        onClick={() => handleVenueChange(childJournal)}
+                                        className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 ml-6 sm:ml-8 apple-transition apple-focus-ring break-words ${
+                                          selectedVenue === childJournal
+                                            ? "font-medium"
+                                            : "hover:opacity-80"
+                                        }`}
+                                        style={{ 
+                                          color: selectedVenue === childJournal ? '#1D1D1F' : '#86868B',
+                                          fontSize: '13px'
+                                        }}
+                                        data-testid={`venue-child-${childJournal.replace(/\s+/g, '-').toLowerCase()}`}
+                                        aria-pressed={selectedVenue === childJournal}
+                                      >
+                                        {childJournal}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </CollapsibleSection>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CollapsibleSection>
+                    <button
+                      onClick={() => setShowAllVenues(!showAllVenues)}
+                      className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
+                      style={{ color: '#AF87FF' }}
+                      data-testid="toggle-venues"
+                      aria-expanded={showAllVenues}
+                      aria-label={showAllVenues ? "Show fewer journals" : "Show more journals"}
+                    >
+                      {showAllVenues ? (
+                        <>
+                          Less <ChevronUp className="ml-1 h-4 w-4" />
+                        </>
+                      ) : (
+                        <>
+                          More <ChevronDown className="ml-1 h-4 w-4" />
+                        </>
+                      )}
+                    </button>
+                  </>
                 )}
               </div>
             </section>
