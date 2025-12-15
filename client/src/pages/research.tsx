@@ -1215,9 +1215,13 @@ export default function Home() {
                 data-testid="footer-newsletter-input"
               />
               <button
+                type="button"
                 className="px-6 py-3 rounded-md text-sm font-medium transition-all duration-200 hover:opacity-90"
                 style={{ backgroundColor: '#242422', color: '#FFFFFF' }}
                 data-testid="footer-newsletter-button"
+                onClick={() => {
+                  window.open('https://conneqthealth.com/#newsletter', '_blank', 'noopener,noreferrer');
+                }}
               >
                 Subscribe
               </button>
