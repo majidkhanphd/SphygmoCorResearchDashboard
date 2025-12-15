@@ -72,7 +72,12 @@ export function PaginationControls({
           >
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent 
+            position="popper" 
+            sideOffset={4}
+            className="z-[9999]"
+            style={{ zIndex: 9999 }}
+          >
             <SelectItem value="25">25 per page</SelectItem>
             <SelectItem value="50">50 per page</SelectItem>
             <SelectItem value="100">100 per page</SelectItem>

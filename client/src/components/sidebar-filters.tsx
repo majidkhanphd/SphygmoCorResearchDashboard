@@ -81,7 +81,12 @@ export default function SidebarFilters({
             <SelectTrigger data-testid="year-filter-select">
               <SelectValue placeholder="All Years" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent 
+              position="popper" 
+              sideOffset={4}
+              className="z-[9999]"
+              style={{ zIndex: 9999 }}
+            >
               <SelectItem value="all">All Years</SelectItem>
               {years.map((year) => (
                 <SelectItem key={year} value={year.toString()}>
