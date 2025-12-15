@@ -43,65 +43,15 @@
     <script type="module" src="/src/main.tsx"></script>
     <script>
       (function () {
-        const TYPE = "CONNEQT_IFRAME_HEIGHT";
-        let lastHeight = 0;
-        let debounceTimer = null;
-
-        function scheduleSend() {
-          if (debounceTimer) return;
-          debounceTimer = setTimeout(() => {
-            debounceTimer = null;
-            sendHeight();
-          }, 100);
-        }
-
-        function measureHeight() {
-          const body = document.body;
-          const html = document.documentElement;
-          const root = document.getElementById("root");
-          
-          return Math.ceil(Math.max(
-            body.scrollHeight || 0,
-            html.scrollHeight || 0,
-            root ? root.scrollHeight : 0
-          ));
-        }
-
-        function sendHeight() {
-          const height = measureHeight();
-          if (height !== lastHeight && height > 0) {
-            lastHeight = height;
-            parent.postMessage({ type: TYPE, height }, "*");
+        window.CONNEQT_IFRAME_HEIGHT_TYPE = "CONNEQT_IFRAME_HEIGHT";
+        window.CONNEQT_LAST_HEIGHT = 0;
+        
+        window.sendIframeHeight = function(height) {
+          if (height && height !== window.CONNEQT_LAST_HEIGHT && height > 0) {
+            window.CONNEQT_LAST_HEIGHT = height;
+            parent.postMessage({ type: window.CONNEQT_IFRAME_HEIGHT_TYPE, height: height }, "*");
           }
-        }
-
-        window.addEventListener("load", scheduleSend);
-        window.addEventListener("resize", scheduleSend);
-
-        ["pushState", "replaceState"].forEach(fn => {
-          const orig = history[fn];
-          history[fn] = function () {
-            const ret = orig.apply(this, arguments);
-            scheduleSend();
-            return ret;
-          };
-        });
-        window.addEventListener("popstate", scheduleSend);
-
-        const ro = new ResizeObserver(scheduleSend);
-        ro.observe(document.body);
-
-        window.addEventListener("load", () => {
-          document.querySelectorAll("img").forEach(img => {
-            if (!img.complete) img.addEventListener("load", scheduleSend, { once: true });
-          });
-        });
-
-        if (document.fonts && document.fonts.ready) {
-          document.fonts.ready.then(scheduleSend).catch(() => {});
-        }
-
-        scheduleSend();
+        };
       })();
     </script>
   </body>
