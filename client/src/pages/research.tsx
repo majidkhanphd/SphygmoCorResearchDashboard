@@ -398,7 +398,7 @@ export default function Home() {
                 }}
                 onFocus={(e) => {
                   e.target.style.backgroundColor = '#FFFFFF';
-                  e.target.style.borderColor = '#007AFF';
+                  e.target.style.borderColor = '#AF87FF';
                 }}
                 onBlur={(e) => {
                   e.target.style.backgroundColor = '#F6F6F6';
@@ -462,7 +462,7 @@ export default function Home() {
               <button
                 onClick={clearAllFilters}
                 className="text-sm transition-colors"
-                style={{ color: '#007AFF' }}
+                style={{ color: '#AF87FF' }}
                 data-testid="clear-all-filters"
               >
                 Clear all
@@ -563,7 +563,7 @@ export default function Home() {
                 data-testid="collapse-sidebar-button"
                 title="Collapse sidebar"
               >
-                <ChevronLeft className="h-5 w-5" style={{ color: '#007AFF' }} />
+                <ChevronLeft className="h-5 w-5" style={{ color: '#AF87FF' }} />
               </button>
             )}
             
@@ -582,7 +582,7 @@ export default function Home() {
                 <button
                   onClick={() => handleResearchAreaChange(null)}
                   className="text-sm mb-3 apple-transition apple-focus-ring break-words"
-                  style={{ color: '#007AFF' }}
+                  style={{ color: '#AF87FF' }}
                   data-testid="clear-research-areas"
                   aria-label="Clear research area filter"
                 >
@@ -638,7 +638,7 @@ export default function Home() {
                   <button
                     onClick={() => setShowAllAreas(!showAllAreas)}
                     className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
-                    style={{ color: '#007AFF' }}
+                    style={{ color: '#AF87FF' }}
                     data-testid="toggle-areas"
                     aria-expanded={showAllAreas}
                     aria-label={showAllAreas ? "Show fewer research areas" : "Show more research areas"}
@@ -675,7 +675,7 @@ export default function Home() {
                 <button
                   onClick={() => handleYearChange(null)}
                   className="text-sm mb-3 apple-transition apple-focus-ring break-words"
-                  style={{ color: '#007AFF' }}
+                  style={{ color: '#AF87FF' }}
                   data-testid="clear-years"
                   aria-label="Clear year filter"
                 >
@@ -727,7 +727,7 @@ export default function Home() {
                   <button
                     onClick={() => setShowAllYears(!showAllYears)}
                     className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
-                    style={{ color: '#007AFF' }}
+                    style={{ color: '#AF87FF' }}
                     data-testid="toggle-years"
                     aria-expanded={showAllYears}
                     aria-label={showAllYears ? "Show fewer years" : "Show more years"}
@@ -764,7 +764,7 @@ export default function Home() {
                 <button
                   onClick={() => handleVenueChange(null)}
                   className="text-sm mb-3 apple-transition apple-focus-ring break-words"
-                  style={{ color: '#007AFF' }}
+                  style={{ color: '#AF87FF' }}
                   data-testid="clear-venues"
                   aria-label="Clear journal filter"
                 >
@@ -889,7 +889,7 @@ export default function Home() {
                   <button
                     onClick={() => setShowAllVenues(!showAllVenues)}
                     className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
-                    style={{ color: '#007AFF' }}
+                    style={{ color: '#AF87FF' }}
                     data-testid="toggle-venues"
                     aria-expanded={showAllVenues}
                     aria-label={showAllVenues ? "Show fewer journals" : "Show more journals"}
@@ -1052,7 +1052,7 @@ export default function Home() {
                               rel="noopener noreferrer"
                               className="transition-colors duration-200"
                               style={{ color: '#1D1D1F', textDecoration: 'none' }}
-                              onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#007AFF'}
+                              onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
                               onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
                               data-testid="publication-title-link"
                             >
@@ -1087,20 +1087,20 @@ export default function Home() {
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 px-2 py-1 rounded transition-colors duration-200"
                                 style={{
-                                  backgroundColor: '#F0F7FF',
-                                  color: '#007AFF',
+                                  backgroundColor: '#F5F0FF',
+                                  color: '#AF87FF',
                                   fontSize: '12px',
                                   fontWeight: '500',
                                   textDecoration: 'none',
-                                  border: '1px solid #B3D9FF'
+                                  border: '1px solid #D4C4FF'
                                 }}
                                 onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#E0F0FF';
-                                  e.currentTarget.style.borderColor = '#80C7FF';
+                                  e.currentTarget.style.backgroundColor = '#EDE5FF';
+                                  e.currentTarget.style.borderColor = '#C4B0FF';
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#F0F7FF';
-                                  e.currentTarget.style.borderColor = '#B3D9FF';
+                                  e.currentTarget.style.backgroundColor = '#F5F0FF';
+                                  e.currentTarget.style.borderColor = '#D4C4FF';
                                 }}
                                 data-testid="doi-badge"
                               >
@@ -1185,7 +1185,7 @@ export default function Home() {
               aria-label="Expand sidebar"
               data-testid="expand-sidebar-button"
             >
-              <ChevronRight size={24} style={{ color: '#007AFF', strokeWidth: 2 }} />
+              <ChevronRight size={24} style={{ color: '#AF87FF', strokeWidth: 2 }} />
             </motion.button>
           )}
         </AnimatePresence>

@@ -376,13 +376,14 @@ export default function HeroBanner() {
                 letterSpacing: '-0.03em',
                 lineHeight: '1.2',
                 color: '#ffffff',
-                textShadow: '0 2px 12px rgba(0, 0, 0, 0.4)'
+                textShadow: '0 2px 12px rgba(0, 0, 0, 0.4)',
+                fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif'
               }}
               data-testid="hero-title"
             >
-              Research
+              <span style={{ color: '#AF87FF' }}>Research</span>
               <br />
-              Fueled by SphygmoCor<span style={{ fontSize: '0.5em', verticalAlign: 'super' }}>©</span>
+              Fueled by <span style={{ color: '#AF87FF' }}>SphygmoCor</span><span style={{ fontSize: '0.5em', verticalAlign: 'super', color: '#AF87FF' }}>©</span>
               <br />
             </h1>
           </div>

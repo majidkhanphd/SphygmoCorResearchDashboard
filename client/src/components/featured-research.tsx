@@ -60,7 +60,7 @@ export default function FeaturedResearch() {
             <div className="flex-1">
               <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
                 {featuredArticle.categories?.map((category: string, index: number) => (
-                  <span key={index} className="inline-flex items-center rounded-full" style={{ paddingLeft: '12px', paddingRight: '12px', paddingTop: '4px', paddingBottom: '4px', fontSize: '12px', fontWeight: '400', color: '#007AFF', backgroundColor: '#F0F7FF', border: '1px solid #007AFF20' }} data-testid={`category-badge-${index}`}>
+                  <span key={index} className="inline-flex items-center rounded-full" style={{ paddingLeft: '12px', paddingRight: '12px', paddingTop: '4px', paddingBottom: '4px', fontSize: '12px', fontWeight: '400', color: '#AF87FF', backgroundColor: '#F5F0FF', border: '1px solid #AF87FF20' }} data-testid={`category-badge-${index}`}>
                     {category}
                   </span>
                 ))}
@@ -77,7 +77,7 @@ export default function FeaturedResearch() {
                   className="inline-flex items-center justify-center rounded-lg transition-all duration-200 flex-shrink-0"
                   style={{
                     padding: '8px',
-                    color: '#007AFF',
+                    color: '#AF87FF',
                     backgroundColor: 'transparent',
                     border: '1px solid #E5E5E7',
                     cursor: 'pointer'
@@ -113,7 +113,7 @@ export default function FeaturedResearch() {
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="inline-flex items-center hover:underline"
-                        style={{ color: '#007AFF' }}
+                        style={{ color: '#AF87FF' }}
                         data-testid="featured-doi-link"
                       >
                         DOI

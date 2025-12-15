@@ -34,7 +34,7 @@ export default function PublicationCard({ publication }: PublicationCardProps) {
       {/* Title */}
       <h3 
         id={`title-${publication.id}`}
-        className="text-lg font-semibold text-gray-900 dark:text-white mb-4 leading-tight group-hover:text-[#007AFF] dark:group-hover:text-[#007AFF] apple-transition" 
+        className="text-lg font-semibold text-gray-900 dark:text-white mb-4 leading-tight group-hover:text-[#AF87FF] dark:group-hover:text-[#AF87FF] apple-transition" 
         data-testid="publication-title"
       >
         {publication.title}
@@ -67,7 +67,7 @@ export default function PublicationCard({ publication }: PublicationCardProps) {
         {(publication.pubmedUrl || publication.doi) && (
           <button 
             onClick={handleViewPaper}
-            className="text-[#007AFF] dark:text-[#007AFF] text-sm font-medium hover:opacity-80 apple-transition mt-4 inline-flex items-center group/link apple-focus-ring"
+            className="text-[#AF87FF] dark:text-[#AF87FF] text-sm font-medium hover:opacity-80 apple-transition mt-4 inline-flex items-center group/link apple-focus-ring"
             data-testid="view-button"
             aria-label={`Read paper: ${publication.title}`}
           >

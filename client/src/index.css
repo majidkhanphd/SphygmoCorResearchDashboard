@@ -1,47 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Apple's Exact Color Palette - Light Mode */
+  /* CONNEQT Health Brand Color Palette - Light Mode */
   --background: #FFFFFF;
-  --foreground: #1D1D1F;
+  --foreground: #242422;
   --card: #FFFFFF;
-  --card-foreground: #1D1D1F;
+  --card-foreground: #242422;
   --popover: #FFFFFF;
-  --popover-foreground: #1D1D1F;
-  --primary: #007AFF;
+  --popover-foreground: #242422;
+  --primary: #AF87FF;
   --primary-foreground: #FFFFFF;
   --secondary: #F6F6F6;
-  --secondary-foreground: #1D1D1F;
+  --secondary-foreground: #242422;
   --muted: #F6F6F6;
   --muted-foreground: #6E6E73;
-  --accent: #F6F6F6;
-  --accent-foreground: #1D1D1F;
+  --accent: #7B99A8;
+  --accent-foreground: #FFFFFF;
   --destructive: #FF3B30;
   --destructive-foreground: #FFFFFF;
   --border: #E5E5E7;
   --input: #E5E5E7;
-  --ring: #007AFF;
+  --ring: #AF87FF;
   --chart-1: #6E6E73;
-  --chart-2: #1D1D1F;
-  --chart-3: #007AFF;
+  --chart-2: #242422;
+  --chart-3: #AF87FF;
   --chart-4: #F6F6F6;
   --chart-5: #E5E5E7;
   --sidebar: #FAFAFA;
-  --sidebar-foreground: #1D1D1F;
-  --sidebar-primary: #007AFF;
+  --sidebar-foreground: #242422;
+  --sidebar-primary: #AF87FF;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #F6F6F6;
-  --sidebar-accent-foreground: #1D1D1F;
+  --sidebar-accent-foreground: #242422;
   --sidebar-border: #E5E5E7;
-  --sidebar-ring: #007AFF;
-  --font-sans: '-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  --sidebar-ring: #AF87FF;
+  --font-sans: 'Montserrat', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen-Sans', 'Ubuntu', sans-serif;
   --font-serif: 'New York', 'Times', serif;
   --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-  --radius: 12px;
+  --radius: 5px;
   --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
   --shadow-xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
   --shadow-sm: 0px 1px 2px 0px rgba(0, 0, 0, 0.05), 0px 1px 3px 0px rgba(0, 0, 0, 0.1);
@@ -88,7 +88,7 @@
   }
 
   body {
-    font-family: '-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+    font-family: 'Montserrat', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen-Sans', 'Ubuntu', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background-color: var(--background);
@@ -115,7 +115,7 @@
   
   .apple-focus-ring:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+    box-shadow: 0 0 0 3px rgba(175, 135, 255, 0.3);
   }
   
   .apple-button-press:active {

@@ -252,7 +252,7 @@ export default function FeaturedCarousel() {
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="inline-flex items-center hover:underline"
-                            style={{ color: '#007AFF' }}
+                            style={{ color: '#AF87FF' }}
                             data-testid={`card-doi-link-${index}`}
                           >
                             DOI
@@ -281,7 +281,7 @@ export default function FeaturedCarousel() {
                       className="inline-flex items-center justify-center rounded-lg transition-all duration-200 w-full"
                       style={{
                         padding: '8px',
-                        color: '#007AFF',
+                        color: '#AF87FF',
                         backgroundColor: 'transparent',
                         border: '1px solid #E5E5E7',
                         cursor: 'pointer',

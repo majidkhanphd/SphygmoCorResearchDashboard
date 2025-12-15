@@ -26,8 +26,8 @@ export default function Navigation() {
             {/* Future navigation items will go here */}
           </div>
         </div>
-        {/* Simple black accent line */}
-        <div className="h-px bg-black" data-testid="accent-line" />
+        {/* CONNEQT purple accent line */}
+        <div className="h-0.5" style={{ backgroundColor: '#AF87FF' }} data-testid="accent-line" />
       </div>
     </header>
   );
