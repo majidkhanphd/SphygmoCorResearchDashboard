@@ -42,19 +42,41 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      (function () {
-        window.CONNEQT_IFRAME_HEIGHT_TYPE = "CONNEQT_IFRAME_HEIGHT";
-        window.CONNEQT_LAST_HEIGHT = 0;
-        
-        window.sendIframeHeight = function(height, force) {
-          if (height && height > 0) {
-            var shouldSend = force || height !== window.CONNEQT_LAST_HEIGHT;
-            if (shouldSend) {
-              window.CONNEQT_LAST_HEIGHT = height;
-              parent.postMessage({ type: window.CONNEQT_IFRAME_HEIGHT_TYPE, height: height }, "*");
-            }
-          }
-        };
+      (() => {
+        const TYPE = "CONNEQT_IFRAME_HEIGHT";
+        const target =
+          document.getElementById("root") ||
+          document.getElementById("__next") ||
+          document.querySelector("main") ||
+          document.body;
+
+        let last = 0, raf = 0;
+
+        function measure() {
+          return Math.ceil(
+            Math.max(target.scrollHeight || 0, target.offsetHeight || 0)
+          );
+        }
+
+        function send() {
+          raf = 0;
+          const h = measure();
+          if (Math.abs(h - last) < 2) return;
+          last = h;
+          parent.postMessage({ type: TYPE, height: h }, "*");
+        }
+
+        function schedule() {
+          if (!raf) raf = requestAnimationFrame(send);
+        }
+
+        window.addEventListener("load", schedule);
+        window.addEventListener("resize", schedule);
+
+        new ResizeObserver(schedule).observe(target);
+        new MutationObserver(schedule).observe(target, { childList: true, subtree: true, attributes: true, characterData: true });
+
+        schedule();
       })();
     </script>
   </body>

@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search, X, Star, ExternalLink } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
-import { useIframeHeightSync } from "@/hooks/use-iframe-height-sync";
 import { searchPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
 import { getResearchAreaDisplayName, RESEARCH_AREA_DISPLAY_NAMES, RESEARCH_AREAS, getCategoryBadgeName, normalizeCategoryToSlug } from "@shared/schema";
@@ -153,15 +152,6 @@ export default function Home() {
       offset: (currentPage - 1) * perPage
     })
   });
-
-  // Sync iframe height with parent page when content changes
-  useIframeHeightSync([
-    data?.publications?.length,
-    isLoading,
-    perPage,
-    currentPage,
-    isSidebarCollapsed
-  ]);
 
   const handleReset = () => {
     setInputValue("");
