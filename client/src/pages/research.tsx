@@ -1358,12 +1358,12 @@ export default function Home() {
             <a href="https://conneqthealth.com/support/" target="_blank" rel="noopener noreferrer" className="text-xs sm:text-sm transition-colors duration-200 whitespace-nowrap" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Support</a>
             <span className="text-gray-400">•</span>
             <a href="https://conneqthealth.com/join-us/" target="_blank" rel="noopener noreferrer" className="text-xs sm:text-sm transition-colors duration-200 whitespace-nowrap" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Join Us</a>
-            <span className="text-gray-400">•</span>
-            <a href="https://conneqthealth.com/corporate-investors/" target="_blank" rel="noopener noreferrer" className="text-xs sm:text-sm transition-colors duration-200 whitespace-nowrap" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Corporate & Investors</a>
           </div>
 
           {/* Navigation Links - Row 2 */}
           <div className="flex justify-center gap-x-4 gap-y-2 mb-10 flex-wrap">
+            <a href="https://conneqthealth.com/corporate-investors/" target="_blank" rel="noopener noreferrer" className="text-xs sm:text-sm transition-colors duration-200 whitespace-nowrap" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Corporate & Investors</a>
+            <span className="text-gray-400">•</span>
             <a href="https://conneqthealth.com/affiliate-program/" target="_blank" rel="noopener noreferrer" className="text-xs sm:text-sm transition-colors duration-200 whitespace-nowrap" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Affiliate Program</a>
             <span className="text-gray-400">•</span>
             <a href="https://conneqthealth.com/privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-xs sm:text-sm transition-colors duration-200 whitespace-nowrap" style={{ color: '#4B5563', textDecoration: 'none' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#4B5563'}>Privacy Policy</a>
