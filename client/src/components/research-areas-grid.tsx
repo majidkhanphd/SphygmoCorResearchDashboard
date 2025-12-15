@@ -117,7 +117,7 @@ export default function ResearchAreasGrid({ selectedArea, onAreaChange }: Resear
                 onMouseEnter={() => setHoveredArea(area.id)}
                 onMouseLeave={() => setHoveredArea(null)}
                 className={`
-                  group relative p-6 rounded-2xl text-left transition-all duration-300 transform
+                  group relative p-6 rounded-[5px] text-left transition-all duration-300 transform
                   ${isSelected 
                     ? 'bg-accent ring-2 ring-primary shadow-lg scale-[1.02]' 
                     : 'bg-card border border-border hover:border-primary hover:shadow-lg hover:scale-[1.02]'
@@ -127,7 +127,7 @@ export default function ResearchAreasGrid({ selectedArea, onAreaChange }: Resear
               >
                 {/* Icon */}
                 <div className={`
-                  w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors duration-200
+                  w-12 h-12 rounded-[5px] flex items-center justify-center mb-4 transition-colors duration-200
                   ${isSelected 
                     ? 'bg-primary/10' 
                     : 'bg-muted group-hover:bg-muted/80'
@@ -167,7 +167,7 @@ export default function ResearchAreasGrid({ selectedArea, onAreaChange }: Resear
 
                 {/* Selection indicator */}
                 {isSelected && (
-                  <div className="absolute inset-0 rounded-2xl ring-2 ring-primary ring-opacity-20 pointer-events-none" />
+                  <div className="absolute inset-0 rounded-[5px] ring-2 ring-primary ring-opacity-20 pointer-events-none" />
                 )}
               </button>
             );

@@ -23,7 +23,7 @@ export default function FeaturedResearch() {
             <Skeleton className="h-8 w-64 mx-auto mb-4" />
             <Skeleton className="h-4 w-96 mx-auto" />
           </div>
-          <Skeleton className="h-64 w-full rounded-2xl" />
+          <Skeleton className="h-64 w-full rounded-[5px]" />
         </div>
       </section>
     );
@@ -39,7 +39,7 @@ export default function FeaturedResearch() {
             <h2 className="text-3xl font-bold text-foreground mb-4">Featured Research</h2>
             <p className="text-muted-foreground">Latest breakthrough studies using SphygmoCor technology</p>
           </div>
-          <div className="bg-card border border-border rounded-2xl p-8">
+          <div className="bg-card border border-border rounded-[5px] p-8">
             <p className="text-center text-muted-foreground">No featured publications available yet.</p>
           </div>
         </div>
@@ -48,14 +48,14 @@ export default function FeaturedResearch() {
   }
 
   return (
-    <section style={{ paddingTop: '64px', paddingBottom: '64px', backgroundColor: '#FFFFFF', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+    <section style={{ paddingTop: '64px', paddingBottom: '64px', backgroundColor: '#FFFFFF', fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif' }}>
       <div className="max-w-[980px] mx-auto px-6">
         <div className="text-center" style={{ marginBottom: '48px' }}>
           <h2 style={{ fontSize: '32px', fontWeight: '600', color: '#1D1D1F', marginBottom: '16px', lineHeight: '1.2' }}>Featured Research</h2>
           <p style={{ fontSize: '16px', color: '#6E6E73', lineHeight: '1.4' }}>Latest breakthrough studies using SphygmoCor technology</p>
         </div>
         
-        <div className="rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E5E7', padding: '32px', marginBottom: '32px', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)' }}>
+        <div className="rounded-[5px]" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E5E7', padding: '32px', marginBottom: '32px', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)' }}>
           <div className="flex flex-col lg:flex-row items-start gap-8">
             <div className="flex-1">
               <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
@@ -128,7 +128,7 @@ export default function FeaturedResearch() {
               <img 
                 src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600" 
                 alt="Scientific cardiovascular research data visualization" 
-                className="rounded-xl shadow-lg w-full h-auto"
+                className="rounded-[5px] shadow-lg w-full h-auto"
                 data-testid="featured-image"
               />
             </div>

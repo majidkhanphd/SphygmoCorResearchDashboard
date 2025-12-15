@@ -86,9 +86,9 @@ export default function FeaturedCarousel() {
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Skeleton className="h-10 w-64 mb-8" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Skeleton className="h-80 w-full rounded-xl" />
-            <Skeleton className="h-80 w-full rounded-xl" />
-            <Skeleton className="h-80 w-full rounded-xl" />
+            <Skeleton className="h-80 w-full rounded-[5px]" />
+            <Skeleton className="h-80 w-full rounded-[5px]" />
+            <Skeleton className="h-80 w-full rounded-[5px]" />
           </div>
         </div>
       </section>
@@ -174,7 +174,7 @@ export default function FeaturedCarousel() {
                   viewport={{ once: true, amount: 0.3 }}
                 >
                   <motion.div 
-                    className="rounded-xl h-full flex flex-col"
+                    className="rounded-[5px] h-full flex flex-col"
                     style={{
                       backgroundColor: '#FFFFFF',
                       border: '1px solid #E5E5E7',

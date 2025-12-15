@@ -6,7 +6,7 @@ function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("apple-skeleton rounded-xl bg-muted", className)}
+      className={cn("apple-skeleton rounded-[5px] bg-muted", className)}
       role="progressbar"
       aria-label="Loading content"
       {...props}

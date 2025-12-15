@@ -6,7 +6,7 @@ export default function About() {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="max-w-[980px] mx-auto px-6" style={{ paddingTop: '64px', paddingBottom: '64px', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+      <main className="max-w-[980px] mx-auto px-6" style={{ paddingTop: '64px', paddingBottom: '64px', fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif' }}>
         <div className="text-center" style={{ marginBottom: '64px' }}>
           <h1 style={{ fontSize: '48px', fontWeight: '300', letterSpacing: '-0.02em', color: '#1D1D1F', marginBottom: '16px', lineHeight: '1.1' }}>
             About CardiEx Research
@@ -30,7 +30,7 @@ export default function About() {
                 and central blood pressure, providing insights that traditional methods cannot achieve.
               </p>
             </div>
-            <div className="rounded-2xl text-center" style={{ backgroundColor: '#F6F6F6', padding: '32px' }}>
+            <div className="rounded-[5px] text-center" style={{ backgroundColor: '#F6F6F6', padding: '32px' }}>
               <div className="grid grid-cols-2 gap-8">
                 <div>
                   <div style={{ fontSize: '32px', fontWeight: '300', color: '#1D1D1F', marginBottom: '8px', lineHeight: '1.2' }} data-testid="research-years">15+</div>

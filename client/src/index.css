@@ -55,29 +55,29 @@
 }
 
 .dark {
-  /* Apple's Minimal Color Palette - Dark Mode */
+  /* CONNEQT Health Brand Color Palette - Dark Mode */
   --background: hsl(0 0% 11.4%);
   --foreground: hsl(0 0% 98%);
   --card: hsl(0 0% 11.4%);
   --card-foreground: hsl(0 0% 98%);
   --popover: hsl(0 0% 11.4%);
   --popover-foreground: hsl(0 0% 98%);
-  --primary: hsl(214 100% 58%);
+  --primary: #AF87FF;
   --primary-foreground: hsl(0 0% 100%);
   --secondary: hsl(0 0% 14.9%);
   --secondary-foreground: hsl(0 0% 98%);
   --muted: hsl(0 0% 14.9%);
   --muted-foreground: hsl(0 0% 63.9%);
-  --accent: hsl(0 0% 14.9%);
+  --accent: #7B99A8;
   --accent-foreground: hsl(0 0% 98%);
   --destructive: hsl(0 62.8% 30.6%);
   --destructive-foreground: hsl(0 0% 98%);
   --border: hsl(0 0% 14.9%);
   --input: hsl(0 0% 14.9%);
-  --ring: hsl(214 100% 58%);
+  --ring: #AF87FF;
   --chart-1: hsl(0 0% 63.9%);
   --chart-2: hsl(0 0% 52.5%);
-  --chart-3: hsl(0 0% 39.2%);
+  --chart-3: #AF87FF;
   --chart-4: hsl(0 0% 25.9%);
   --chart-5: hsl(0 0% 70.2%);
 }
@@ -115,7 +115,7 @@
   
   .apple-focus-ring:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(175, 135, 255, 0.3);
+    box-shadow: 0 0 0 3px rgba(175, 135, 255, 0.35);
   }
   
   .apple-button-press:active {
@@ -166,7 +166,7 @@ input:focus-visible,
 button:focus-visible,
 select:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+  box-shadow: 0 0 0 3px rgba(175, 135, 255, 0.35);
 }
 
 /* Hero banner pulse animation */

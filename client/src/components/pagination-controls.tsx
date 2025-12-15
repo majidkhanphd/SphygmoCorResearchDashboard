@@ -53,7 +53,7 @@ export function PaginationControls({
     <div style={{ paddingTop: '48px', borderTop: '1px solid #E5E5E7', marginTop: '48px' }}>
       {/* Per-page selector - always visible */}
       <div className="flex items-center justify-center gap-2 mb-6" style={{
-        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+        fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif',
         fontSize: '14px',
         color: '#1D1D1F'
       }}>
@@ -63,7 +63,7 @@ export function PaginationControls({
             className="w-[110px]"
             style={{
               border: '1px solid #E5E5E7',
-              borderRadius: '8px',
+              borderRadius: '5px',
               fontSize: '14px',
               fontWeight: '500',
               color: '#1D1D1F'
@@ -94,12 +94,12 @@ export function PaginationControls({
               disabled={currentPage === 1}
               className={currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
               style={{
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif',
                 fontSize: '14px',
                 fontWeight: '500',
                 color: currentPage === 1 ? '#6E6E73' : '#AF87FF',
                 border: '1px solid #E5E5E7',
-                borderRadius: '8px',
+                borderRadius: '5px',
                 padding: '8px 12px',
                 gap: '4px'
               }}
@@ -115,12 +115,12 @@ export function PaginationControls({
               onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
               className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
               style={{
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif',
                 fontSize: '14px',
                 fontWeight: '500',
                 color: currentPage === 1 ? '#6E6E73' : '#AF87FF',
                 border: '1px solid #E5E5E7',
-                borderRadius: '8px',
+                borderRadius: '5px',
                 padding: '8px 12px'
               }}
               data-testid="pagination-previous"
@@ -149,13 +149,13 @@ export function PaginationControls({
                   isActive={currentPage === pageNum}
                   className="cursor-pointer"
                   style={{
-                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                    fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif',
                     fontSize: '14px',
                     fontWeight: '500',
                     color: currentPage === pageNum ? '#FFFFFF' : '#1D1D1F',
                     backgroundColor: currentPage === pageNum ? '#AF87FF' : 'transparent',
                     border: '1px solid #E5E5E7',
-                    borderRadius: '8px',
+                    borderRadius: '5px',
                     minWidth: '40px',
                     height: '40px',
                     display: 'flex',
@@ -175,12 +175,12 @@ export function PaginationControls({
               onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
               className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
               style={{
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif',
                 fontSize: '14px',
                 fontWeight: '500',
                 color: currentPage === totalPages ? '#6E6E73' : '#AF87FF',
                 border: '1px solid #E5E5E7',
-                borderRadius: '8px',
+                borderRadius: '5px',
                 padding: '8px 12px'
               }}
               data-testid="pagination-next"
@@ -196,12 +196,12 @@ export function PaginationControls({
               disabled={currentPage === totalPages}
               className={currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
               style={{
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif',
                 fontSize: '14px',
                 fontWeight: '500',
                 color: currentPage === totalPages ? '#6E6E73' : '#AF87FF',
                 border: '1px solid #E5E5E7',
-                borderRadius: '8px',
+                borderRadius: '5px',
                 padding: '8px 12px',
                 gap: '4px'
               }}
@@ -216,7 +216,7 @@ export function PaginationControls({
           <PaginationItem className="ml-4">
             <div className="flex items-center gap-2">
               <span style={{
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif',
                 fontSize: '14px',
                 fontWeight: '500',
                 color: '#6E6E73'
@@ -233,10 +233,10 @@ export function PaginationControls({
                 placeholder="Page"
                 className="w-20"
                 style={{
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                  fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif',
                   fontSize: '14px',
                   border: '1px solid #E5E5E7',
-                  borderRadius: '8px',
+                  borderRadius: '5px',
                   padding: '8px'
                 }}
                 data-testid="jump-to-page-input"
@@ -251,7 +251,7 @@ export function PaginationControls({
       <div className="text-center mt-4" style={{ 
         fontSize: '14px', 
         color: '#6E6E73',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
+        fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif'
       }}>
         Showing {((currentPage - 1) * perPage) + 1} - {Math.min(currentPage * perPage, total)} of {total} publications
       </div>

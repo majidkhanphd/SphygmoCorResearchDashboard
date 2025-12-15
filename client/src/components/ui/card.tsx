@@ -8,9 +8,9 @@ const Card = React.forwardRef<
 >(({ className, style, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("rounded-xl", className)}
+    className={cn("rounded-[5px]", className)}
     style={{
-      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif',
+      fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, sans-serif',
       border: '1px solid #E5E5E7',
       backgroundColor: '#FFFFFF',
       color: '#1D1D1F',

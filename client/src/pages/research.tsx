@@ -20,17 +20,17 @@ import { sanitizeText } from "@shared/sanitize";
 import { getChildJournals, isParentJournal, type JournalGroup, JOURNAL_GROUPS } from "@shared/journal-mappings";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
-  "copd": { bg: "#F3E5F5", text: "#4A148C", border: "#CE93D8" },
-  "eva": { bg: "#E0F2F1", text: "#004D40", border: "#80CBC4" },
-  "heart-failure": { bg: "#FFF3E0", text: "#E65100", border: "#FFB74D" },
-  "hypertension": { bg: "#E1F5FE", text: "#01579B", border: "#81D4FA" },
-  "longevity": { bg: "#F3E5F5", text: "#6A1B9A", border: "#CE93D8" },
-  "maternal-health": { bg: "#FCE4EC", text: "#880E4F", border: "#F48FB1" },
-  "mens-health": { bg: "#E0F2F1", text: "#00695C", border: "#80CBC4" },
-  "metabolic-health": { bg: "#FFF8E1", text: "#F57F17", border: "#FFD54F" },
-  "neuroscience": { bg: "#EDE7F6", text: "#311B92", border: "#B39DDB" },
-  "womens-health": { bg: "#FCE4EC", text: "#AD1457", border: "#F48FB1" }
+  "ckd": { bg: "#F5F0FF", text: "#7B5DC4", border: "#D4C4FF" },
+  "copd": { bg: "#F5F0FF", text: "#8857FF", border: "#D4C4FF" },
+  "eva": { bg: "#F5F0FF", text: "#8B6FD6", border: "#D4C4FF" },
+  "heart-failure": { bg: "#F5F0FF", text: "#9A6FFF", border: "#D4C4FF" },
+  "hypertension": { bg: "#F5F0FF", text: "#7B5DC4", border: "#D4C4FF" },
+  "longevity": { bg: "#F5F0FF", text: "#AF87FF", border: "#D4C4FF" },
+  "maternal-health": { bg: "#F5F0FF", text: "#8B6FD6", border: "#D4C4FF" },
+  "mens-health": { bg: "#F5F0FF", text: "#9A6FFF", border: "#D4C4FF" },
+  "metabolic-health": { bg: "#F5F0FF", text: "#8857FF", border: "#D4C4FF" },
+  "neuroscience": { bg: "#F5F0FF", text: "#7B5DC4", border: "#D4C4FF" },
+  "womens-health": { bg: "#F5F0FF", text: "#AF87FF", border: "#D4C4FF" }
 };
 
 const getBadgeDisplayName = (category: string): string => {
@@ -384,7 +384,7 @@ export default function Home() {
                 placeholder="Search publications"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full rounded-xl apple-transition apple-focus-ring py-2 sm:py-3 text-sm sm:text-base"
+                className="w-full rounded-[5px] apple-transition apple-focus-ring py-2 sm:py-3 text-sm sm:text-base"
                 style={{
                   paddingLeft: '2.5rem',
                   paddingRight: inputValue ? '2.5rem' : '1rem',
@@ -430,7 +430,7 @@ export default function Home() {
             <div className="w-full sm:w-48 flex-shrink-0">
               <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "relevance") => setSortBy(value)}>
                 <SelectTrigger 
-                  className="w-full rounded-xl transition-all duration-200 ease-in-out py-2 sm:py-3 text-sm sm:text-base"
+                  className="w-full rounded-[5px] transition-all duration-200 ease-in-out py-2 sm:py-3 text-sm sm:text-base"
                   style={{
                     fontSize: '17px',
                     fontWeight: '400',

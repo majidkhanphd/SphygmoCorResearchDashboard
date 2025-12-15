@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium apple-transition apple-focus-ring apple-button-press disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[5px] text-sm font-medium apple-transition apple-focus-ring apple-button-press disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -18,12 +18,12 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 active:bg-secondary/90",
         ghost: "hover:bg-accent hover:text-accent-foreground active:bg-accent/80",
         link: "text-primary underline-offset-4 hover:underline hover:opacity-80 active:opacity-60",
-        apple: "bg-[#AF87FF] text-white hover:bg-[#9A6FFF] active:bg-[#8857FF] rounded-xl px-6 py-3 text-base font-medium",
+        apple: "bg-[#AF87FF] text-white hover:bg-[#9A6FFF] active:bg-[#8857FF] rounded-[5px] px-6 py-3 text-base font-medium",
       },
       size: {
         default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-xl px-3 text-sm",
-        lg: "h-11 rounded-xl px-8 text-base",
+        sm: "h-9 rounded-[5px] px-3 text-sm",
+        lg: "h-11 rounded-[5px] px-8 text-base",
         icon: "h-10 w-10",
         apple: "h-12 px-6 py-3 text-base",
       },

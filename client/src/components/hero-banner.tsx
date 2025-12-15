@@ -59,7 +59,7 @@ export default function HeroBanner() {
     <motion.section 
       className="w-full relative overflow-hidden"
       style={{
-        background: 'linear-gradient(135deg, #2a3f54 0%, #34495e 25%, #3d5066 50%, #455a6d 100%)',
+        background: 'linear-gradient(135deg, #2a2438 0%, #342f48 25%, #3d3552 50%, #453d5d 100%)',
         minHeight: 'clamp(200px, 40vh, 295px)'
       }}
       data-testid="hero-banner"
@@ -133,7 +133,7 @@ export default function HeroBanner() {
                   d={normalWaveform}
                   transform={`translate(${offset}, 100)`}
                   fill="none"
-                  stroke="#7fb3b5"
+                  stroke="#9A6FFF"
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -163,7 +163,7 @@ export default function HeroBanner() {
                   d={alternansStrong}
                   transform={`translate(${offset}, 130)`}
                   fill="none"
-                  stroke="#6b8fa3"
+                  stroke="#AF87FF"
                   strokeWidth="1.6"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -174,7 +174,7 @@ export default function HeroBanner() {
                   d={alternansWeak}
                   transform={`translate(${offset + 100}, 130)`}
                   fill="none"
-                  stroke="#6b8fa3"
+                  stroke="#AF87FF"
                   strokeWidth="1.6"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -203,7 +203,7 @@ export default function HeroBanner() {
                   d={bisferiens}
                   transform={`translate(${offset}, 160)`}
                   fill="none"
-                  stroke="#a5c1d3"
+                  stroke="#C4B0FF"
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -232,7 +232,7 @@ export default function HeroBanner() {
                   d={parvusTardus}
                   transform={`translate(${offset}, 190)`}
                   fill="none"
-                  stroke="#95a8b8"
+                  stroke="#D4C4FF"
                   strokeWidth="1.4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -261,7 +261,7 @@ export default function HeroBanner() {
                   d={paradoxusHigh}
                   transform={`translate(${offset}, 220)`}
                   fill="none"
-                  stroke="#8a9fb0"
+                  stroke="#C4B0FF"
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -271,7 +271,7 @@ export default function HeroBanner() {
                   d={paradoxusMed}
                   transform={`translate(${offset + 100}, 220)`}
                   fill="none"
-                  stroke="#8a9fb0"
+                  stroke="#C4B0FF"
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -281,7 +281,7 @@ export default function HeroBanner() {
                   d={paradoxusLow}
                   transform={`translate(${offset + 200}, 220)`}
                   fill="none"
-                  stroke="#8a9fb0"
+                  stroke="#C4B0FF"
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -291,7 +291,7 @@ export default function HeroBanner() {
                   d={paradoxusMed}
                   transform={`translate(${offset + 300}, 220)`}
                   fill="none"
-                  stroke="#8a9fb0"
+                  stroke="#C4B0FF"
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -314,7 +314,7 @@ export default function HeroBanner() {
           style={{
             width: '500px',
             height: '500px',
-            background: 'radial-gradient(circle, rgba(127, 179, 181, 0.1) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(175, 135, 255, 0.1) 0%, transparent 70%)',
             top: '-15%',
             left: '5%'
           }}
@@ -333,7 +333,7 @@ export default function HeroBanner() {
           style={{
             width: '400px',
             height: '400px',
-            background: 'radial-gradient(circle, rgba(107, 143, 163, 0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(175, 135, 255, 0.08) 0%, transparent 70%)',
             bottom: '-5%',
             right: '10%'
           }}
@@ -360,7 +360,7 @@ export default function HeroBanner() {
         >
           {/* Semi-transparent backdrop for text readability */}
           <div 
-            className="inline-block rounded-2xl px-4 sm:px-8 py-3 sm:py-6"
+            className="inline-block rounded-[5px] px-4 sm:px-8 py-3 sm:py-6"
             style={{
               background: 'rgba(25, 35, 48, 0.5)',
               backdropFilter: 'blur(12px)',

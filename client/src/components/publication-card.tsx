@@ -25,7 +25,7 @@ export default function PublicationCard({ publication }: PublicationCardProps) {
 
   return (
     <article 
-      className="publication-card bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 apple-fade-in group" 
+      className="publication-card bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-[5px] p-8 apple-fade-in group" 
       data-testid={`publication-card-${publication.id}`}
       role="article"
       aria-labelledby={`title-${publication.id}`}
