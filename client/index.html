@@ -44,36 +44,35 @@
     <script>
       (function () {
         const TYPE = "CONNEQT_IFRAME_HEIGHT";
+        let lastHeight = 0;
+        let debounceTimer = null;
 
-        let rafId = null;
         function scheduleSend() {
-          if (rafId) return;
-          rafId = requestAnimationFrame(() => {
-            rafId = null;
+          if (debounceTimer) return;
+          debounceTimer = setTimeout(() => {
+            debounceTimer = null;
             sendHeight();
-          });
+          }, 100);
         }
 
         function measureHeight() {
           const body = document.body;
           const html = document.documentElement;
-
-          const appRoot =
-            document.getElementById("root") ||
-            document.getElementById("__next") ||
-            document.querySelector("main") ||
-            body;
-
-          const rects = [body, html, appRoot].map(el => el.getBoundingClientRect().height);
-          const scrolls = [body, html, appRoot].map(el => el.scrollHeight || 0);
-          const offsets = [body, html, appRoot].map(el => el.offsetHeight || 0);
-
-          return Math.ceil(Math.max(...rects, ...scrolls, ...offsets));
+          const root = document.getElementById("root");
+          
+          return Math.ceil(Math.max(
+            body.scrollHeight || 0,
+            html.scrollHeight || 0,
+            root ? root.scrollHeight : 0
+          ));
         }
 
         function sendHeight() {
           const height = measureHeight();
-          parent.postMessage({ type: TYPE, height }, "*");
+          if (height !== lastHeight && height > 0) {
+            lastHeight = height;
+            parent.postMessage({ type: TYPE, height }, "*");
+          }
         }
 
         window.addEventListener("load", scheduleSend);
@@ -90,13 +89,7 @@
         window.addEventListener("popstate", scheduleSend);
 
         const ro = new ResizeObserver(scheduleSend);
-        ro.observe(document.documentElement);
         ro.observe(document.body);
-        const root = document.getElementById("root") || document.getElementById("__next");
-        if (root) ro.observe(root);
-
-        const mo = new MutationObserver(scheduleSend);
-        mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, characterData: true });
 
         window.addEventListener("load", () => {
           document.querySelectorAll("img").forEach(img => {
