@@ -1199,76 +1199,102 @@ export default function Home() {
           </h2>
           
           {/* FDA Timeline Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6 mb-8">
-            {/* 2002 */}
-            <div className="text-center">
-              <div className="inline-flex items-center gap-1 mb-3">
-                <span className="px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
-                <span className="text-xs" style={{ color: '#6B7280' }}>CLEARED</span>
-              </div>
-              <div className="text-2xl font-semibold mb-2" style={{ color: '#242422' }}>2002</div>
-              <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.4' }}>
-                510K Clearance:<br />SphygmoCor Px
-              </div>
-            </div>
+          <div className="relative">
+            {/* Horizontal connecting line - visible on lg screens */}
+            <div className="hidden lg:block absolute top-[72px] left-[8%] right-[8%] h-[1px]" style={{ backgroundColor: '#E5E7EB' }}></div>
             
-            {/* 2007 */}
-            <div className="text-center">
-              <div className="inline-flex items-center gap-1 mb-3">
-                <span className="px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
-                <span className="text-xs" style={{ color: '#6B7280' }}>CLEARED</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-8 mb-8">
+              {/* 2002 */}
+              <div className="text-center relative">
+                <div className="inline-flex items-center gap-2 mb-4">
+                  <span className="px-3 py-1 text-xs font-bold rounded-sm" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
+                  <span className="text-[10px] font-medium tracking-wide" style={{ color: '#9CA3AF' }}>CLEARED</span>
+                </div>
+                <div className="text-2xl font-semibold mb-3 relative" style={{ color: '#242422' }}>
+                  2002
+                  <div className="hidden lg:block absolute left-1/2 -translate-x-1/2 top-full mt-1 w-2 h-2 rounded-full bg-white border-2" style={{ borderColor: '#E5E7EB' }}></div>
+                </div>
+                <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.5' }}>
+                  510K Clearance:<br />SphygmoCor Px
+                </div>
               </div>
-              <div className="text-2xl font-semibold mb-2" style={{ color: '#242422' }}>2007</div>
-              <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.4' }}>
-                510K Clearance:<br />SphygmoCor CvMS
+              
+              {/* 2007 */}
+              <div className="text-center relative">
+                <div className="inline-flex items-center gap-2 mb-4">
+                  <span className="px-3 py-1 text-xs font-bold rounded-sm" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
+                  <span className="text-[10px] font-medium tracking-wide" style={{ color: '#9CA3AF' }}>CLEARED</span>
+                </div>
+                <div className="text-2xl font-semibold mb-3 relative" style={{ color: '#242422' }}>
+                  2007
+                  <div className="hidden lg:block absolute left-1/2 -translate-x-1/2 top-full mt-1 w-2 h-2 rounded-full bg-white border-2" style={{ borderColor: '#E5E7EB' }}></div>
+                </div>
+                <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.5' }}>
+                  510K Clearance:<br />SphygmoCor CvMS
+                </div>
               </div>
-            </div>
-            
-            {/* 2012 */}
-            <div className="text-center">
-              <div className="inline-flex items-center gap-1 mb-3">
-                <span className="px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
-                <span className="text-xs" style={{ color: '#6B7280' }}>CLEARED</span>
+              
+              {/* 2012 */}
+              <div className="text-center relative">
+                <div className="inline-flex items-center gap-2 mb-4">
+                  <span className="px-3 py-1 text-xs font-bold rounded-sm" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
+                  <span className="text-[10px] font-medium tracking-wide" style={{ color: '#9CA3AF' }}>CLEARED</span>
+                </div>
+                <div className="text-2xl font-semibold mb-3 relative" style={{ color: '#242422' }}>
+                  2012
+                  <div className="hidden lg:block absolute left-1/2 -translate-x-1/2 top-full mt-1 w-2 h-2 rounded-full bg-white border-2" style={{ borderColor: '#E5E7EB' }}></div>
+                </div>
+                <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.5' }}>
+                  510K Clearance:<br />SphygmoCor XCEL
+                </div>
               </div>
-              <div className="text-2xl font-semibold mb-2" style={{ color: '#242422' }}>2012</div>
-              <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.4' }}>
-                510K Clearance:<br />SphygmoCor XCEL
+              
+              {/* 2016 Oscar */}
+              <div className="text-center relative">
+                <div className="inline-flex items-center gap-2 mb-4">
+                  <span className="px-3 py-1 text-xs font-bold rounded-sm" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
+                  <span className="text-[10px] font-medium tracking-wide" style={{ color: '#9CA3AF' }}>CLEARED</span>
+                </div>
+                <div className="text-2xl font-semibold mb-3 relative" style={{ color: '#242422' }}>
+                  2016
+                  <div className="hidden lg:block absolute left-1/2 -translate-x-1/2 top-full mt-1 w-2 h-2 rounded-full bg-white border-2" style={{ borderColor: '#E5E7EB' }}></div>
+                </div>
+                <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.5' }}>
+                  Oscar 2 ABPM with<br />SphygmoCor
+                </div>
               </div>
-            </div>
-            
-            {/* 2016 Oscar */}
-            <div className="text-center">
-              <div className="inline-flex items-center gap-1 mb-3">
-                <span className="px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
-                <span className="text-xs" style={{ color: '#6B7280' }}>CLEARED</span>
+              
+              {/* 2016 AMA */}
+              <div className="text-center relative">
+                <div className="inline-flex items-center gap-2 mb-4">
+                  <span className="px-3 py-1 text-xs font-bold rounded-sm flex items-center gap-1" style={{ backgroundColor: '#4B5563', color: 'white' }}>
+                    AMA
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+                  </span>
+                  <span className="text-[10px] font-medium tracking-wide invisible">CLEARED</span>
+                </div>
+                <div className="text-2xl font-semibold mb-3 relative" style={{ color: '#242422' }}>
+                  2016
+                  <div className="hidden lg:block absolute left-1/2 -translate-x-1/2 top-full mt-1 w-2 h-2 rounded-full bg-white border-2" style={{ borderColor: '#E5E7EB' }}></div>
+                </div>
+                <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.5' }}>
+                  CPT Code<br />Approval
+                </div>
               </div>
-              <div className="text-2xl font-semibold mb-2" style={{ color: '#242422' }}>2016</div>
-              <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.4' }}>
-                Oscar 2 ABPM with<br />SphygmoCor
-              </div>
-            </div>
-            
-            {/* 2016 AMA */}
-            <div className="text-center">
-              <div className="inline-flex items-center gap-1 mb-3">
-                <span className="px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#1F2937', color: 'white' }}>AMA</span>
-                <span className="text-xs invisible">CLEARED</span>
-              </div>
-              <div className="text-2xl font-semibold mb-2" style={{ color: '#242422' }}>2016</div>
-              <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.4' }}>
-                CPT Code<br />Approval
-              </div>
-            </div>
-            
-            {/* 2023 */}
-            <div className="text-center">
-              <div className="inline-flex items-center gap-1 mb-3">
-                <span className="px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
-                <span className="text-xs" style={{ color: '#6B7280' }}>CLEARED</span>
-              </div>
-              <div className="text-2xl font-semibold mb-2" style={{ color: '#242422' }}>2023</div>
-              <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.4' }}>
-                CONNEQT Pulse
+              
+              {/* 2023 */}
+              <div className="text-center relative">
+                <div className="inline-flex items-center gap-2 mb-4">
+                  <span className="px-3 py-1 text-xs font-bold rounded-sm" style={{ backgroundColor: '#22C55E', color: 'white' }}>FDA</span>
+                  <span className="text-[10px] font-medium tracking-wide" style={{ color: '#9CA3AF' }}>CLEARED</span>
+                </div>
+                <div className="text-2xl font-semibold mb-3 relative" style={{ color: '#242422' }}>
+                  2023
+                  <div className="hidden lg:block absolute left-1/2 -translate-x-1/2 top-full mt-1 w-2 h-2 rounded-full bg-white border-2" style={{ borderColor: '#E5E7EB' }}></div>
+                </div>
+                <div className="text-xs" style={{ color: '#6B7280', lineHeight: '1.5' }}>
+                  CONNEQT Pulse
+                </div>
               </div>
             </div>
           </div>
@@ -1404,11 +1430,49 @@ export default function Home() {
           </div>
 
           {/* Partner Logos */}
-          <div className="mb-6">
-            <div className="flex flex-wrap justify-center items-center gap-8 mb-4">
-              <div className="text-xs font-medium" style={{ color: '#6B7280' }}>DTRA</div>
-              <div className="text-xs" style={{ color: '#6B7280' }}>American Heart Association<br/>Center for Health<br/>Technology & Innovation</div>
-              <div className="text-xs font-medium" style={{ color: '#6B7280' }}>AdvaMed</div>
+          <div className="mb-8">
+            <div className="flex flex-wrap justify-center items-center gap-10 sm:gap-16 mb-6">
+              {/* DTRA Logo */}
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col items-center justify-center">
+                  <svg className="w-8 h-8" viewBox="0 0 32 32" fill="none">
+                    <path d="M4 8L16 4L28 8L16 12L4 8Z" fill="#6B7280"/>
+                    <path d="M4 16L16 12L28 16L16 20L4 16Z" fill="#9CA3AF"/>
+                    <path d="M4 24L16 20L28 24L16 28L4 24Z" fill="#D1D5DB"/>
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-bold" style={{ color: '#4B5563' }}>DTRA</div>
+                  <div className="text-[8px] leading-tight" style={{ color: '#9CA3AF' }}>DECENTRALIZED TRIALS<br/>RESEARCH ALLIANCE</div>
+                </div>
+              </div>
+              
+              {/* AHA Logo */}
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#E5E7EB' }}>
+                  <svg className="w-5 h-5" fill="#6B7280" viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <div className="text-[9px] leading-tight" style={{ color: '#6B7280' }}>American Heart Association.</div>
+                  <div className="text-[10px] font-semibold" style={{ color: '#4B5563' }}>Center for Health</div>
+                  <div className="text-[10px] font-semibold" style={{ color: '#4B5563' }}>Technology & Innovation</div>
+                </div>
+              </div>
+              
+              {/* AdvaMed Logo */}
+              <div className="flex items-center gap-2">
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#DC2626"/>
+                  <path d="M2 17L12 22L22 17" stroke="#DC2626" strokeWidth="2"/>
+                  <path d="M2 12L12 17L22 12" stroke="#DC2626" strokeWidth="2"/>
+                </svg>
+                <div className="text-left">
+                  <div className="text-sm font-bold" style={{ color: '#4B5563' }}>AdvaMed</div>
+                  <div className="text-[8px] leading-tight" style={{ color: '#9CA3AF' }}>Advanced Medical Technology Association</div>
+                </div>
+              </div>
             </div>
             <p className="text-xs" style={{ color: '#9CA3AF' }}>
               CONNEQT is pleased to be a member of these esteemed professional organizations.
