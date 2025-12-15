@@ -604,24 +604,25 @@ export default function Home() {
                 >
                   All
                 </button>
-                <AnimatePresence>
+                <AnimatePresence mode="popLayout" initial={false}>
                 {visibleAreas.map(([slug, displayName]) => {
                   const count = filterCounts.areas[slug] || 0;
                   const categoryColor = CATEGORY_COLORS[slug];
                   return (
                     <motion.button
                       key={slug}
+                      layout
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                       onClick={() => handleResearchAreaChange(slug)}
                       className={`flex items-center text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                         selectedResearchArea === slug
                           ? "font-medium"
                           : "hover:opacity-80"
                       }`}
-                      style={{ color: selectedResearchArea === slug ? '#1D1D1F' : '#6E6E73' }}
+                      style={{ overflow: "hidden", color: selectedResearchArea === slug ? '#1D1D1F' : '#6E6E73' }}
                       data-testid={`area-${slug}`}
                       aria-pressed={selectedResearchArea === slug}
                       aria-label={`Filter by ${displayName}${count > 0 ? ` (${count} publications)` : ''}`}
@@ -697,23 +698,24 @@ export default function Home() {
                 >
                   All years {totalYearCount > 0 && `(${totalYearCount})`}
                 </button>
-                <AnimatePresence>
+                <AnimatePresence mode="popLayout" initial={false}>
                 {visibleYears.map((year) => {
                   const count = filterCounts.years[year] || 0;
                   return (
                     <motion.button
                       key={year}
+                      layout
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                       onClick={() => handleYearChange(year)}
                       className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                         selectedYear === year
                           ? "font-medium"
                           : "hover:opacity-80"
                       }`}
-                      style={{ color: selectedYear === year ? '#1D1D1F' : '#6E6E73' }}
+                      style={{ overflow: "hidden", color: selectedYear === year ? '#1D1D1F' : '#6E6E73' }}
                       data-testid={`year-${year}`}
                       aria-pressed={selectedYear === year}
                       aria-label={`Filter by ${year}${count > 0 ? ` (${count} publications)` : ''}`}
@@ -793,7 +795,7 @@ export default function Home() {
                 >
                   All Journals
                 </button>
-                <AnimatePresence>
+                <AnimatePresence mode="popLayout" initial={false}>
                 {visibleVenues.map((venue) => {
                   const count = filterCounts.venues[venue] || 0;
                   const hasChildren = isParentJournal(venue);
@@ -803,10 +805,12 @@ export default function Home() {
                   return (
                     <motion.div 
                       key={venue}
+                      layout
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      style={{ overflow: "hidden" }}
+                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                     >
                       {/* Parent or regular journal */}
                       <div className="flex items-center">
@@ -821,7 +825,7 @@ export default function Home() {
                             aria-label={isExpanded ? `Collapse ${venue}` : `Expand ${venue}`}
                             data-testid={`toggle-journal-${venue.replace(/\s+/g, '-').toLowerCase()}`}
                             animate={{ rotate: isExpanded ? 90 : 0 }}
-                            transition={{ duration: 0.2, ease: "easeInOut" }}
+                            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                           >
                             <ChevronRight className="h-3 w-3" />
                           </motion.button>
@@ -843,24 +847,23 @@ export default function Home() {
                       </div>
                       
                       {/* Child journals (shown when expanded) */}
-                      <AnimatePresence>
+                      <AnimatePresence mode="popLayout" initial={false}>
                       {hasChildren && isExpanded && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2, ease: "easeInOut" }}
+                          style={{ overflow: "hidden" }}
+                          transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                         >
                           {childJournals.map((childJournal) => {
-                            // Child journals won't have their own counts in the venues list
-                            // since they're aggregated under the parent
                             return (
                               <motion.button
                                 key={childJournal}
-                                initial={{ opacity: 0, x: -10 }}
+                                initial={{ opacity: 0, x: -8 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -10 }}
-                                transition={{ duration: 0.15, ease: "easeInOut" }}
+                                exit={{ opacity: 0, x: -8 }}
+                                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                                 onClick={() => handleVenueChange(childJournal)}
                                 className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 ml-6 sm:ml-8 apple-transition apple-focus-ring break-words ${
                                   selectedVenue === childJournal
