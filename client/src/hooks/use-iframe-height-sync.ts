@@ -2,52 +2,61 @@ import { useEffect, useRef, useCallback } from "react";
 
 declare global {
   interface Window {
-    sendIframeHeight?: (height: number) => void;
+    sendIframeHeight?: (height: number, force?: boolean) => void;
     CONNEQT_LAST_HEIGHT?: number;
   }
 }
 
 export function useIframeHeightSync(dependencies: unknown[] = []) {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
   
-  const measureAndSend = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+  const clearAllTimeouts = useCallback(() => {
+    timeoutsRef.current.forEach(t => clearTimeout(t));
+    timeoutsRef.current = [];
+  }, []);
+  
+  const measureAndSend = useCallback((force: boolean = false) => {
+    const root = document.getElementById("root");
+    if (root && window.sendIframeHeight) {
+      const height = Math.ceil(root.scrollHeight);
+      window.sendIframeHeight(height, force);
     }
-    
-    timeoutRef.current = setTimeout(() => {
-      requestAnimationFrame(() => {
-        const root = document.getElementById("root");
-        if (root && window.sendIframeHeight) {
-          const height = Math.ceil(root.scrollHeight);
-          window.sendIframeHeight(height);
-        }
-      });
-    }, 150);
   }, []);
 
-  useEffect(() => {
-    measureAndSend();
+  const scheduleMultipleMeasurements = useCallback(() => {
+    clearAllTimeouts();
     
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [measureAndSend, ...dependencies]);
+    const delays = [100, 250, 500];
+    delays.forEach((delay, index) => {
+      const timeout = setTimeout(() => {
+        requestAnimationFrame(() => {
+          measureAndSend(index === delays.length - 1);
+        });
+      }, delay);
+      timeoutsRef.current.push(timeout);
+    });
+  }, [clearAllTimeouts, measureAndSend]);
 
   useEffect(() => {
-    const handleLoad = () => measureAndSend();
+    scheduleMultipleMeasurements();
+    
+    return () => {
+      clearAllTimeouts();
+    };
+  }, [scheduleMultipleMeasurements, clearAllTimeouts, ...dependencies]);
+
+  useEffect(() => {
+    const handleLoad = () => scheduleMultipleMeasurements();
     window.addEventListener("load", handleLoad);
     
     if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(measureAndSend).catch(() => {});
+      document.fonts.ready.then(scheduleMultipleMeasurements).catch(() => {});
     }
 
     return () => {
       window.removeEventListener("load", handleLoad);
     };
-  }, [measureAndSend]);
+  }, [scheduleMultipleMeasurements]);
 
-  return measureAndSend;
+  return scheduleMultipleMeasurements;
 }

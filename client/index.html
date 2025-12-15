@@ -46,10 +46,13 @@
         window.CONNEQT_IFRAME_HEIGHT_TYPE = "CONNEQT_IFRAME_HEIGHT";
         window.CONNEQT_LAST_HEIGHT = 0;
         
-        window.sendIframeHeight = function(height) {
-          if (height && height !== window.CONNEQT_LAST_HEIGHT && height > 0) {
-            window.CONNEQT_LAST_HEIGHT = height;
-            parent.postMessage({ type: window.CONNEQT_IFRAME_HEIGHT_TYPE, height: height }, "*");
+        window.sendIframeHeight = function(height, force) {
+          if (height && height > 0) {
+            var shouldSend = force || height !== window.CONNEQT_LAST_HEIGHT;
+            if (shouldSend) {
+              window.CONNEQT_LAST_HEIGHT = height;
+              parent.postMessage({ type: window.CONNEQT_IFRAME_HEIGHT_TYPE, height: height }, "*");
+            }
           }
         };
       })();
