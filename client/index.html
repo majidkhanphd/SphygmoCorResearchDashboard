@@ -43,22 +43,72 @@
     <script type="module" src="/src/main.tsx"></script>
     <script>
       (function () {
-        function sendHeight() {
-          const height = Math.max(
-            document.body.scrollHeight,
-            document.documentElement.scrollHeight,
-            document.body.offsetHeight,
-            document.documentElement.offsetHeight
-          );
-          parent.postMessage({ type: "CONNEQT_IFRAME_HEIGHT", height }, "*");
+        const TYPE = "CONNEQT_IFRAME_HEIGHT";
+
+        let rafId = null;
+        function scheduleSend() {
+          if (rafId) return;
+          rafId = requestAnimationFrame(() => {
+            rafId = null;
+            sendHeight();
+          });
         }
 
-        window.addEventListener("load", sendHeight);
-        window.addEventListener("resize", sendHeight);
+        function measureHeight() {
+          const body = document.body;
+          const html = document.documentElement;
 
-        // If your app content changes after load (SPA / React), watch for changes:
-        const ro = new ResizeObserver(sendHeight);
+          const appRoot =
+            document.getElementById("root") ||
+            document.getElementById("__next") ||
+            document.querySelector("main") ||
+            body;
+
+          const rects = [body, html, appRoot].map(el => el.getBoundingClientRect().height);
+          const scrolls = [body, html, appRoot].map(el => el.scrollHeight || 0);
+          const offsets = [body, html, appRoot].map(el => el.offsetHeight || 0);
+
+          return Math.ceil(Math.max(...rects, ...scrolls, ...offsets));
+        }
+
+        function sendHeight() {
+          const height = measureHeight();
+          parent.postMessage({ type: TYPE, height }, "*");
+        }
+
+        window.addEventListener("load", scheduleSend);
+        window.addEventListener("resize", scheduleSend);
+
+        ["pushState", "replaceState"].forEach(fn => {
+          const orig = history[fn];
+          history[fn] = function () {
+            const ret = orig.apply(this, arguments);
+            scheduleSend();
+            return ret;
+          };
+        });
+        window.addEventListener("popstate", scheduleSend);
+
+        const ro = new ResizeObserver(scheduleSend);
         ro.observe(document.documentElement);
+        ro.observe(document.body);
+        const root = document.getElementById("root") || document.getElementById("__next");
+        if (root) ro.observe(root);
+
+        const mo = new MutationObserver(scheduleSend);
+        mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, characterData: true });
+
+        window.addEventListener("load", () => {
+          document.querySelectorAll("img").forEach(img => {
+            if (!img.complete) img.addEventListener("load", scheduleSend, { once: true });
+          });
+        });
+
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(scheduleSend).catch(() => {});
+        }
+
+        scheduleSend();
       })();
     </script>
   </body>
