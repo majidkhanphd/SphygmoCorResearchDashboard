@@ -559,26 +559,33 @@ export default function Home() {
             maxSize={isMobileScreen ? 30 : 25}
             collapsible={true}
             collapsedSize={1}
-            className={`transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
-            style={{ 
-              ...(isSidebarCollapsed ? { width: '0px', minWidth: '0px' } : {})
-            }}
+            className={`transition-all duration-200 ease-in-out relative`}
           >
+            {/* Toggle button - stays visible when collapsed/expanded */}
+            <button
+              onClick={isSidebarCollapsed ? handleExpandSidebar : handleCollapseSidebar}
+              className="absolute top-0 right-0 z-10 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+              aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              data-testid="toggle-sidebar-button"
+              title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              style={{ 
+                minWidth: '36px',
+                minHeight: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              {isSidebarCollapsed ? (
+                <ChevronRight className="h-5 w-5" style={{ color: '#AF87FF' }} />
+              ) : (
+                <ChevronLeft className="h-5 w-5" style={{ color: '#AF87FF' }} />
+              )}
+            </button>
+            
             {/* Left sidebar - Apple ML Research Style */}
             <div className={`${isSidebarCollapsed ? 'hidden' : 'block'}`}>
             <aside className="min-w-0 pr-2 relative" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word', alignSelf: 'flex-start', maxHeight: publicationsHeight ? `${publicationsHeight}px` : 'none', display: 'flex', flexDirection: 'column' }} role="complementary" aria-label="Research filters">
-            {/* Collapse button - top right of sidebar */}
-            {!isSidebarCollapsed && (
-              <button
-                onClick={handleCollapseSidebar}
-                className="absolute top-0 right-2 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
-                aria-label="Collapse sidebar"
-                data-testid="collapse-sidebar-button"
-                title="Collapse sidebar"
-              >
-                <ChevronLeft className="h-5 w-5" style={{ color: '#AF87FF' }} />
-              </button>
-            )}
             
             {/* Research Areas Filter */}
             <section className="mb-10 min-w-0" style={{ flexShrink: 0 }} role="group" aria-labelledby="research-areas-heading">
@@ -1039,39 +1046,17 @@ export default function Home() {
           </div>
           </ResizablePanel>
           
-          {/* Sidebar resizer - original working version */}
-          <ResizableHandle 
-            withHandle 
-            style={{ 
-              width: '8px',
-              cursor: 'col-resize',
-              backgroundColor: 'rgba(0, 0, 0, 0.05)',
-              transition: 'background-color 0.2s'
-            }} 
-          />
-          
-          {/* Floating expand button when sidebar is collapsed */}
-          {isSidebarCollapsed && (
-            <button
-              onClick={handleExpandSidebar}
-              className="fixed z-30 flex items-center justify-center hover:bg-[#EBEBED] transition-colors"
-              style={{
-                left: '16px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '28px',
-                height: '48px',
-                backgroundColor: '#F5F5F7',
-                border: '1px solid #E5E5E7',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-              }}
-              aria-label="Expand sidebar"
-              data-testid="expand-sidebar-button"
-            >
-              <ChevronRight className="h-5 w-5" style={{ color: '#6E6E73' }} />
-            </button>
+          {/* Sidebar resizer - only visible when sidebar is expanded */}
+          {!isSidebarCollapsed && (
+            <ResizableHandle 
+              withHandle 
+              style={{ 
+                width: '8px',
+                cursor: 'col-resize',
+                backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                transition: 'background-color 0.2s'
+              }} 
+            />
           )}
           
           <ResizablePanel defaultSize={72}>
