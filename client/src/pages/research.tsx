@@ -549,7 +549,7 @@ export default function Home() {
           >
             {/* Left sidebar - Apple ML Research Style */}
             <div className={`${isSidebarCollapsed ? 'hidden' : 'block'}`}>
-            <aside className="min-w-0 pr-2 relative overflow-y-auto sidebar-scrollbar" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word', alignSelf: 'flex-start', maxHeight: publicationsHeight ? `${publicationsHeight}px` : 'none' }} role="complementary" aria-label="Research filters">
+            <aside className="min-w-0 pr-2 relative" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word', alignSelf: 'flex-start', maxHeight: publicationsHeight ? `${publicationsHeight}px` : 'none', display: 'flex', flexDirection: 'column' }} role="complementary" aria-label="Research filters">
             {/* Collapse button - top right of sidebar */}
             {!isSidebarCollapsed && (
               <button
@@ -564,7 +564,7 @@ export default function Home() {
             )}
             
             {/* Research Areas Filter */}
-            <section className="mb-10 min-w-0" role="group" aria-labelledby="research-areas-heading">
+            <section className="mb-10 min-w-0" style={{ flexShrink: 0 }} role="group" aria-labelledby="research-areas-heading">
               {/* Uppercase caption */}
               <div className="mb-3 min-w-0">
                 <span className="text-xs font-medium tracking-wider uppercase break-words" style={{ color: '#6E6E73' }}>RESEARCH AREAS</span>
@@ -678,10 +678,10 @@ export default function Home() {
             </section>
             
             {/* Thin separator */}
-            <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
+            <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7', flexShrink: 0 }}></div>
             
             {/* Published Year Filter */}
-            <section className="mb-10 min-w-0" role="group" aria-labelledby="years-heading">
+            <section className="mb-10 min-w-0" style={{ flexShrink: 0 }} role="group" aria-labelledby="years-heading">
               {/* Uppercase caption */}
               <div className="mb-3 min-w-0">
                 <span className="text-xs font-medium tracking-wider uppercase break-words" style={{ color: '#6E6E73' }}>YEARS</span>
@@ -787,10 +787,10 @@ export default function Home() {
             </section>
             
             {/* Thin separator */}
-            <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7' }}></div>
+            <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7', flexShrink: 0 }}></div>
             
-            {/* Journals Filter */}
-            <section className="mb-10 min-w-0" role="group" aria-labelledby="venues-heading">
+            {/* Journals Filter - scrollable section */}
+            <section className="min-w-0 overflow-y-auto sidebar-scrollbar" style={{ flex: 1, minHeight: 0 }} role="group" aria-labelledby="venues-heading">
               {/* Uppercase caption */}
               <div className="mb-3 min-w-0">
                 <span className="text-xs font-medium tracking-wider uppercase break-words" style={{ color: '#6E6E73' }}>JOURNALS</span>
