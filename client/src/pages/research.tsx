@@ -534,7 +534,7 @@ export default function Home() {
         )}
 
         {/* Main content with sidebar and publications */}
-        <ResizablePanelGroup direction="horizontal" className="w-full" onLayout={handlePanelLayout}>
+        <ResizablePanelGroup direction="horizontal" className="w-full" style={{ alignItems: 'flex-start' }} onLayout={handlePanelLayout}>
           <ResizablePanel 
             ref={sidebarPanelRef} 
             defaultSize={initialSidebarCollapsed ? 1 : sidebarDefaultSize} 
@@ -813,11 +813,12 @@ export default function Home() {
               )}
               
               <div 
-                className="space-y-1 min-w-0 overflow-y-auto sidebar-scrollbar"
+                className="space-y-1 min-w-0 overflow-y-auto sidebar-scrollbar relative"
                 style={{ 
-                  maxHeight: publicationsHeight ? `${publicationsHeight}px` : '60vh',
+                  maxHeight: '50vh',
                   paddingRight: '4px',
-                  marginRight: '-4px'
+                  marginRight: '-4px',
+                  paddingBottom: showAllVenues ? '40px' : '0px'
                 }}
               >
                 <button
@@ -983,8 +984,15 @@ export default function Home() {
                     </CollapsibleSection>
                     <button
                       onClick={() => setShowAllVenues(!showAllVenues)}
-                      className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
-                      style={{ color: '#AF87FF' }}
+                      className="flex items-center text-sm py-2 apple-transition apple-focus-ring"
+                      style={{ 
+                        color: '#AF87FF',
+                        position: showAllVenues ? 'sticky' : 'static',
+                        bottom: 0,
+                        backgroundColor: 'white',
+                        zIndex: 10,
+                        marginTop: '4px'
+                      }}
                       data-testid="toggle-venues"
                       aria-expanded={showAllVenues}
                       aria-label={showAllVenues ? "Show fewer journals" : "Show more journals"}
