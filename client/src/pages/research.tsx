@@ -551,6 +551,33 @@ export default function Home() {
         )}
 
         {/* Main content with sidebar and publications */}
+        <div className="relative w-full">
+          {/* Toggle button - positioned outside ResizablePanelGroup so it stays visible */}
+          <button
+            onClick={isSidebarCollapsed ? handleExpandSidebar : handleCollapseSidebar}
+            className="absolute top-0 z-20 p-2 rounded-full hover:bg-gray-100 transition-all duration-200"
+            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            data-testid="toggle-sidebar-button"
+            title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            style={{ 
+              left: isSidebarCollapsed ? '4px' : 'calc(16% - 40px)',
+              minWidth: '36px',
+              minHeight: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'white',
+              border: '1px solid #E5E5E7',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}
+          >
+            {isSidebarCollapsed ? (
+              <ChevronRight className="h-5 w-5" style={{ color: '#AF87FF' }} />
+            ) : (
+              <ChevronLeft className="h-5 w-5" style={{ color: '#AF87FF' }} />
+            )}
+          </button>
+          
         <ResizablePanelGroup direction="horizontal" className="w-full" style={{ alignItems: 'flex-start' }} onLayout={handlePanelLayout}>
           <ResizablePanel 
             ref={sidebarPanelRef} 
@@ -559,30 +586,8 @@ export default function Home() {
             maxSize={isMobileScreen ? 30 : 25}
             collapsible={true}
             collapsedSize={1}
-            className={`transition-all duration-200 ease-in-out relative`}
+            className={`transition-all duration-200 ease-in-out`}
           >
-            {/* Toggle button - stays visible when collapsed/expanded */}
-            <button
-              onClick={isSidebarCollapsed ? handleExpandSidebar : handleCollapseSidebar}
-              className="absolute top-0 right-0 z-10 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
-              aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              data-testid="toggle-sidebar-button"
-              title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              style={{ 
-                minWidth: '36px',
-                minHeight: '36px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              {isSidebarCollapsed ? (
-                <ChevronRight className="h-5 w-5" style={{ color: '#AF87FF' }} />
-              ) : (
-                <ChevronLeft className="h-5 w-5" style={{ color: '#AF87FF' }} />
-              )}
-            </button>
-            
             {/* Left sidebar - Apple ML Research Style */}
             <div className={`${isSidebarCollapsed ? 'hidden' : 'block'}`}>
             <aside className="min-w-0 pr-2 relative" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word', alignSelf: 'flex-start', maxHeight: publicationsHeight ? `${publicationsHeight}px` : 'none', display: 'flex', flexDirection: 'column' }} role="complementary" aria-label="Research filters">
@@ -1289,6 +1294,7 @@ export default function Home() {
           </section>
           </ResizablePanel>
         </ResizablePanelGroup>
+        </div>
 
         {/* Pagination controls - Apple style */}
         {!isLoading && allPublications.length > 0 && (
