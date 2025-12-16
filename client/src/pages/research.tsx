@@ -815,10 +815,9 @@ export default function Home() {
               <div 
                 className="space-y-1 min-w-0 overflow-y-auto sidebar-scrollbar relative"
                 style={{ 
-                  maxHeight: '50vh',
+                  maxHeight: showAllVenues ? 'none' : (publicationsHeight ? `${Math.min(publicationsHeight, window.innerHeight * 0.6)}px` : '60vh'),
                   paddingRight: '4px',
-                  marginRight: '-4px',
-                  paddingBottom: showAllVenues ? '40px' : '0px'
+                  marginRight: '-4px'
                 }}
               >
                 <button
@@ -982,34 +981,43 @@ export default function Home() {
                         })}
                       </div>
                     </CollapsibleSection>
-                    <button
-                      onClick={() => setShowAllVenues(!showAllVenues)}
-                      className="flex items-center text-sm py-2 apple-transition apple-focus-ring"
-                      style={{ 
-                        color: '#AF87FF',
-                        position: showAllVenues ? 'sticky' : 'static',
-                        bottom: 0,
-                        backgroundColor: 'white',
-                        zIndex: 10,
-                        marginTop: '4px'
-                      }}
-                      data-testid="toggle-venues"
-                      aria-expanded={showAllVenues}
-                      aria-label={showAllVenues ? "Show fewer journals" : "Show more journals"}
-                    >
-                      {showAllVenues ? (
-                        <>
-                          Less <ChevronUp className="ml-1 h-4 w-4" />
-                        </>
-                      ) : (
-                        <>
-                          More <ChevronDown className="ml-1 h-4 w-4" />
-                        </>
-                      )}
-                    </button>
                   </>
                 )}
               </div>
+              {/* Sticky footer for More/Less toggle when journals are expanded */}
+              {hiddenVenues.length > 0 && (
+                <div 
+                  style={{ 
+                    position: showAllVenues ? 'sticky' : 'static',
+                    bottom: 0,
+                    backgroundColor: 'white',
+                    zIndex: 10,
+                    paddingTop: '8px',
+                    paddingBottom: '4px',
+                    marginTop: '4px',
+                    boxShadow: showAllVenues ? '0 -4px 8px -4px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  <button
+                    onClick={() => setShowAllVenues(!showAllVenues)}
+                    className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
+                    style={{ color: '#AF87FF' }}
+                    data-testid="toggle-venues"
+                    aria-expanded={showAllVenues}
+                    aria-label={showAllVenues ? "Show fewer journals" : "Show more journals"}
+                  >
+                    {showAllVenues ? (
+                      <>
+                        Less <ChevronUp className="ml-1 h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        More <ChevronDown className="ml-1 h-4 w-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </section>
           </aside>
           </div>
