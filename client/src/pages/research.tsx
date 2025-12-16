@@ -561,9 +561,37 @@ export default function Home() {
             collapsedSize={1}
             className={`transition-all duration-200 ease-in-out`}
           >
+            {/* Expand button when sidebar is collapsed */}
+            {isSidebarCollapsed && (
+              <div className="h-full flex items-start justify-center pt-2">
+                <button
+                  onClick={handleExpandSidebar}
+                  className="p-2 rounded hover:bg-gray-100 transition-colors duration-200"
+                  aria-label="Expand sidebar"
+                  data-testid="expand-sidebar-button"
+                  title="Expand sidebar"
+                >
+                  <ChevronRight className="h-5 w-5" style={{ color: '#AF87FF' }} />
+                </button>
+              </div>
+            )}
+            
             {/* Left sidebar - Apple ML Research Style */}
             <div className={`${isSidebarCollapsed ? 'hidden' : 'block'}`}>
             <aside className="min-w-0 pr-2 relative" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word', alignSelf: 'flex-start', maxHeight: publicationsHeight ? `${publicationsHeight}px` : 'none', display: 'flex', flexDirection: 'column' }} role="complementary" aria-label="Research filters">
+            
+            {/* Collapse button at top of sidebar */}
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={handleCollapseSidebar}
+                className="p-1.5 rounded hover:bg-gray-100 transition-colors duration-200"
+                aria-label="Collapse sidebar"
+                data-testid="collapse-sidebar-button"
+                title="Collapse sidebar"
+              >
+                <ChevronLeft className="h-4 w-4" style={{ color: '#6E6E73' }} />
+              </button>
+            </div>
             
             {/* Research Areas Filter */}
             <section className="mb-10 min-w-0" style={{ flexShrink: 0 }} role="group" aria-labelledby="research-areas-heading">
