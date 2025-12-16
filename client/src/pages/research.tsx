@@ -551,33 +551,6 @@ export default function Home() {
         )}
 
         {/* Main content with sidebar and publications */}
-        <div className="relative w-full">
-          {/* Toggle button - positioned outside ResizablePanelGroup so it stays visible */}
-          <button
-            onClick={isSidebarCollapsed ? handleExpandSidebar : handleCollapseSidebar}
-            className="absolute top-0 z-20 p-2 rounded-full hover:bg-gray-100 transition-all duration-200"
-            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            data-testid="toggle-sidebar-button"
-            title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            style={{ 
-              left: isSidebarCollapsed ? '4px' : 'calc(16% - 40px)',
-              minWidth: '36px',
-              minHeight: '36px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'white',
-              border: '1px solid #E5E5E7',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}
-          >
-            {isSidebarCollapsed ? (
-              <ChevronRight className="h-5 w-5" style={{ color: '#AF87FF' }} />
-            ) : (
-              <ChevronLeft className="h-5 w-5" style={{ color: '#AF87FF' }} />
-            )}
-          </button>
-          
         <ResizablePanelGroup direction="horizontal" className="w-full" style={{ alignItems: 'flex-start' }} onLayout={handlePanelLayout}>
           <ResizablePanel 
             ref={sidebarPanelRef} 
@@ -1051,18 +1024,25 @@ export default function Home() {
           </div>
           </ResizablePanel>
           
-          {/* Sidebar resizer - only visible when sidebar is expanded */}
-          {!isSidebarCollapsed && (
-            <ResizableHandle 
-              withHandle 
+          {/* Sidebar resizer - visible adjustable divider bar */}
+          <ResizableHandle 
+            className="group relative flex items-center justify-center"
+            style={{ 
+              width: '12px',
+              cursor: 'col-resize',
+              backgroundColor: '#F0F0F2',
+              transition: 'background-color 0.2s'
+            }}
+          >
+            {/* Inner grip line indicator */}
+            <div 
+              className="absolute h-full w-[2px] rounded-full group-hover:bg-[#AF87FF] transition-colors duration-200"
               style={{ 
-                width: '8px',
-                cursor: 'col-resize',
-                backgroundColor: 'rgba(0, 0, 0, 0.05)',
-                transition: 'background-color 0.2s'
-              }} 
+                backgroundColor: '#C5C5C7',
+                height: '100%'
+              }}
             />
-          )}
+          </ResizableHandle>
           
           <ResizablePanel defaultSize={72}>
             {/* Main content area - Apple typography */}
@@ -1294,7 +1274,6 @@ export default function Home() {
           </section>
           </ResizablePanel>
         </ResizablePanelGroup>
-        </div>
 
         {/* Pagination controls - Apple style */}
         {!isLoading && allPublications.length > 0 && (
