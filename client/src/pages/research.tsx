@@ -1039,8 +1039,16 @@ export default function Home() {
           </div>
           </ResizablePanel>
           
-          {/* Sidebar divider wrapper with full-height grey bar */}
-          <div className="relative" style={{ width: '12px', flexShrink: 0 }}>
+          {/* Sidebar resizer - must be direct child of ResizablePanelGroup */}
+          <ResizableHandle 
+            withHandle={false}
+            className="relative group hover:bg-[#F0F0F2]/50 transition-colors"
+            style={{ 
+              width: '12px',
+              cursor: 'col-resize',
+              backgroundColor: 'transparent'
+            }} 
+          >
             {/* Full-height grey divider bar */}
             <div 
               style={{
@@ -1054,26 +1062,14 @@ export default function Home() {
               }}
             />
             
-            {/* Resizable handle - covers full area for drag functionality */}
-            <ResizableHandle 
-              withHandle={false}
-              className="absolute inset-0 group hover:bg-[#F0F0F2] transition-colors"
-              style={{ 
-                width: '100%',
-                height: '100%',
-                cursor: 'col-resize',
-                backgroundColor: 'transparent'
-              }} 
-            />
-            
             {/* Viewport-centered grab handle - fixed position so it stays centered on screen */}
             {!isSidebarCollapsed && (
               <div
                 style={{
                   position: 'fixed',
                   top: '50vh',
-                  transform: 'translateY(-50%)',
-                  marginLeft: '-2px',
+                  left: 'inherit',
+                  transform: 'translateY(-50%) translateX(-2px)',
                   zIndex: 20,
                   display: 'flex',
                   alignItems: 'center',
@@ -1096,7 +1092,7 @@ export default function Home() {
                 }} />
               </div>
             )}
-          </div>
+          </ResizableHandle>
           
           {/* Floating expand button when sidebar is collapsed */}
           {isSidebarCollapsed && (
