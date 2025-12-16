@@ -568,13 +568,12 @@ export default function Home() {
               <div className="h-full flex items-start justify-center pt-2">
                 <button
                   onClick={handleExpandSidebar}
-                  className="p-3 rounded hover:bg-gray-100 transition-colors duration-200 hover:scale-110"
+                  className="p-1.5 rounded hover:bg-gray-100 transition-colors duration-200"
                   aria-label="Expand sidebar"
                   data-testid="expand-sidebar-button"
                   title="Expand sidebar"
-                  style={{ minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <ChevronRight className="h-6 w-6" style={{ color: '#AF87FF' }} />
+                  <ChevronRight className="h-4 w-4" style={{ color: '#AF87FF' }} />
                 </button>
               </div>
             )}
