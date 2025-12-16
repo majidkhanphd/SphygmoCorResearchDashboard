@@ -565,10 +565,11 @@ export default function Home() {
           >
             {/* Expand button when sidebar is collapsed */}
             {isSidebarCollapsed && (
-              <div className="h-full flex items-start justify-center pt-2">
+              <div className="h-full flex items-start justify-center pt-2 flex-shrink-0">
                 <button
                   onClick={handleExpandSidebar}
-                  className="p-1.5 rounded hover:bg-gray-100 transition-colors duration-200"
+                  className="p-1.5 rounded hover:bg-gray-100 transition-colors duration-200 flex-shrink-0"
+                  style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   aria-label="Expand sidebar"
                   data-testid="expand-sidebar-button"
                   title="Expand sidebar"
