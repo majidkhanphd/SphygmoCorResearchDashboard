@@ -118,7 +118,7 @@ export default function FeaturedCarousel() {
             className="text-2xl sm:text-3xl font-light tracking-tight text-foreground"
             data-testid="featured-heading"
           >
-            Featured Research
+            Featured Research Enabled by SphygmoCor Technology
           </h2>
           
           {featuredPublications.length > 1 && (

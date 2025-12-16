@@ -368,13 +368,15 @@ export default function Home() {
       <div className="w-full py-1 sm:py-2 md:py-2">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Main title - Apple's exact typography - Responsive */}
-        <div className="text-center mb-4 sm:mb-6 md:mb-8">
-          <h1 className="text-sm sm:text-2xl md:text-3xl font-light mb-2 sm:mb-3" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
-            Publications
-          </h1>
-          <p className="text-xs sm:text-sm md:text-sm px-2 sm:px-8 md:px-12 lg:px-16 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.4' }}>
-            Browse our comprehensive collection of peer-reviewed research spanning decades of SphygmoCor technology in practice worldwide.
-          </p>
+        <div className="text-center mb-4 sm:mb-6 md:mb-8 px-2 sm:px-4">
+          <div className="inline-block px-6 sm:px-10 md:px-16 py-6 sm:py-8 md:py-10 rounded-lg" style={{ backgroundColor: '#F6F6F6', border: '1px solid #E5E5E7' }}>
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-light mb-3 sm:mb-4" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
+              Publications
+            </h1>
+            <p className="text-sm sm:text-base md:text-lg px-2 sm:px-4 md:px-6 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.5' }}>
+              Browse our comprehensive collection of peer-reviewed research spanning decades of our SphygmoCor technology in practice worldwide.
+            </p>
+          </div>
         </div>
         
         {/* Page Last Updated */}
