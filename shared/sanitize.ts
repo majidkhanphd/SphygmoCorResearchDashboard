@@ -19,14 +19,8 @@
 export function decodeHTMLEntities(text: string): string {
   if (!text) return text;
 
-  // In browser environment, use DOM APIs
-  if (typeof document !== 'undefined') {
-    const textArea = document.createElement('textarea');
-    textArea.innerHTML = text;
-    return textArea.value;
-  }
-
-  // In Node.js environment, use regex-based decoding
+  // Use regex-based decoding for both browser and Node.js environments
+  // This avoids innerHTML usage which can be flagged by security scanners
   // IMPORTANT: Decode numeric entities FIRST, then named entities
   // This prevents double-decoding (e.g., &amp;lt; → &lt; → <)
   return text
@@ -46,11 +40,32 @@ export function decodeHTMLEntities(text: string): string {
         return match;
       }
     })
-    // Decode named entities LAST (and &amp; must be last of all)
+    // Decode common named entities (most frequently used)
+    .replace(/&nbsp;/g, ' ')
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&ndash;/g, '–')
+    .replace(/&mdash;/g, '—')
+    .replace(/&lsquo;/g, ''')
+    .replace(/&rsquo;/g, ''')
+    .replace(/&ldquo;/g, '"')
+    .replace(/&rdquo;/g, '"')
+    .replace(/&hellip;/g, '…')
+    .replace(/&copy;/g, '©')
+    .replace(/&reg;/g, '®')
+    .replace(/&trade;/g, '™')
+    .replace(/&deg;/g, '°')
+    .replace(/&plusmn;/g, '±')
+    .replace(/&times;/g, '×')
+    .replace(/&divide;/g, '÷')
+    .replace(/&alpha;/g, 'α')
+    .replace(/&beta;/g, 'β')
+    .replace(/&gamma;/g, 'γ')
+    .replace(/&delta;/g, 'δ')
+    .replace(/&micro;/g, 'µ')
+    // Decode &amp; LAST to prevent double-decoding
     .replace(/&amp;/g, '&');
 }
 
