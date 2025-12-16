@@ -881,14 +881,16 @@ export default function Home() {
                               <button
                                 key={childJournal}
                                 onClick={() => handleVenueChange(childJournal)}
-                                className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 ml-6 sm:ml-8 apple-transition apple-focus-ring break-words ${
+                                className={`block text-sm text-left py-2 sm:py-1 pl-6 sm:pl-8 pr-2 apple-transition apple-focus-ring break-words ${
                                   selectedVenue === childJournal
                                     ? "font-medium"
                                     : "hover:opacity-80"
                                 }`}
                                 style={{ 
                                   color: selectedVenue === childJournal ? '#1D1D1F' : '#86868B',
-                                  fontSize: '13px'
+                                  fontSize: '13px',
+                                  width: '100%',
+                                  boxSizing: 'border-box'
                                 }}
                                 data-testid={`venue-child-${childJournal.replace(/\s+/g, '-').toLowerCase()}`}
                                 aria-pressed={selectedVenue === childJournal}
@@ -954,14 +956,16 @@ export default function Home() {
                                       <button
                                         key={childJournal}
                                         onClick={() => handleVenueChange(childJournal)}
-                                        className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 ml-6 sm:ml-8 apple-transition apple-focus-ring break-words ${
+                                        className={`block text-sm text-left py-2 sm:py-1 pl-6 sm:pl-8 pr-2 apple-transition apple-focus-ring break-words ${
                                           selectedVenue === childJournal
                                             ? "font-medium"
                                             : "hover:opacity-80"
                                         }`}
                                         style={{ 
                                           color: selectedVenue === childJournal ? '#1D1D1F' : '#86868B',
-                                          fontSize: '13px'
+                                          fontSize: '13px',
+                                          width: '100%',
+                                          boxSizing: 'border-box'
                                         }}
                                         data-testid={`venue-child-${childJournal.replace(/\s+/g, '-').toLowerCase()}`}
                                         aria-pressed={selectedVenue === childJournal}
