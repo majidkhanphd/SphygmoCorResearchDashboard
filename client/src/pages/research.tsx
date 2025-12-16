@@ -55,6 +55,11 @@ export default function Home() {
     const saved = localStorage.getItem('publicationsPerPage');
     return saved ? parseInt(saved) : 25;
   });
+  // Fetch batch size - starts at 100, upgrades to 200 when user selects 200 per page
+  const [fetchBatchSize, setFetchBatchSize] = useState<number>(() => {
+    const savedPerPage = localStorage.getItem('publicationsPerPage');
+    return savedPerPage && parseInt(savedPerPage) > 100 ? 200 : 100;
+  });
   const resultsRef = useRef<HTMLDivElement>(null);
   const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
   const [sidebarSize, setSidebarSize] = useState(16);
@@ -119,16 +124,24 @@ export default function Home() {
     }
   }, [initialSidebarCollapsed]);
 
-  // Reset to page 1 when filters or perPage changes
+  // Reset to page 1 when filters change (but NOT when perPage changes - that's client-side now)
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchQuery, selectedResearchArea, selectedVenue, selectedYear, sortBy, perPage]);
+  }, [debouncedSearchQuery, selectedResearchArea, selectedVenue, selectedYear, sortBy]);
   
-  // Persist perPage to localStorage
+  // Handle perPage changes - upgrade batch size if needed, reset page
   useEffect(() => {
+    // Reset to page 1 when perPage changes
+    setCurrentPage(1);
+    // Upgrade batch size if user selects 200
+    if (perPage > 100 && fetchBatchSize < 200) {
+      setFetchBatchSize(200);
+    }
+    // Persist to localStorage
     localStorage.setItem('publicationsPerPage', perPage.toString());
-  }, [perPage]);
+  }, [perPage, fetchBatchSize]);
 
+  // Fetch a batch of publications - client-side pagination will slice this
   const { 
     data, 
     isLoading
@@ -139,8 +152,7 @@ export default function Home() {
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy,
-      limit: perPage,
-      page: currentPage
+      limit: fetchBatchSize
     }],
     queryFn: () => searchPublications({
       query: debouncedSearchQuery || undefined,
@@ -148,8 +160,8 @@ export default function Home() {
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy,
-      limit: perPage,
-      offset: (currentPage - 1) * perPage
+      limit: fetchBatchSize,
+      offset: 0
     })
   });
 
@@ -245,8 +257,13 @@ export default function Home() {
     setIsSidebarCollapsed(false);
   };
 
-  // Get publications from current page
-  const allPublications = data?.publications || [];
+  // Get all fetched publications from the batch
+  const fetchedPublications = data?.publications || [];
+  
+  // Client-side pagination - slice the fetched batch based on perPage and currentPage
+  const startIndex = (currentPage - 1) * perPage;
+  const endIndex = startIndex + perPage;
+  const allPublications = fetchedPublications.slice(startIndex, endIndex);
   
   // Get authoritative filter counts from the backend
   const backendFilterCounts = data?.filterCounts || {
@@ -262,9 +279,9 @@ export default function Home() {
     years: backendFilterCounts.years
   };
   
-  // Get pagination data
-  const totalPages = data?.totalPages || 0;
+  // Get pagination data - use server total for accurate count, calculate pages client-side
   const totalResults = data?.total || 0;
+  const totalPages = Math.ceil(totalResults / perPage);
 
   // Get venues from backend filter counts for authoritative list - sorted by count (descending)
   const venues = Object.keys(backendFilterCounts.venues).sort((a, b) => {
