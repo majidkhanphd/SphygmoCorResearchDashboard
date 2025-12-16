@@ -549,7 +549,7 @@ export default function Home() {
           >
             {/* Left sidebar - Apple ML Research Style */}
             <div className={`${isSidebarCollapsed ? 'hidden' : 'block'}`}>
-            <aside className="min-w-0 pr-2 relative" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word', alignSelf: 'flex-start' }} role="complementary" aria-label="Research filters">
+            <aside className="min-w-0 pr-2 relative overflow-y-auto sidebar-scrollbar" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word', alignSelf: 'flex-start', maxHeight: publicationsHeight ? `${publicationsHeight}px` : 'none' }} role="complementary" aria-label="Research filters">
             {/* Collapse button - top right of sidebar */}
             {!isSidebarCollapsed && (
               <button
@@ -813,9 +813,8 @@ export default function Home() {
               )}
               
               <div 
-                className="space-y-1 min-w-0 overflow-y-auto sidebar-scrollbar relative"
+                className="space-y-1 min-w-0 relative"
                 style={{ 
-                  maxHeight: showAllVenues ? 'none' : (publicationsHeight ? `${Math.min(publicationsHeight, window.innerHeight * 0.6)}px` : '60vh'),
                   paddingRight: '4px',
                   marginRight: '-4px'
                 }}
