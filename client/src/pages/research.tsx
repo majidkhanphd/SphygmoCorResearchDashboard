@@ -1039,15 +1039,83 @@ export default function Home() {
           </div>
           </ResizablePanel>
           
+          {/* Sidebar divider with centered handle */}
           <ResizableHandle 
-            withHandle 
+            withHandle={false}
+            className="relative group"
             style={{ 
-              width: '8px',
+              width: '12px',
               cursor: 'col-resize',
-              backgroundColor: 'rgba(0, 0, 0, 0.05)',
-              transition: 'background-color 0.2s'
+              backgroundColor: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }} 
-          />
+          >
+            {/* Visible grey divider bar */}
+            <div 
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: 0,
+                bottom: 0,
+                width: '1px',
+                backgroundColor: '#E5E5E7',
+                transform: 'translateX(-50%)'
+              }}
+            />
+            {/* Centered grabber handle - uses fixed positioning to stay in viewport center */}
+            <div
+              style={{
+                position: 'fixed',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                zIndex: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '16px',
+                height: '48px',
+                backgroundColor: '#F5F5F7',
+                border: '1px solid #E5E5E7',
+                borderRadius: '4px',
+                cursor: 'col-resize',
+                transition: 'background-color 0.2s, box-shadow 0.2s'
+              }}
+              className="hover:bg-[#EBEBED] hover:shadow-sm"
+            >
+              <div style={{ 
+                width: '4px', 
+                height: '24px', 
+                backgroundColor: '#C7C7CC',
+                borderRadius: '2px'
+              }} />
+            </div>
+          </ResizableHandle>
+          
+          {/* Floating expand button when sidebar is collapsed */}
+          {isSidebarCollapsed && (
+            <button
+              onClick={handleExpandSidebar}
+              className="fixed z-30 flex items-center justify-center hover:bg-[#EBEBED] transition-colors"
+              style={{
+                left: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '28px',
+                height: '48px',
+                backgroundColor: '#F5F5F7',
+                border: '1px solid #E5E5E7',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              }}
+              aria-label="Expand sidebar"
+              data-testid="expand-sidebar-button"
+            >
+              <ChevronRight className="h-5 w-5" style={{ color: '#6E6E73' }} />
+            </button>
+          )}
           
           <ResizablePanel defaultSize={72}>
             {/* Main content area - Apple typography */}
