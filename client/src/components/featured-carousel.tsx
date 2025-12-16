@@ -37,7 +37,7 @@ const getBadgeDisplayName = (category: string): string => {
 const ABSTRACT_SECTION_HEADERS = [
   'Background',
   'Objective',
-  'Objectives',
+  'Objectives', 
   'Study Objective',
   'Study Objectives',
   'Aim',
@@ -69,42 +69,96 @@ const ABSTRACT_SECTION_HEADERS = [
   'Trial Registration',
 ];
 
+interface ParsedSection {
+  header: string;
+  content: string;
+  position: number;
+}
+
 const formatAbstract = (abstract: string): JSX.Element[] => {
   const sanitized = sanitizeText(abstract);
-  const elements: JSX.Element[] = [];
   
-  const headerPattern = new RegExp(
-    `(${ABSTRACT_SECTION_HEADERS.map(h => h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\s*[:.]?\\s*`,
-    'gi'
-  );
-  
-  const parts = sanitized.split(headerPattern);
-  
-  let currentIndex = 0;
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i]?.trim();
-    if (!part) continue;
-    
-    const isHeader = ABSTRACT_SECTION_HEADERS.some(
-      h => h.toLowerCase() === part.toLowerCase()
-    );
-    
-    if (isHeader) {
-      elements.push(
-        <span key={`header-${currentIndex}`} className="block mt-3 first:mt-0">
-          <span style={{ fontWeight: '600', color: '#1D1D1F' }}>{part}:</span>{' '}
-        </span>
-      );
-    } else {
-      elements.push(
-        <span key={`text-${currentIndex}`}>{part}</span>
-      );
-    }
-    currentIndex++;
+  if (!sanitized || sanitized.trim().length === 0) {
+    return [<span key="empty">No abstract available.</span>];
   }
   
+  const foundSections: ParsedSection[] = [];
+  
+  for (const header of ABSTRACT_SECTION_HEADERS) {
+    const escapedHeader = header.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const boundaryPattern = new RegExp(
+      `(?:^|[.!?]\\s+|\\n\\s*)${escapedHeader}\\s*[:–\\-]\\s*`,
+      'gi'
+    );
+    
+    let match;
+    while ((match = boundaryPattern.exec(sanitized)) !== null) {
+      const headerStart = match.index;
+      const headerMatch = match[0];
+      const contentStart = headerStart + headerMatch.length;
+      
+      const existsAtPosition = foundSections.some(
+        s => Math.abs(s.position - headerStart) < 5
+      );
+      
+      if (!existsAtPosition) {
+        foundSections.push({
+          header: header,
+          content: '',
+          position: contentStart,
+        });
+      }
+    }
+  }
+  
+  if (foundSections.length < 2) {
+    return [<span key="unstructured">{sanitized}</span>];
+  }
+  
+  foundSections.sort((a, b) => a.position - b.position);
+  
+  for (let i = 0; i < foundSections.length; i++) {
+    const startPos = foundSections[i].position;
+    const endPos = i < foundSections.length - 1 
+      ? sanitized.lastIndexOf(foundSections[i + 1].header, foundSections[i + 1].position)
+      : sanitized.length;
+    
+    let content = sanitized.substring(startPos, endPos).trim();
+    
+    content = content.replace(/[.!?]\s*$/, '').trim();
+    if (content) content += '.';
+    
+    foundSections[i].content = content;
+  }
+  
+  const firstSectionStart = foundSections.length > 0 
+    ? sanitized.indexOf(foundSections[0].header)
+    : sanitized.length;
+  const preamble = sanitized.substring(0, firstSectionStart).trim();
+  
+  const elements: JSX.Element[] = [];
+  
+  if (preamble && preamble.length > 20) {
+    elements.push(
+      <span key="preamble" className="block mb-3">
+        {preamble}
+      </span>
+    );
+  }
+  
+  foundSections.forEach((section, index) => {
+    if (section.content.length > 0) {
+      elements.push(
+        <span key={`section-${index}`} className="block mt-3 first:mt-0">
+          <span style={{ fontWeight: '600', color: '#1D1D1F' }}>{section.header}:</span>{' '}
+          <span>{section.content}</span>
+        </span>
+      );
+    }
+  });
+  
   if (elements.length === 0) {
-    return [<span key="full">{sanitized}</span>];
+    return [<span key="fallback">{sanitized}</span>];
   }
   
   return elements;
