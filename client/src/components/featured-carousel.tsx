@@ -34,6 +34,82 @@ const getBadgeDisplayName = (category: string): string => {
   return displayName;
 };
 
+const ABSTRACT_SECTION_HEADERS = [
+  'Background',
+  'Objective',
+  'Objectives',
+  'Study Objective',
+  'Study Objectives',
+  'Aim',
+  'Aims',
+  'Purpose',
+  'Introduction',
+  'Methods',
+  'Method',
+  'Materials and Methods',
+  'Study Design',
+  'Design',
+  'Patients',
+  'Participants',
+  'Subjects',
+  'Setting',
+  'Measurements',
+  'Interventions',
+  'Results',
+  'Findings',
+  'Outcomes',
+  'Main Results',
+  'Key Results',
+  'Conclusions',
+  'Conclusion',
+  'Discussion',
+  'Interpretation',
+  'Clinical Implications',
+  'Significance',
+  'Trial Registration',
+];
+
+const formatAbstract = (abstract: string): JSX.Element[] => {
+  const sanitized = sanitizeText(abstract);
+  const elements: JSX.Element[] = [];
+  
+  const headerPattern = new RegExp(
+    `(${ABSTRACT_SECTION_HEADERS.map(h => h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\s*[:.]?\\s*`,
+    'gi'
+  );
+  
+  const parts = sanitized.split(headerPattern);
+  
+  let currentIndex = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]?.trim();
+    if (!part) continue;
+    
+    const isHeader = ABSTRACT_SECTION_HEADERS.some(
+      h => h.toLowerCase() === part.toLowerCase()
+    );
+    
+    if (isHeader) {
+      elements.push(
+        <span key={`header-${currentIndex}`} className="block mt-3 first:mt-0">
+          <span style={{ fontWeight: '600', color: '#1D1D1F' }}>{part}:</span>{' '}
+        </span>
+      );
+    } else {
+      elements.push(
+        <span key={`text-${currentIndex}`}>{part}</span>
+      );
+    }
+    currentIndex++;
+  }
+  
+  if (elements.length === 0) {
+    return [<span key="full">{sanitized}</span>];
+  }
+  
+  return elements;
+};
+
 export default function FeaturedCarousel() {
   const { data: featuredPublications, isLoading } = useQuery({
     queryKey: ["/api/publications/featured"],
@@ -262,19 +338,29 @@ export default function FeaturedCarousel() {
                       )}
                     </p>
 
-                    {areAbstractsExpanded && publication.abstract && (
-                      <p
-                        className="mb-3"
-                        style={{
-                          fontSize: '11px',
-                          color: '#6E6E73',
-                          lineHeight: '1.5',
-                        }}
-                        data-testid={`card-abstract-${index}`}
-                      >
-                        {sanitizeText(publication.abstract)}
-                      </p>
-                    )}
+                    <AnimatePresence>
+                      {areAbstractsExpanded && publication.abstract && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3, ease: 'easeInOut' }}
+                          className="overflow-hidden"
+                        >
+                          <div
+                            className="mb-3 pt-2"
+                            style={{
+                              fontSize: '12px',
+                              color: '#6E6E73',
+                              lineHeight: '1.6',
+                            }}
+                            data-testid={`card-abstract-${index}`}
+                          >
+                            {formatAbstract(publication.abstract)}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
                     <button
                       onClick={toggleExpand}
