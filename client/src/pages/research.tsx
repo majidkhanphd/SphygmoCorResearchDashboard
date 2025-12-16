@@ -556,11 +556,11 @@ export default function Home() {
         <ResizablePanelGroup direction="horizontal" className="w-full" style={{ alignItems: 'flex-start' }} onLayout={handlePanelLayout}>
           <ResizablePanel 
             ref={sidebarPanelRef} 
-            defaultSize={initialSidebarCollapsed ? 1 : sidebarDefaultSize} 
+            defaultSize={initialSidebarCollapsed ? 3 : sidebarDefaultSize} 
             minSize={sidebarMinSize} 
             maxSize={isMobileScreen ? 30 : 25}
             collapsible={true}
-            collapsedSize={1}
+            collapsedSize={3}
             className={`transition-all duration-200 ease-in-out`}
           >
             {/* Expand button when sidebar is collapsed */}
