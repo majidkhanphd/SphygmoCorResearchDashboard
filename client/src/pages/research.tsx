@@ -420,7 +420,7 @@ export default function Home() {
       {/* Publications Section - Extended tracking area for gradient */}
       <div 
         ref={bannerSectionRef}
-        className="w-full py-1 sm:py-2 md:py-2"
+        className="w-full pt-12 sm:pt-16 md:pt-20 pb-1 sm:pb-2 md:pb-2"
         onMouseMove={handleSectionMouseMove}
         onMouseLeave={handleSectionMouseLeave}
       >
