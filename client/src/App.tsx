@@ -1,12 +1,25 @@
 import { Switch, Route } from "wouter";
+import { lazy, Suspense } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Research from "@/pages/research";
 import RedirectToHome from "@/components/redirect-to-home";
-import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
+
+const Admin = lazy(() => import("@/pages/admin"));
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-8 h-8 border-3 border-[#AF87FF] border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm text-gray-500">Loading...</span>
+      </div>
+    </div>
+  );
+}
 
 function Router() {
   return (
@@ -21,8 +34,14 @@ function Router() {
       <Route path="/updates" component={RedirectToHome} />
       <Route path="/work-with-us" component={RedirectToHome} />
       
-      {/* Admin route - keep for backend functionality */}
-      <Route path="/admin" component={Admin} />
+      {/* Admin route - lazy loaded */}
+      <Route path="/admin">
+        {() => (
+          <Suspense fallback={<PageLoader />}>
+            <Admin />
+          </Suspense>
+        )}
+      </Route>
       
       {/* 404 fallback */}
       <Route component={NotFound} />
