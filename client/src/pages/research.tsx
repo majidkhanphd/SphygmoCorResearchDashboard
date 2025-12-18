@@ -88,6 +88,22 @@ export default function Home() {
   const [initialSidebarCollapsed] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth < 640;
   });
+  
+  // Mouse-reactive gradient for Publications banner
+  const [bannerMousePos, setBannerMousePos] = useState({ x: 50, y: 50 });
+  const bannerRef = useRef<HTMLDivElement>(null);
+  
+  const handleBannerMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!bannerRef.current) return;
+    const rect = bannerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setBannerMousePos({ x, y });
+  };
+  
+  const handleBannerMouseLeave = () => {
+    setBannerMousePos({ x: 50, y: 50 });
+  };
 
   // Update sidebar default size and min size on window resize
   useEffect(() => {
@@ -369,7 +385,26 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-4 sm:mb-6 md:mb-8 px-2 sm:px-4">
-          <div className="inline-block px-6 sm:px-10 md:px-16 py-6 sm:py-8 md:py-10 rounded-lg" style={{ backgroundColor: '#F6F6F6', border: '1px solid #E5E5E7' }}>
+          <div 
+            ref={bannerRef}
+            onMouseMove={handleBannerMouseMove}
+            onMouseLeave={handleBannerMouseLeave}
+            className="inline-block px-6 sm:px-10 md:px-16 py-6 sm:py-8 md:py-10 rounded-lg transition-all duration-300 ease-out"
+            style={{ 
+              background: `
+                radial-gradient(
+                  ellipse 80% 80% at ${bannerMousePos.x}% ${bannerMousePos.y}%,
+                  rgba(175, 135, 255, 0.15) 0%,
+                  rgba(200, 175, 255, 0.08) 30%,
+                  rgba(235, 225, 255, 0.05) 50%,
+                  rgba(246, 246, 246, 1) 80%
+                )
+              `,
+              border: '1px solid rgba(175, 135, 255, 0.2)',
+              boxShadow: '0 4px 20px rgba(175, 135, 255, 0.08)'
+            }}
+            data-testid="publications-banner"
+          >
             <h1 className="text-2xl sm:text-4xl md:text-5xl font-light mb-3 sm:mb-4" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
               Publications
             </h1>
