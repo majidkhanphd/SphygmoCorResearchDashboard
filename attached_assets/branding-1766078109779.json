@@ -1,0 +1,132 @@
+{
+  "colorScheme": "light",
+  "fonts": [
+    {
+      "family": "Montserrat",
+      "count": 59
+    },
+    {
+      "family": "-apple-system",
+      "count": 48
+    },
+    {
+      "family": "BlinkMacSystemFont",
+      "count": 48
+    },
+    {
+      "family": "Segoe UI",
+      "count": 48
+    },
+    {
+      "family": "Roboto",
+      "count": 48
+    },
+    {
+      "family": "Oxygen-Sans",
+      "count": 48
+    },
+    {
+      "family": "Ubuntu",
+      "count": 48
+    },
+    {
+      "family": "Cantarell",
+      "count": 48
+    },
+    {
+      "family": "Helvetica Neue",
+      "count": 48
+    },
+    {
+      "family": "sans-serif",
+      "count": 48
+    }
+  ],
+  "colors": {
+    "primary": "#AF87FF",
+    "accent": "#516E80",
+    "background": "#FFFFFF",
+    "textPrimary": "#242422",
+    "link": "#516E80"
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "Montserrat",
+      "heading": "Montserrat"
+    },
+    "fontStacks": {
+      "body": [
+        "Montserrat",
+        "-apple-system",
+        "BlinkMacSystemFont",
+        "Segoe UI",
+        "Roboto",
+        "Oxygen-Sans",
+        "Ubuntu",
+        "Cantarell",
+        "Helvetica Neue",
+        "sans-serif"
+      ],
+      "heading": [
+        "Montserrat",
+        "-apple-system",
+        "BlinkMacSystemFont",
+        "Segoe UI",
+        "Roboto",
+        "Oxygen-Sans",
+        "Ubuntu",
+        "Cantarell",
+        "Helvetica Neue",
+        "sans-serif"
+      ],
+      "paragraph": [
+        "Montserrat",
+        "-apple-system",
+        "BlinkMacSystemFont",
+        "Segoe UI",
+        "Roboto",
+        "Oxygen-Sans",
+        "Ubuntu",
+        "Cantarell",
+        "Helvetica Neue",
+        "sans-serif"
+      ]
+    },
+    "fontSizes": {
+      "h1": "40px",
+      "h2": "40px",
+      "body": "16px"
+    }
+  },
+  "spacing": {
+    "baseUnit": 4,
+    "borderRadius": "5px"
+  },
+  "components": {},
+  "images": {
+    "logo": null,
+    "favicon": "https://conneqthealth.com/wp-content/uploads/2022/12/favicon-2.png",
+    "ogImage": null
+  },
+  "__framework_hints": [
+    "Site Kit by Google 1.168.0"
+  ],
+  "__llm_button_reasoning": {
+    "primary": {
+      "index": -1,
+      "text": "N/A",
+      "reasoning": "LLM failed"
+    },
+    "secondary": {
+      "index": -1,
+      "text": "N/A",
+      "reasoning": "LLM failed"
+    },
+    "confidence": 0
+  },
+  "confidence": {
+    "buttons": 0,
+    "colors": 0,
+    "overall": 0
+  }
+}
