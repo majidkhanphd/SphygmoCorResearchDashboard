@@ -429,19 +429,16 @@ export default function Home() {
         <div className="text-center mb-4 sm:mb-6 md:mb-8 px-2 sm:px-4">
           <div 
             ref={bannerRef}
-            className="inline-block px-6 sm:px-10 md:px-16 py-6 sm:py-8 md:py-10 rounded-lg banner-glow-pulse"
+            className="inline-block px-6 sm:px-10 md:px-16 py-6 sm:py-8 md:py-10 rounded-lg relative"
             style={{ 
-              background: `
-                radial-gradient(
-                  ellipse 150% 150% at ${smoothPos.x}% ${smoothPos.y}%,
-                  rgba(175, 135, 255, 0.09) 0%,
-                  rgba(200, 175, 255, 0.05) 30%,
-                  rgba(225, 215, 255, 0.025) 50%,
-                  rgba(246, 246, 246, 1) 80%
-                )
-              `,
+              background: 'rgba(246, 246, 246, 1)',
               border: '1px solid rgba(175, 135, 255, 0.15)',
-              transition: 'border-color 0.3s ease'
+              boxShadow: `
+                0 4px 25px rgba(175, 135, 255, ${0.08 + Math.abs(smoothPos.x - 50) * 0.002}),
+                0 0 ${40 + Math.abs(smoothPos.y - 50) * 0.5}px rgba(175, 135, 255, 0.1),
+                ${(smoothPos.x - 50) * 0.3}px ${(smoothPos.y - 50) * 0.2}px 35px rgba(175, 135, 255, 0.12)
+              `,
+              transition: 'box-shadow 0.15s ease-out'
             }}
             data-testid="publications-banner"
           >
