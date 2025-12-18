@@ -211,3 +211,21 @@ select:focus-visible {
 .sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.25);
 }
+
+/* Pulsing glow animation for Publications banner */
+@keyframes banner-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(175, 135, 255, 0.08),
+                0 0 30px rgba(175, 135, 255, 0.05),
+                inset 0 0 20px rgba(175, 135, 255, 0.02);
+  }
+  50% {
+    box-shadow: 0 4px 30px rgba(175, 135, 255, 0.15),
+                0 0 50px rgba(175, 135, 255, 0.1),
+                inset 0 0 30px rgba(175, 135, 255, 0.05);
+  }
+}
+
+.banner-glow-pulse {
+  animation: banner-glow-pulse 4s ease-in-out infinite;
+}

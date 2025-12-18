@@ -89,20 +89,57 @@ export default function Home() {
     return typeof window !== 'undefined' && window.innerWidth < 640;
   });
   
-  // Mouse-reactive gradient for Publications banner
-  const [bannerMousePos, setBannerMousePos] = useState({ x: 50, y: 50 });
+  // Mouse-reactive gradient for Publications banner with smooth animation
+  const [isTrackingMouse, setIsTrackingMouse] = useState(false);
+  const targetPosRef = useRef({ x: 50, y: 50 });
+  const [smoothPos, setSmoothPos] = useState({ x: 50, y: 50 });
   const bannerRef = useRef<HTMLDivElement>(null);
+  const bannerSectionRef = useRef<HTMLDivElement>(null);
   
-  const handleBannerMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  // Continuous smooth position interpolation - runs always
+  useEffect(() => {
+    let animationFrame: number;
+    const startTime = Date.now();
+    
+    const animate = () => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      
+      // If not tracking mouse, add gentle idle drift
+      if (!isTrackingMouse) {
+        const idleX = Math.sin(elapsed * 0.3) * 15 + Math.sin(elapsed * 0.7) * 8;
+        const idleY = Math.cos(elapsed * 0.4) * 12 + Math.cos(elapsed * 0.6) * 6;
+        targetPosRef.current = { x: 50 + idleX, y: 50 + idleY };
+      }
+      
+      // Smoothly interpolate toward target
+      setSmoothPos(prev => ({
+        x: prev.x + (targetPosRef.current.x - prev.x) * 0.06,
+        y: prev.y + (targetPosRef.current.y - prev.y) * 0.06
+      }));
+      
+      animationFrame = requestAnimationFrame(animate);
+    };
+    
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [isTrackingMouse]);
+  
+  // Extended mouse tracking - works across the entire page section
+  const handleSectionMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!bannerRef.current) return;
+    setIsTrackingMouse(true);
     const rect = bannerRef.current.getBoundingClientRect();
+    // Calculate position relative to banner, allowing extended range beyond borders
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setBannerMousePos({ x, y });
+    // Allow tracking well beyond the banner bounds for seamless movement
+    const clampedX = Math.max(-50, Math.min(150, x));
+    const clampedY = Math.max(-50, Math.min(150, y));
+    targetPosRef.current = { x: clampedX, y: clampedY };
   };
   
-  const handleBannerMouseLeave = () => {
-    setBannerMousePos({ x: 50, y: 50 });
+  const handleSectionMouseLeave = () => {
+    setIsTrackingMouse(false);
   };
 
   // Update sidebar default size and min size on window resize
@@ -380,28 +417,31 @@ export default function Home() {
       {/* Featured Research Carousel */}
       <FeaturedCarousel />
       
-      {/* Publications Section */}
-      <div className="w-full py-1 sm:py-2 md:py-2">
+      {/* Publications Section - Extended tracking area for gradient */}
+      <div 
+        ref={bannerSectionRef}
+        className="w-full py-1 sm:py-2 md:py-2"
+        onMouseMove={handleSectionMouseMove}
+        onMouseLeave={handleSectionMouseLeave}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
         {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-4 sm:mb-6 md:mb-8 px-2 sm:px-4">
           <div 
             ref={bannerRef}
-            onMouseMove={handleBannerMouseMove}
-            onMouseLeave={handleBannerMouseLeave}
-            className="inline-block px-6 sm:px-10 md:px-16 py-6 sm:py-8 md:py-10 rounded-lg transition-all duration-300 ease-out"
+            className="inline-block px-6 sm:px-10 md:px-16 py-6 sm:py-8 md:py-10 rounded-lg banner-glow-pulse"
             style={{ 
               background: `
                 radial-gradient(
-                  ellipse 80% 80% at ${bannerMousePos.x}% ${bannerMousePos.y}%,
-                  rgba(175, 135, 255, 0.15) 0%,
-                  rgba(200, 175, 255, 0.08) 30%,
-                  rgba(235, 225, 255, 0.05) 50%,
-                  rgba(246, 246, 246, 1) 80%
+                  ellipse 100% 100% at ${smoothPos.x}% ${smoothPos.y}%,
+                  rgba(175, 135, 255, 0.18) 0%,
+                  rgba(200, 175, 255, 0.1) 25%,
+                  rgba(225, 215, 255, 0.06) 45%,
+                  rgba(246, 246, 246, 1) 75%
                 )
               `,
-              border: '1px solid rgba(175, 135, 255, 0.2)',
-              boxShadow: '0 4px 20px rgba(175, 135, 255, 0.08)'
+              border: '1px solid rgba(175, 135, 255, 0.25)',
+              transition: 'border-color 0.3s ease'
             }}
             data-testid="publications-banner"
           >
