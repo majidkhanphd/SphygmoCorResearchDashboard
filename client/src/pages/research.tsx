@@ -433,14 +433,14 @@ export default function Home() {
             style={{ 
               background: `
                 radial-gradient(
-                  ellipse 100% 100% at ${smoothPos.x}% ${smoothPos.y}%,
-                  rgba(175, 135, 255, 0.18) 0%,
-                  rgba(200, 175, 255, 0.1) 25%,
-                  rgba(225, 215, 255, 0.06) 45%,
-                  rgba(246, 246, 246, 1) 75%
+                  ellipse 150% 150% at ${smoothPos.x}% ${smoothPos.y}%,
+                  rgba(175, 135, 255, 0.09) 0%,
+                  rgba(200, 175, 255, 0.05) 30%,
+                  rgba(225, 215, 255, 0.025) 50%,
+                  rgba(246, 246, 246, 1) 80%
                 )
               `,
-              border: '1px solid rgba(175, 135, 255, 0.25)',
+              border: '1px solid rgba(175, 135, 255, 0.15)',
               transition: 'border-color 0.3s ease'
             }}
             data-testid="publications-banner"
