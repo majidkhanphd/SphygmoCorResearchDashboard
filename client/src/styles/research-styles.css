@@ -1,0 +1,387 @@
+/* ===========================================
+   CONNEQT Health Research Page Styles
+   For Creative Director Review
+   =========================================== */
+
+/* --- CSS Custom Properties (Design Tokens) --- */
+.research-page {
+  --research-text-primary: #1D1D1F;
+  --research-text-secondary: #6E6E73;
+  --research-text-muted: #86868B;
+  --research-bg-gray: #F6F6F6;
+  --research-border-gray: #E5E5E7;
+  --research-accent-purple: #AF87FF;
+  --research-purple-bg: #F5F0FF;
+  --research-purple-border: #D4C4FF;
+  --research-purple-hover-bg: #EDE5FF;
+  --research-purple-hover-border: #C4B0FF;
+  --research-featured-bg: #FFF8E1;
+  --research-featured-text: #FF8F00;
+  --research-featured-border: #FFE0B2;
+  --research-separator: #C5C5C7;
+  --research-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* --- Typography --- */
+.research-font-family {
+  font-family: var(--research-font-family);
+}
+
+.research-main-title {
+  letter-spacing: -0.02em;
+  color: var(--research-text-primary);
+  line-height: 1.1;
+}
+
+.research-subtitle {
+  color: var(--research-text-secondary);
+  line-height: 1.5;
+}
+
+.research-last-updated {
+  color: var(--research-text-secondary);
+  font-family: var(--research-font-family);
+}
+
+/* --- Banner Section --- */
+.research-banner {
+  border: 1px solid rgba(175, 135, 255, 0.15);
+  transition: border-color 0.3s ease;
+}
+
+/* --- Search & Filters --- */
+.research-search-icon {
+  color: var(--research-text-secondary);
+}
+
+.research-search-input {
+  padding-left: 2.5rem;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--research-text-primary);
+  background-color: var(--research-bg-gray);
+  border: 1px solid var(--research-border-gray);
+  outline: none;
+}
+
+.research-search-input:focus {
+  background-color: #FFFFFF;
+  border-color: var(--research-accent-purple);
+}
+
+.research-search-input-with-clear {
+  padding-right: 2.5rem;
+}
+
+.research-search-input-no-clear {
+  padding-right: 1rem;
+}
+
+.research-clear-icon {
+  color: var(--research-text-secondary);
+}
+
+.research-clear-icon:hover {
+  color: var(--research-text-primary);
+}
+
+.research-sort-dropdown {
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--research-text-primary);
+  background-color: var(--research-bg-gray);
+  border: 1px solid var(--research-border-gray);
+  font-family: var(--research-font-family);
+}
+
+/* --- Active Filter Chips --- */
+.research-filter-label {
+  color: var(--research-text-primary);
+}
+
+.research-clear-all-link {
+  color: var(--research-accent-purple);
+}
+
+.research-filter-chip {
+  background-color: var(--research-bg-gray);
+  color: var(--research-text-primary);
+}
+
+/* --- Sidebar --- */
+.research-sidebar {
+  font-family: var(--research-font-family);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+}
+
+.research-sidebar-section-header {
+  color: var(--research-text-secondary);
+}
+
+.research-sidebar-section-title {
+  color: var(--research-text-primary);
+}
+
+.research-sidebar-clear-btn {
+  color: var(--research-accent-purple);
+}
+
+.research-sidebar-item {
+  color: var(--research-text-secondary);
+}
+
+.research-sidebar-item-selected {
+  color: var(--research-text-primary);
+}
+
+.research-sidebar-child-item {
+  color: var(--research-text-muted);
+  font-size: 13px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.research-sidebar-child-item-selected {
+  color: var(--research-text-primary);
+}
+
+.research-sidebar-toggle-btn {
+  color: var(--research-accent-purple);
+}
+
+.research-sidebar-separator {
+  background-color: var(--research-border-gray);
+  flex-shrink: 0;
+}
+
+.research-sidebar-journals {
+  flex: 1;
+  min-height: 0;
+}
+
+.research-journals-container {
+  padding-right: 4px;
+  margin-right: -4px;
+}
+
+.research-journals-footer {
+  background-color: white;
+  z-index: 10;
+  padding-top: 8px;
+  padding-bottom: 4px;
+  margin-top: 4px;
+}
+
+.research-journals-footer-expanded {
+  position: sticky;
+  bottom: 0;
+  box-shadow: 0 -4px 8px -4px rgba(0, 0, 0, 0.1);
+}
+
+.research-journals-footer-collapsed {
+  position: static;
+  box-shadow: none;
+}
+
+.research-category-dot {
+  margin-right: 6px;
+  font-size: 10px;
+}
+
+.research-collapse-btn-icon {
+  color: var(--research-text-secondary);
+}
+
+.research-expand-btn-icon {
+  color: var(--research-accent-purple);
+}
+
+.research-expand-btn-container {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Resizable Handle --- */
+.research-resizable-handle {
+  width: 12px;
+  cursor: col-resize;
+  background-color: #F0F0F2;
+  transition: background-color 0.2s;
+}
+
+.research-resizable-grip {
+  background-color: var(--research-separator);
+  height: 100%;
+}
+
+/* --- Publications List --- */
+.research-publications-section {
+  font-family: var(--research-font-family);
+}
+
+.research-publications-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+}
+
+.research-publication-item {
+  border-bottom: 1px solid var(--research-border-gray);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.research-publication-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.research-category-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.research-category-badge-text {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.research-category-separator {
+  color: var(--research-border-gray);
+  margin: 0 4px;
+}
+
+.research-publication-title {
+  line-height: 1.3;
+  color: var(--research-text-primary);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.research-publication-link {
+  color: var(--research-text-primary);
+  text-decoration: none;
+}
+
+.research-publication-link:hover {
+  color: var(--research-accent-purple);
+}
+
+.research-citation-metadata {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--research-text-secondary);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.research-authors {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--research-text-secondary);
+  margin-top: 4px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* --- Badges --- */
+.research-doi-badge {
+  background-color: var(--research-purple-bg);
+  color: var(--research-accent-purple);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid var(--research-purple-border);
+}
+
+.research-doi-badge:hover {
+  background-color: var(--research-purple-hover-bg);
+  border-color: var(--research-purple-hover-border);
+}
+
+.research-featured-badge {
+  background-color: var(--research-featured-bg);
+  color: var(--research-featured-text);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--research-featured-border);
+}
+
+/* --- Loading States --- */
+.research-loading-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.research-loading-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.research-skeleton {
+  background-color: var(--research-bg-gray);
+}
+
+.research-skeleton-title {
+  width: 75%;
+}
+
+.research-skeleton-subtitle {
+  width: 50%;
+}
+
+.research-skeleton-meta {
+  width: 66%;
+}
+
+/* --- Empty State --- */
+.research-empty-primary {
+  color: var(--research-text-secondary);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.research-empty-secondary {
+  color: var(--research-text-secondary);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+/* --- Floating Expand Button --- */
+.research-floating-expand-btn {
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+}
+
+.research-floating-expand-icon {
+  color: var(--research-accent-purple);
+  stroke-width: 2;
+}

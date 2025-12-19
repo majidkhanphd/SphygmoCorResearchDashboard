@@ -17,6 +17,7 @@ import type { ImperativePanelHandle } from "react-resizable-panels";
 import { PaginationControls } from "@/components/pagination-controls";
 import { sanitizeText } from "@shared/sanitize";
 import { getChildJournals, isParentJournal, type JournalGroup, JOURNAL_GROUPS } from "@shared/journal-mappings";
+import "@/styles/research-styles.css";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
@@ -413,7 +414,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="bg-background">
+    <div className="bg-background research-page">
       {/* Featured Research Carousel */}
       <FeaturedCarousel />
       
@@ -424,12 +425,12 @@ export default function Home() {
         onMouseMove={handleSectionMouseMove}
         onMouseLeave={handleSectionMouseLeave}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 research-font-family">
         {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-4 sm:mb-6 md:mb-8 px-2 sm:px-4">
           <div 
             ref={bannerRef}
-            className="inline-block px-6 sm:px-10 md:px-16 py-6 sm:py-8 md:py-10 rounded-lg banner-glow-pulse"
+            className="inline-block px-6 sm:px-10 md:px-16 py-6 sm:py-8 md:py-10 rounded-lg banner-glow-pulse research-banner"
             style={{ 
               background: `
                 radial-gradient(
@@ -439,16 +440,14 @@ export default function Home() {
                   rgba(225, 215, 255, 0.025) 50%,
                   rgba(246, 246, 246, 1) 80%
                 )
-              `,
-              border: '1px solid rgba(175, 135, 255, 0.15)',
-              transition: 'border-color 0.3s ease'
+              `
             }}
             data-testid="publications-banner"
           >
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-light mb-3 sm:mb-4" style={{ letterSpacing: '-0.02em', color: '#1D1D1F', lineHeight: '1.1' }} data-testid="main-title">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-light mb-3 sm:mb-4 research-main-title" data-testid="main-title">
               Publications
             </h1>
-            <p className="text-sm sm:text-base md:text-lg px-2 sm:px-4 md:px-6 text-center w-full" style={{ color: '#6E6E73', lineHeight: '1.5' }}>
+            <p className="text-sm sm:text-base md:text-lg px-2 sm:px-4 md:px-6 text-center w-full research-subtitle">
               Browse our comprehensive collection of peer-reviewed research spanning decades of our SphygmoCor technology in practice worldwide.
             </p>
           </div>
@@ -456,7 +455,7 @@ export default function Home() {
         
         {/* Page Last Updated */}
         <div className="text-center mb-6 sm:mb-8">
-          <p className="text-xs sm:text-sm" style={{ color: '#6E6E73', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }} data-testid="last-updated">
+          <p className="text-xs sm:text-sm research-last-updated" data-testid="last-updated">
             Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
@@ -465,35 +464,16 @@ export default function Home() {
         <div className="mb-6 sm:mb-10 md:mb-12">
           {/* Search bar and sort dropdown */}
           <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row items-stretch sm:items-center mb-6">
-            <div className="relative flex-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+            <div className="relative flex-1 research-font-family">
             <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-3 sm:pl-4">
-              <Search className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: '#6E6E73' }} />
+              <Search className="h-4 w-4 sm:h-5 sm:w-5 research-search-icon" />
             </div>
               <input
                 type="text"
                 placeholder="Search publications"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full rounded-[5px] apple-transition apple-focus-ring py-2 sm:py-3 text-sm sm:text-base"
-                style={{
-                  paddingLeft: '2.5rem',
-                  paddingRight: inputValue ? '2.5rem' : '1rem',
-                  fontSize: '17px',
-                  fontWeight: '400',
-                  lineHeight: '1.4',
-                  color: '#1D1D1F',
-                  backgroundColor: '#F6F6F6',
-                  border: '1px solid #E5E5E7',
-                  outline: 'none'
-                }}
-                onFocus={(e) => {
-                  e.target.style.backgroundColor = '#FFFFFF';
-                  e.target.style.borderColor = '#AF87FF';
-                }}
-                onBlur={(e) => {
-                  e.target.style.backgroundColor = '#F6F6F6';
-                  e.target.style.borderColor = '#E5E5E7';
-                }}
+                className={`w-full rounded-[5px] apple-transition apple-focus-ring py-2 sm:py-3 text-sm sm:text-base research-search-input ${inputValue ? 'research-search-input-with-clear' : 'research-search-input-no-clear'}`}
                 data-testid="search-input"
                 aria-label="Search publications by title, author, or keywords"
                 role="searchbox"
@@ -506,12 +486,7 @@ export default function Home() {
                   data-testid="reset-button"
                   aria-label="Clear search"
                 >
-                  <X 
-                    className="h-4 w-4 sm:h-5 sm:w-5 apple-transition" 
-                    style={{ color: '#6E6E73' }}
-                    onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
-                    onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#6E6E73'}
-                  />
+                  <X className="h-4 w-4 sm:h-5 sm:w-5 apple-transition research-clear-icon" />
                 </button>
               )}
             </div>
@@ -520,16 +495,7 @@ export default function Home() {
             <div className="w-full sm:w-48 flex-shrink-0">
               <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "relevance") => setSortBy(value)}>
                 <SelectTrigger 
-                  className="w-full rounded-[5px] transition-all duration-200 ease-in-out py-2 sm:py-3 text-sm sm:text-base"
-                  style={{
-                    fontSize: '17px',
-                    fontWeight: '400',
-                    lineHeight: '1.4',
-                    color: '#1D1D1F',
-                    backgroundColor: '#F6F6F6',
-                    border: '1px solid #E5E5E7',
-                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif'
-                  }}
+                  className="w-full rounded-[5px] transition-all duration-200 ease-in-out py-2 sm:py-3 text-sm sm:text-base research-sort-dropdown"
                   data-testid="sort-dropdown"
                 >
                   <SelectValue />
@@ -548,11 +514,10 @@ export default function Home() {
         {(selectedResearchArea || selectedVenue || selectedYear || debouncedSearchQuery) && (
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm font-medium" style={{ color: '#1D1D1F' }}>Active filters:</span>
+              <span className="text-sm font-medium research-filter-label">Active filters:</span>
               <button
                 onClick={clearAllFilters}
-                className="text-sm transition-colors"
-                style={{ color: '#AF87FF' }}
+                className="text-sm transition-colors research-clear-all-link"
                 data-testid="clear-all-filters"
               >
                 Clear all
@@ -561,8 +526,7 @@ export default function Home() {
             <div className="flex flex-wrap gap-2">
               {debouncedSearchQuery && (
                 <div 
-                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors text-xs sm:text-sm"
-                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F' }}
+                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors text-xs sm:text-sm research-filter-chip"
                   data-testid="filter-chip-search"
                 >
                   <span>Search: {debouncedSearchQuery}</span>
@@ -577,8 +541,7 @@ export default function Home() {
               )}
               {selectedResearchArea && (
                 <div 
-                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors text-xs sm:text-sm"
-                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F' }}
+                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors text-xs sm:text-sm research-filter-chip"
                   data-testid="filter-chip-research-area"
                 >
                   <span>Research Area: {getResearchAreaDisplayName(selectedResearchArea)}</span>
@@ -593,8 +556,7 @@ export default function Home() {
               )}
               {selectedVenue && (
                 <div 
-                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors text-xs sm:text-sm"
-                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F' }}
+                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors text-xs sm:text-sm research-filter-chip"
                   data-testid="filter-chip-venue"
                 >
                   <span>Journal: {selectedVenue}</span>
@@ -609,8 +571,7 @@ export default function Home() {
               )}
               {selectedYear && (
                 <div 
-                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors text-xs sm:text-sm"
-                  style={{ backgroundColor: '#F6F6F6', color: '#1D1D1F' }}
+                  className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors text-xs sm:text-sm research-filter-chip"
                   data-testid="filter-chip-year"
                 >
                   <span>Year: {selectedYear}</span>
@@ -643,20 +604,19 @@ export default function Home() {
               <div className="h-full flex items-start justify-center pt-2 flex-shrink-0">
                 <button
                   onClick={handleExpandSidebar}
-                  className="p-1.5 rounded hover:bg-gray-100 transition-colors duration-200 flex-shrink-0"
-                  style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  className="p-1.5 rounded hover:bg-gray-100 transition-colors duration-200 flex-shrink-0 research-expand-btn-container"
                   aria-label="Expand sidebar"
                   data-testid="expand-sidebar-button"
                   title="Expand sidebar"
                 >
-                  <ChevronRight className="h-4 w-4" style={{ color: '#AF87FF' }} />
+                  <ChevronRight className="h-4 w-4 research-expand-btn-icon" />
                 </button>
               </div>
             )}
             
             {/* Left sidebar - Apple ML Research Style */}
             <div className={`${isSidebarCollapsed ? 'hidden' : 'block'}`}>
-            <aside className="min-w-0 pr-2 relative" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif', overflowWrap: 'anywhere', wordBreak: 'break-word', alignSelf: 'flex-start', maxHeight: publicationsHeight ? `${publicationsHeight}px` : 'none', display: 'flex', flexDirection: 'column' }} role="complementary" aria-label="Research filters">
+            <aside className="min-w-0 pr-2 relative research-sidebar" style={{ maxHeight: publicationsHeight ? `${publicationsHeight}px` : 'none' }} role="complementary" aria-label="Research filters">
             
             {/* Collapse button at top of sidebar */}
             <div className="flex justify-end mb-2">
@@ -667,26 +627,25 @@ export default function Home() {
                 data-testid="collapse-sidebar-button"
                 title="Collapse sidebar"
               >
-                <ChevronLeft className="h-4 w-4" style={{ color: '#6E6E73' }} />
+                <ChevronLeft className="h-4 w-4 research-collapse-btn-icon" />
               </button>
             </div>
             
             {/* Research Areas Filter */}
-            <section className="mb-10 min-w-0" style={{ flexShrink: 0 }} role="group" aria-labelledby="research-areas-heading">
+            <section className="mb-10 min-w-0 research-sidebar-separator" role="group" aria-labelledby="research-areas-heading">
               {/* Uppercase caption */}
               <div className="mb-3 min-w-0">
-                <span className="text-xs font-medium tracking-wider uppercase break-words" style={{ color: '#6E6E73' }}>RESEARCH AREAS</span>
+                <span className="text-xs font-medium tracking-wider uppercase break-words research-sidebar-section-header">RESEARCH AREAS</span>
               </div>
               
               {/* Italic category label */}
-              <h3 id="research-areas-heading" className="text-base font-medium italic mb-4 min-w-0 break-words" style={{ color: '#1D1D1F' }}>Research areas</h3>
+              <h3 id="research-areas-heading" className="text-base font-medium italic mb-4 min-w-0 break-words research-sidebar-section-title">Research areas</h3>
               
               {/* Clear button */}
               {selectedResearchArea && (
                 <button
                   onClick={() => handleResearchAreaChange(null)}
-                  className="text-sm mb-3 apple-transition apple-focus-ring break-words"
-                  style={{ color: '#AF87FF' }}
+                  className="text-sm mb-3 apple-transition apple-focus-ring break-words research-sidebar-clear-btn"
                   data-testid="clear-research-areas"
                   aria-label="Clear research area filter"
                 >
@@ -699,10 +658,9 @@ export default function Home() {
                   onClick={() => handleResearchAreaChange(null)}
                   className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                     !selectedResearchArea 
-                      ? "font-medium" 
-                      : "hover:opacity-80"
+                      ? "font-medium research-sidebar-item-selected" 
+                      : "hover:opacity-80 research-sidebar-item"
                   }`}
-                  style={{ color: !selectedResearchArea ? '#1D1D1F' : '#6E6E73' }}
                   data-testid="area-all"
                   aria-pressed={!selectedResearchArea}
                 >
@@ -717,16 +675,15 @@ export default function Home() {
                       onClick={() => handleResearchAreaChange(slug)}
                       className={`flex items-center text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                         selectedResearchArea === slug
-                          ? "font-medium"
-                          : "hover:opacity-80"
+                          ? "font-medium research-sidebar-item-selected"
+                          : "hover:opacity-80 research-sidebar-item"
                       }`}
-                      style={{ color: selectedResearchArea === slug ? '#1D1D1F' : '#6E6E73' }}
                       data-testid={`area-${slug}`}
                       aria-pressed={selectedResearchArea === slug}
                       aria-label={`Filter by ${displayName}${count > 0 ? ` (${count} publications)` : ''}`}
                     >
                       {categoryColor && (
-                        <span style={{ color: categoryColor.text, marginRight: '6px', fontSize: '10px' }}>●</span>
+                        <span className="research-category-dot" style={{ color: categoryColor.text }}>●</span>
                       )}
                       <span>{displayName} {count > 0 && `(${count})`}</span>
                     </button>
@@ -745,16 +702,15 @@ export default function Home() {
                               onClick={() => handleResearchAreaChange(slug)}
                               className={`flex items-center text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                                 selectedResearchArea === slug
-                                  ? "font-medium"
-                                  : "hover:opacity-80"
+                                  ? "font-medium research-sidebar-item-selected"
+                                  : "hover:opacity-80 research-sidebar-item"
                               }`}
-                              style={{ color: selectedResearchArea === slug ? '#1D1D1F' : '#6E6E73' }}
                               data-testid={`area-${slug}`}
                               aria-pressed={selectedResearchArea === slug}
                               aria-label={`Filter by ${displayName}${count > 0 ? ` (${count} publications)` : ''}`}
                             >
                               {categoryColor && (
-                                <span style={{ color: categoryColor.text, marginRight: '6px', fontSize: '10px' }}>●</span>
+                                <span className="research-category-dot" style={{ color: categoryColor.text }}>●</span>
                               )}
                               <span>{displayName} {count > 0 && `(${count})`}</span>
                             </button>
@@ -764,8 +720,7 @@ export default function Home() {
                     </CollapsibleSection>
                     <button
                       onClick={() => setShowAllAreas(!showAllAreas)}
-                      className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
-                      style={{ color: '#AF87FF' }}
+                      className="flex items-center text-sm py-1 apple-transition apple-focus-ring research-sidebar-toggle-btn"
                       data-testid="toggle-areas"
                       aria-expanded={showAllAreas}
                       aria-label={showAllAreas ? "Show fewer research areas" : "Show more research areas"}
@@ -786,24 +741,23 @@ export default function Home() {
             </section>
             
             {/* Thin separator */}
-            <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7', flexShrink: 0 }}></div>
+            <div className="h-px mb-10 research-sidebar-separator"></div>
             
             {/* Published Year Filter */}
-            <section className="mb-10 min-w-0" style={{ flexShrink: 0 }} role="group" aria-labelledby="years-heading">
+            <section className="mb-10 min-w-0 research-sidebar-separator" role="group" aria-labelledby="years-heading">
               {/* Uppercase caption */}
               <div className="mb-3 min-w-0">
-                <span className="text-xs font-medium tracking-wider uppercase break-words" style={{ color: '#6E6E73' }}>YEARS</span>
+                <span className="text-xs font-medium tracking-wider uppercase break-words research-sidebar-section-header">YEARS</span>
               </div>
               
               {/* Italic category label */}
-              <h3 id="years-heading" className="text-base font-medium italic mb-4 min-w-0 break-words" style={{ color: '#1D1D1F' }}>Years</h3>
+              <h3 id="years-heading" className="text-base font-medium italic mb-4 min-w-0 break-words research-sidebar-section-title">Years</h3>
               
               {/* Clear button */}
               {selectedYear && (
                 <button
                   onClick={() => handleYearChange(null)}
-                  className="text-sm mb-3 apple-transition apple-focus-ring break-words"
-                  style={{ color: '#AF87FF' }}
+                  className="text-sm mb-3 apple-transition apple-focus-ring break-words research-sidebar-clear-btn"
                   data-testid="clear-years"
                   aria-label="Clear year filter"
                 >
@@ -816,10 +770,9 @@ export default function Home() {
                   onClick={() => handleYearChange(null)}
                   className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                     !selectedYear
-                      ? "font-medium"
-                      : "hover:opacity-80"
+                      ? "font-medium research-sidebar-item-selected"
+                      : "hover:opacity-80 research-sidebar-item"
                   }`}
-                  style={{ color: !selectedYear ? '#1D1D1F' : '#6E6E73' }}
                   data-testid="year-all"
                   aria-pressed={!selectedYear}
                 >
@@ -833,10 +786,9 @@ export default function Home() {
                       onClick={() => handleYearChange(year)}
                       className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                         selectedYear === year
-                          ? "font-medium"
-                          : "hover:opacity-80"
+                          ? "font-medium research-sidebar-item-selected"
+                          : "hover:opacity-80 research-sidebar-item"
                       }`}
-                      style={{ color: selectedYear === year ? '#1D1D1F' : '#6E6E73' }}
                       data-testid={`year-${year}`}
                       aria-pressed={selectedYear === year}
                       aria-label={`Filter by ${year}${count > 0 ? ` (${count} publications)` : ''}`}
@@ -857,10 +809,9 @@ export default function Home() {
                               onClick={() => handleYearChange(year)}
                               className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                                 selectedYear === year
-                                  ? "font-medium"
-                                  : "hover:opacity-80"
+                                  ? "font-medium research-sidebar-item-selected"
+                                  : "hover:opacity-80 research-sidebar-item"
                               }`}
-                              style={{ color: selectedYear === year ? '#1D1D1F' : '#6E6E73' }}
                               data-testid={`year-${year}`}
                               aria-pressed={selectedYear === year}
                               aria-label={`Filter by ${year}${count > 0 ? ` (${count} publications)` : ''}`}
@@ -873,8 +824,7 @@ export default function Home() {
                     </CollapsibleSection>
                     <button
                       onClick={() => setShowAllYears(!showAllYears)}
-                      className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
-                      style={{ color: '#AF87FF' }}
+                      className="flex items-center text-sm py-1 apple-transition apple-focus-ring research-sidebar-toggle-btn"
                       data-testid="toggle-years"
                       aria-expanded={showAllYears}
                       aria-label={showAllYears ? "Show fewer years" : "Show more years"}
@@ -895,24 +845,23 @@ export default function Home() {
             </section>
             
             {/* Thin separator */}
-            <div className="h-px mb-10" style={{ backgroundColor: '#E5E5E7', flexShrink: 0 }}></div>
+            <div className="h-px mb-10 research-sidebar-separator"></div>
             
             {/* Journals Filter - scrollable section */}
-            <section className="min-w-0 overflow-y-auto sidebar-scrollbar" style={{ flex: 1, minHeight: 0 }} role="group" aria-labelledby="venues-heading">
+            <section className="min-w-0 overflow-y-auto sidebar-scrollbar research-sidebar-journals" role="group" aria-labelledby="venues-heading">
               {/* Uppercase caption */}
               <div className="mb-3 min-w-0">
-                <span className="text-xs font-medium tracking-wider uppercase break-words" style={{ color: '#6E6E73' }}>JOURNALS</span>
+                <span className="text-xs font-medium tracking-wider uppercase break-words research-sidebar-section-header">JOURNALS</span>
               </div>
               
               {/* Italic category label */}
-              <h3 id="venues-heading" className="text-base font-medium italic mb-4 min-w-0 break-words" style={{ color: '#1D1D1F' }}>Journals</h3>
+              <h3 id="venues-heading" className="text-base font-medium italic mb-4 min-w-0 break-words research-sidebar-section-title">Journals</h3>
               
               {/* Clear button */}
               {selectedVenue && (
                 <button
                   onClick={() => handleVenueChange(null)}
-                  className="text-sm mb-3 apple-transition apple-focus-ring break-words"
-                  style={{ color: '#AF87FF' }}
+                  className="text-sm mb-3 apple-transition apple-focus-ring break-words research-sidebar-clear-btn"
                   data-testid="clear-venues"
                   aria-label="Clear journal filter"
                 >
@@ -920,21 +869,14 @@ export default function Home() {
                 </button>
               )}
               
-              <div 
-                className="space-y-1 min-w-0 relative"
-                style={{ 
-                  paddingRight: '4px',
-                  marginRight: '-4px'
-                }}
-              >
+              <div className="space-y-1 min-w-0 relative research-journals-container">
                 <button
                   onClick={() => handleVenueChange(null)}
                   className={`block text-sm w-full text-left py-1 apple-transition apple-focus-ring break-words ${
                     !selectedVenue
-                      ? "font-medium"
-                      : "hover:opacity-80"
+                      ? "font-medium research-sidebar-item-selected"
+                      : "hover:opacity-80 research-sidebar-item"
                   }`}
-                  style={{ color: !selectedVenue ? '#1D1D1F' : '#6E6E73' }}
                   data-testid="venue-all"
                   aria-pressed={!selectedVenue}
                 >
@@ -955,8 +897,7 @@ export default function Home() {
                               e.stopPropagation();
                               toggleParentJournal(venue);
                             }}
-                            className="flex-shrink-0 mr-1 apple-transition apple-focus-ring"
-                            style={{ color: '#6E6E73' }}
+                            className="flex-shrink-0 mr-1 apple-transition apple-focus-ring research-sidebar-item"
                             aria-label={isExpanded ? `Collapse ${venue}` : `Expand ${venue}`}
                             data-testid={`toggle-journal-${venue.replace(/\s+/g, '-').toLowerCase()}`}
                             animate={{ rotate: isExpanded ? 90 : 0 }}
@@ -969,10 +910,9 @@ export default function Home() {
                           onClick={() => handleVenueChange(venue)}
                           className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 apple-transition apple-focus-ring break-words ${
                             selectedVenue === venue
-                              ? "font-medium"
-                              : "hover:opacity-80"
+                              ? "font-medium research-sidebar-item-selected"
+                              : "hover:opacity-80 research-sidebar-item"
                           } ${!hasChildren ? 'ml-4' : ''}`}
-                          style={{ color: selectedVenue === venue ? '#1D1D1F' : '#6E6E73' }}
                           data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
                           aria-pressed={selectedVenue === venue}
                           aria-label={`Filter by ${venue}${count > 0 ? ` (${count} publications)` : ''}`}
@@ -990,15 +930,9 @@ export default function Home() {
                                 onClick={() => handleVenueChange(childJournal)}
                                 className={`block text-sm text-left py-2 sm:py-1 pl-6 sm:pl-8 pr-2 apple-transition apple-focus-ring break-words ${
                                   selectedVenue === childJournal
-                                    ? "font-medium"
-                                    : "hover:opacity-80"
+                                    ? "font-medium research-sidebar-child-item-selected"
+                                    : "hover:opacity-80 research-sidebar-child-item"
                                 }`}
-                                style={{ 
-                                  color: selectedVenue === childJournal ? '#1D1D1F' : '#86868B',
-                                  fontSize: '13px',
-                                  width: '100%',
-                                  boxSizing: 'border-box'
-                                }}
                                 data-testid={`venue-child-${childJournal.replace(/\s+/g, '-').toLowerCase()}`}
                                 aria-pressed={selectedVenue === childJournal}
                               >
@@ -1030,8 +964,7 @@ export default function Home() {
                                       e.stopPropagation();
                                       toggleParentJournal(venue);
                                     }}
-                                    className="flex-shrink-0 mr-1 apple-transition apple-focus-ring"
-                                    style={{ color: '#6E6E73' }}
+                                    className="flex-shrink-0 mr-1 apple-transition apple-focus-ring research-sidebar-item"
                                     aria-label={isExpanded ? `Collapse ${venue}` : `Expand ${venue}`}
                                     data-testid={`toggle-journal-${venue.replace(/\s+/g, '-').toLowerCase()}`}
                                     animate={{ rotate: isExpanded ? 90 : 0 }}
@@ -1044,10 +977,9 @@ export default function Home() {
                                   onClick={() => handleVenueChange(venue)}
                                   className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 apple-transition apple-focus-ring break-words ${
                                     selectedVenue === venue
-                                      ? "font-medium"
-                                      : "hover:opacity-80"
+                                      ? "font-medium research-sidebar-item-selected"
+                                      : "hover:opacity-80 research-sidebar-item"
                                   } ${!hasChildren ? 'ml-4' : ''}`}
-                                  style={{ color: selectedVenue === venue ? '#1D1D1F' : '#6E6E73' }}
                                   data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
                                   aria-pressed={selectedVenue === venue}
                                   aria-label={`Filter by ${venue}${count > 0 ? ` (${count} publications)` : ''}`}
@@ -1065,15 +997,9 @@ export default function Home() {
                                         onClick={() => handleVenueChange(childJournal)}
                                         className={`block text-sm text-left py-2 sm:py-1 pl-6 sm:pl-8 pr-2 apple-transition apple-focus-ring break-words ${
                                           selectedVenue === childJournal
-                                            ? "font-medium"
-                                            : "hover:opacity-80"
+                                            ? "font-medium research-sidebar-child-item-selected"
+                                            : "hover:opacity-80 research-sidebar-child-item"
                                         }`}
-                                        style={{ 
-                                          color: selectedVenue === childJournal ? '#1D1D1F' : '#86868B',
-                                          fontSize: '13px',
-                                          width: '100%',
-                                          boxSizing: 'border-box'
-                                        }}
                                         data-testid={`venue-child-${childJournal.replace(/\s+/g, '-').toLowerCase()}`}
                                         aria-pressed={selectedVenue === childJournal}
                                       >
@@ -1093,22 +1019,10 @@ export default function Home() {
               </div>
               {/* Sticky footer for More/Less toggle when journals are expanded */}
               {hiddenVenues.length > 0 && (
-                <div 
-                  style={{ 
-                    position: showAllVenues ? 'sticky' : 'static',
-                    bottom: 0,
-                    backgroundColor: 'white',
-                    zIndex: 10,
-                    paddingTop: '8px',
-                    paddingBottom: '4px',
-                    marginTop: '4px',
-                    boxShadow: showAllVenues ? '0 -4px 8px -4px rgba(0,0,0,0.1)' : 'none'
-                  }}
-                >
+                <div className={`research-journals-footer ${showAllVenues ? 'research-journals-footer-expanded' : 'research-journals-footer-collapsed'}`}>
                   <button
                     onClick={() => setShowAllVenues(!showAllVenues)}
-                    className="flex items-center text-sm py-1 apple-transition apple-focus-ring"
-                    style={{ color: '#AF87FF' }}
+                    className="flex items-center text-sm py-1 apple-transition apple-focus-ring research-sidebar-toggle-btn"
                     data-testid="toggle-venues"
                     aria-expanded={showAllVenues}
                     aria-label={showAllVenues ? "Show fewer journals" : "Show more journals"}
@@ -1131,51 +1045,36 @@ export default function Home() {
           </ResizablePanel>
           
           {/* Sidebar resizer - visible adjustable divider bar */}
-          <ResizableHandle 
-            className="group relative flex items-center justify-center"
-            style={{ 
-              width: '12px',
-              cursor: 'col-resize',
-              backgroundColor: '#F0F0F2',
-              transition: 'background-color 0.2s'
-            }}
-          >
+          <ResizableHandle className="group relative flex items-center justify-center research-resizable-handle">
             {/* Inner grip line indicator */}
-            <div 
-              className="absolute h-full w-[2px] rounded-full group-hover:bg-[#AF87FF] transition-colors duration-200"
-              style={{ 
-                backgroundColor: '#C5C5C7',
-                height: '100%'
-              }}
-            />
+            <div className="absolute h-full w-[2px] rounded-full group-hover:bg-[#AF87FF] transition-colors duration-200 research-resizable-grip" />
           </ResizableHandle>
           
           <ResizablePanel defaultSize={72}>
             {/* Main content area - Apple typography */}
             <section 
               ref={resultsRef}
-              className="flex-1 min-w-0 pl-4 sm:pl-6 md:pl-8" 
+              className="flex-1 min-w-0 pl-4 sm:pl-6 md:pl-8 research-publications-section" 
               id="publications-section" 
               role="main" 
-              aria-label="Publications list" 
-              style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
+              aria-label="Publications list"
             >
             {isLoading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+              <div className="research-loading-container">
                 {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div className="h-6 rounded" style={{ backgroundColor: '#F6F6F6', width: '75%' }}></div>
-                    <div className="h-4 rounded" style={{ backgroundColor: '#F6F6F6', width: '50%' }}></div>
-                    <div className="h-4 rounded" style={{ backgroundColor: '#F6F6F6', width: '66%' }}></div>
+                  <div key={i} className="research-loading-item">
+                    <div className="h-6 rounded research-skeleton research-skeleton-title"></div>
+                    <div className="h-4 rounded research-skeleton research-skeleton-subtitle"></div>
+                    <div className="h-4 rounded research-skeleton research-skeleton-meta"></div>
                   </div>
                 ))}
               </div>
             ) : allPublications?.length === 0 ? (
               <div className="py-8 sm:py-10 md:py-12">
-                <p className="text-base sm:text-lg mb-2" style={{ color: '#6E6E73', fontWeight: '400', lineHeight: '1.4' }}>
+                <p className="text-base sm:text-lg mb-2 research-empty-primary">
                   No publications found matching your criteria.
                 </p>
-                <p className="text-sm sm:text-base" style={{ color: '#6E6E73', fontWeight: '400', lineHeight: '1.4' }}>
+                <p className="text-sm sm:text-base research-empty-secondary">
                   Try adjusting your filters or search terms.
                 </p>
               </div>
@@ -1183,13 +1082,7 @@ export default function Home() {
               <>
                 {/* Publications List - Single Column Layout */}
                 <motion.div 
-                  className="min-w-0"
-                  style={{ 
-                    display: 'flex',
-                    flexDirection: 'column',
-                    padding: 0, 
-                    margin: 0 
-                  }} 
+                  className="min-w-0 research-publications-list"
                   data-testid="publications-list"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -1205,15 +1098,7 @@ export default function Home() {
                       <motion.div 
                         key={publication.id} 
                         data-testid={`publication-${publication.id}`}
-                        className="min-w-0 py-4 sm:py-5 md:py-6"
-                        style={{
-                          borderBottom: '1px solid #E5E5E7',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          width: '100%',
-                          maxWidth: '100%',
-                          overflow: 'hidden'
-                        }}
+                        className="min-w-0 py-4 sm:py-5 md:py-6 research-publication-item"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
@@ -1226,22 +1111,11 @@ export default function Home() {
                         viewport={{ once: true, amount: 0.1 }}
                       >
                         {/* Publication entry - no card styling */}
-                        <div 
-                          className="min-w-0 break-words"
-                          style={{ 
-                            display: 'flex',
-                            flexDirection: 'column'
-                          }}>
+                        <div className="min-w-0 break-words research-publication-content">
                           
                           {/* Category badges - Apple style */}
                           {publication.categories && publication.categories.length > 0 && (
-                            <div style={{ 
-                              display: 'flex', 
-                              flexWrap: 'wrap', 
-                              alignItems: 'center',
-                              gap: '4px', 
-                              marginBottom: '12px' 
-                            }}>
+                            <div className="research-category-badges">
                               {publication.categories.map((category: string, catIndex: number) => {
                                 // Normalize category to slug for consistent color lookup and keys
                                 const categorySlug = normalizeCategoryToSlug(category) || category;
@@ -1250,17 +1124,14 @@ export default function Home() {
                                 return (
                                   <span key={categorySlug} style={{ display: 'inline-flex', alignItems: 'center' }}>
                                     <span
-                                      style={{
-                                        fontSize: '12px',
-                                        fontWeight: '500',
-                                        color: colors.text,
-                                      }}
+                                      className="research-category-badge-text"
+                                      style={{ color: colors.text }}
                                       data-testid={`category-badge-${categorySlug}`}
                                     >
                                       {displayName}
                                     </span>
                                     {catIndex < (publication.categories?.length || 0) - 1 && (
-                                      <span style={{ color: '#E5E5E7', margin: '0 4px' }}>—</span>
+                                      <span className="research-category-separator">—</span>
                                     )}
                                   </span>
                                 );
@@ -1269,20 +1140,12 @@ export default function Home() {
                           )}
                           
                           {/* Title - Apple's conservative typography - Responsive */}
-                          <h3 className="text-lg sm:text-xl font-semibold mb-2" style={{ 
-                            lineHeight: '1.3', 
-                            color: '#1D1D1F', 
-                            wordWrap: 'break-word',
-                            overflowWrap: 'break-word'
-                          }}>
+                          <h3 className="text-lg sm:text-xl font-semibold mb-2 research-publication-title">
                             <a 
                               href={publication.pubmedUrl || publication.doi || '#'}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="transition-colors duration-200"
-                              style={{ color: '#1D1D1F', textDecoration: 'none' }}
-                              onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#AF87FF'}
-                              onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#1D1D1F'}
+                              className="transition-colors duration-200 research-publication-link"
                               data-testid="publication-title-link"
                             >
                               {sanitizeText(publication.title)}
@@ -1290,19 +1153,7 @@ export default function Home() {
                           </h3>
                           
                           {/* Citation metadata - Apple's exact layout */}
-                          <div style={{ 
-                            fontSize: '14px', 
-                            fontWeight: '400', 
-                            lineHeight: '1.4', 
-                            color: '#6E6E73',
-                            marginBottom: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            flexWrap: 'wrap',
-                            gap: '8px',
-                            wordWrap: 'break-word',
-                            overflowWrap: 'break-word'
-                          }}>
+                          <div className="research-citation-metadata">
                             {/* Venue (italicized) and year */}
                             <span data-testid="publication-venue">
                               <em>{sanitizeText(publication.journal)}</em>, {publicationYear}
@@ -1314,23 +1165,7 @@ export default function Home() {
                                 href={`https://doi.org/${publication.doi}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 px-2 py-1 rounded transition-colors duration-200"
-                                style={{
-                                  backgroundColor: '#F5F0FF',
-                                  color: '#AF87FF',
-                                  fontSize: '12px',
-                                  fontWeight: '500',
-                                  textDecoration: 'none',
-                                  border: '1px solid #D4C4FF'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#EDE5FF';
-                                  e.currentTarget.style.borderColor = '#C4B0FF';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#F5F0FF';
-                                  e.currentTarget.style.borderColor = '#D4C4FF';
-                                }}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded transition-colors duration-200 research-doi-badge"
                                 data-testid="doi-badge"
                               >
                                 DOI
@@ -1341,14 +1176,7 @@ export default function Home() {
                             {/* Featured Badge */}
                             {publication.isFeatured === 1 && (
                               <span
-                                className="inline-flex items-center gap-1 px-2 py-1 rounded"
-                                style={{
-                                  backgroundColor: '#FFF8E1',
-                                  color: '#FF8F00',
-                                  fontSize: '12px',
-                                  fontWeight: '500',
-                                  border: '1px solid #FFE0B2'
-                                }}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded research-featured-badge"
                                 data-testid="featured-badge"
                               >
                                 <Star className="h-3 w-3" fill="#FFD60A" stroke="#FFD60A" />
@@ -1358,15 +1186,7 @@ export default function Home() {
                           </div>
                           
                           {/* Authors with em dash separators */}
-                          <div style={{ 
-                            fontSize: '14px', 
-                            fontWeight: '400', 
-                            lineHeight: '1.4', 
-                            color: '#6E6E73',
-                            marginTop: '4px',
-                            wordWrap: 'break-word',
-                            overflowWrap: 'break-word'
-                          }} data-testid="publication-authors">
+                          <div className="research-authors" data-testid="publication-authors">
                             {formattedAuthors}
                           </div>
                         </div>
@@ -1399,14 +1219,7 @@ export default function Home() {
           {isSidebarCollapsed && isMobileScreen && isPublicationsSectionVisible && (
             <motion.button
               onClick={handleExpandSidebar}
-              className="fixed z-50 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3 bg-white border-2 border-gray-200 hover:bg-gray-50 flex items-center justify-center"
-              style={{
-                left: '16px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '44px',
-                height: '44px'
-              }}
+              className="fixed z-50 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3 bg-white border-2 border-gray-200 hover:bg-gray-50 flex items-center justify-center research-floating-expand-btn"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -1414,7 +1227,7 @@ export default function Home() {
               aria-label="Expand sidebar"
               data-testid="expand-sidebar-button"
             >
-              <ChevronRight size={24} style={{ color: '#AF87FF', strokeWidth: 2 }} />
+              <ChevronRight size={24} className="research-floating-expand-icon" />
             </motion.button>
           )}
         </AnimatePresence>
