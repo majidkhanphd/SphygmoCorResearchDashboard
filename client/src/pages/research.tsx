@@ -125,23 +125,45 @@ export default function Home() {
     return () => cancelAnimationFrame(animationFrame);
   }, [isTrackingMouse]);
   
-  // Extended mouse tracking - works across the entire page section
-  const handleSectionMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!bannerRef.current) return;
-    setIsTrackingMouse(true);
-    const rect = bannerRef.current.getBoundingClientRect();
-    // Calculate position relative to banner, allowing extended range beyond borders
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    // Allow tracking well beyond the banner bounds for seamless movement
-    const clampedX = Math.max(-50, Math.min(150, x));
-    const clampedY = Math.max(-50, Math.min(150, y));
-    targetPosRef.current = { x: clampedX, y: clampedY };
-  };
-  
-  const handleSectionMouseLeave = () => {
-    setIsTrackingMouse(false);
-  };
+  // Window-level mouse tracking with extended zone around banner (192px in all directions)
+  useEffect(() => {
+    const TRACKING_ZONE = 192; // pixels around banner to track mouse
+    
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      if (!bannerRef.current) return;
+      
+      const rect = bannerRef.current.getBoundingClientRect();
+      const extendedRect = {
+        left: rect.left - TRACKING_ZONE,
+        right: rect.right + TRACKING_ZONE,
+        top: rect.top - TRACKING_ZONE,
+        bottom: rect.bottom + TRACKING_ZONE,
+      };
+      
+      // Check if mouse is within extended zone
+      const isInZone = 
+        e.clientX >= extendedRect.left &&
+        e.clientX <= extendedRect.right &&
+        e.clientY >= extendedRect.top &&
+        e.clientY <= extendedRect.bottom;
+      
+      if (isInZone) {
+        setIsTrackingMouse(true);
+        // Calculate position relative to banner, allowing extended range beyond borders
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        // Allow tracking well beyond the banner bounds for seamless movement
+        const clampedX = Math.max(-50, Math.min(150, x));
+        const clampedY = Math.max(-50, Math.min(150, y));
+        targetPosRef.current = { x: clampedX, y: clampedY };
+      } else {
+        setIsTrackingMouse(false);
+      }
+    };
+    
+    window.addEventListener('mousemove', handleWindowMouseMove);
+    return () => window.removeEventListener('mousemove', handleWindowMouseMove);
+  }, []);
 
   // Update sidebar default size and min size on window resize
   useEffect(() => {
@@ -418,12 +440,10 @@ export default function Home() {
       {/* Featured Research Carousel */}
       <FeaturedCarousel />
       
-      {/* Publications Section - Extended tracking area for gradient */}
+      {/* Publications Section */}
       <div 
         ref={bannerSectionRef}
-        className="w-full py-1 sm:py-2 md:py-2 -mt-16 sm:-mt-20 md:-mt-24 pt-16 sm:pt-20 md:pt-24"
-        onMouseMove={handleSectionMouseMove}
-        onMouseLeave={handleSectionMouseLeave}
+        className="w-full py-1 sm:py-2 md:py-2"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 research-font-family">
         {/* Main title - Apple's exact typography - Responsive */}
