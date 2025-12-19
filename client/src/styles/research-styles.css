@@ -120,6 +120,10 @@
   flex-direction: column;
 }
 
+.research-sidebar-section {
+  flex-shrink: 0;
+}
+
 .research-sidebar-section-header {
   color: var(--research-text-secondary);
 }

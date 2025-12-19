@@ -632,7 +632,7 @@ export default function Home() {
             </div>
             
             {/* Research Areas Filter */}
-            <section className="mb-10 min-w-0 research-sidebar-separator" role="group" aria-labelledby="research-areas-heading">
+            <section className="mb-10 min-w-0 research-sidebar-section" role="group" aria-labelledby="research-areas-heading">
               {/* Uppercase caption */}
               <div className="mb-3 min-w-0">
                 <span className="text-xs font-medium tracking-wider uppercase break-words research-sidebar-section-header">RESEARCH AREAS</span>
@@ -744,7 +744,7 @@ export default function Home() {
             <div className="h-px mb-10 research-sidebar-separator"></div>
             
             {/* Published Year Filter */}
-            <section className="mb-10 min-w-0 research-sidebar-separator" role="group" aria-labelledby="years-heading">
+            <section className="mb-10 min-w-0 research-sidebar-section" role="group" aria-labelledby="years-heading">
               {/* Uppercase caption */}
               <div className="mb-3 min-w-0">
                 <span className="text-xs font-medium tracking-wider uppercase break-words research-sidebar-section-header">YEARS</span>
