@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, forwardRef } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -164,7 +164,7 @@ const formatAbstract = (abstract: string): JSX.Element[] => {
   return elements;
 };
 
-export default function FeaturedCarousel() {
+const FeaturedCarousel = forwardRef<HTMLElement>(function FeaturedCarousel(_, ref) {
   const { data: featuredPublications, isLoading } = useQuery({
     queryKey: ["/api/publications/featured"],
     queryFn: getFeaturedPublications,
@@ -231,6 +231,7 @@ export default function FeaturedCarousel() {
 
   return (
     <motion.section 
+      ref={ref}
       className="w-full bg-background py-8 sm:py-10" 
       data-testid="featured-carousel-section"
       initial={{ opacity: 0 }}
@@ -485,4 +486,6 @@ export default function FeaturedCarousel() {
       </div>
     </motion.section>
   );
-}
+});
+
+export default FeaturedCarousel;

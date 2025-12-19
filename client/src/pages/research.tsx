@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import FeaturedCarousel from "@/components/featured-carousel";
@@ -97,6 +97,7 @@ export default function Home() {
   const bannerRef = useRef<HTMLDivElement>(null);
   const bannerSectionRef = useRef<HTMLDivElement>(null);
   
+  
   // Continuous smooth position interpolation - runs always
   useEffect(() => {
     let animationFrame: number;
@@ -125,36 +126,45 @@ export default function Home() {
     return () => cancelAnimationFrame(animationFrame);
   }, [isTrackingMouse]);
   
-  // Window-level mouse tracking with extended zone around banner (192px in all directions)
+  // Content area ref for real-time bounds checking
+  const contentAreaRef = useRef<HTMLDivElement>(null);
+  const TRACKING_BUFFER = 50; // Pixels of buffer around content area
+  
+  // Window-level mouse tracking - check bounds in real-time on each move
   useEffect(() => {
-    const TRACKING_ZONE = 192; // pixels around banner to track mouse
-    
     const handleWindowMouseMove = (e: MouseEvent) => {
-      if (!bannerRef.current) return;
+      if (!bannerRef.current || !contentAreaRef.current) {
+        setIsTrackingMouse(false);
+        return;
+      }
       
-      const rect = bannerRef.current.getBoundingClientRect();
-      const extendedRect = {
-        left: rect.left - TRACKING_ZONE,
-        right: rect.right + TRACKING_ZONE,
-        top: rect.top - TRACKING_ZONE,
-        bottom: rect.bottom + TRACKING_ZONE,
-      };
+      // Get content area bounds (carousel + banner + publications)
+      const contentRect = contentAreaRef.current.getBoundingClientRect();
       
-      // Check if mouse is within extended zone
-      const isInZone = 
-        e.clientX >= extendedRect.left &&
-        e.clientX <= extendedRect.right &&
-        e.clientY >= extendedRect.top &&
-        e.clientY <= extendedRect.bottom;
+      // Check if mouse is within content area (with buffer)
+      const isInContentArea = 
+        e.clientX >= contentRect.left - TRACKING_BUFFER &&
+        e.clientX <= contentRect.right + TRACKING_BUFFER &&
+        e.clientY >= contentRect.top - TRACKING_BUFFER &&
+        e.clientY <= contentRect.bottom + TRACKING_BUFFER;
       
-      if (isInZone) {
+      if (isInContentArea) {
         setIsTrackingMouse(true);
-        // Calculate position relative to banner, allowing extended range beyond borders
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
-        // Allow tracking well beyond the banner bounds for seamless movement
-        const clampedX = Math.max(-50, Math.min(150, x));
-        const clampedY = Math.max(-50, Math.min(150, y));
+        
+        // Map mouse position to content-area-relative coordinates
+        // This allows the gradient to track smoothly across carousel, banner, and publications
+        const contentHeight = contentRect.height;
+        
+        // Map mouse Y to content area: top = 0%, bottom = 100%
+        const mouseYInContent = e.clientY - contentRect.top;
+        const normalizedY = (mouseYInContent / contentHeight) * 100;
+        
+        // X position is straightforward - map to content width
+        const normalizedX = ((e.clientX - contentRect.left) / contentRect.width) * 100;
+        
+        // Clamp to reasonable range that still allows gradient movement
+        const clampedX = Math.max(0, Math.min(100, normalizedX));
+        const clampedY = Math.max(0, Math.min(100, normalizedY));
         targetPosRef.current = { x: clampedX, y: clampedY };
       } else {
         setIsTrackingMouse(false);
@@ -162,7 +172,10 @@ export default function Home() {
     };
     
     window.addEventListener('mousemove', handleWindowMouseMove);
-    return () => window.removeEventListener('mousemove', handleWindowMouseMove);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+    };
   }, []);
 
   // Update sidebar default size and min size on window resize
@@ -437,14 +450,16 @@ export default function Home() {
 
   return (
     <div className="bg-background research-page">
-      {/* Featured Research Carousel */}
-      <FeaturedCarousel />
-      
-      {/* Publications Section */}
-      <div 
-        ref={bannerSectionRef}
-        className="w-full py-1 sm:py-2 md:py-2"
-      >
+      {/* Main content area - unified tracking zone */}
+      <div ref={contentAreaRef}>
+        {/* Featured Research Carousel */}
+        <FeaturedCarousel />
+        
+        {/* Publications Section */}
+        <div 
+          ref={bannerSectionRef}
+          className="w-full py-1 sm:py-2 md:py-2"
+        >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 research-font-family">
         {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-4 sm:mb-6 md:mb-8 px-2 sm:px-4">
@@ -1251,6 +1266,7 @@ export default function Home() {
             </motion.button>
           )}
         </AnimatePresence>
+      </div>
       </div>
       </div>
     </div>
