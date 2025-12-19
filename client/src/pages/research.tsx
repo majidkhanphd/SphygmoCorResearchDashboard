@@ -151,20 +151,16 @@ export default function Home() {
       if (isInContentArea) {
         setIsTrackingMouse(true);
         
-        // Map mouse position to content-area-relative coordinates
-        // This allows the gradient to track smoothly across carousel, banner, and publications
-        const contentHeight = contentRect.height;
+        // Calculate position relative to banner for gradient positioning
+        // This keeps the gradient centered on the banner while allowing tracking beyond its edges
+        const bannerRect = bannerRef.current.getBoundingClientRect();
+        const x = ((e.clientX - bannerRect.left) / bannerRect.width) * 100;
+        const y = ((e.clientY - bannerRect.top) / bannerRect.height) * 100;
         
-        // Map mouse Y to content area: top = 0%, bottom = 100%
-        const mouseYInContent = e.clientY - contentRect.top;
-        const normalizedY = (mouseYInContent / contentHeight) * 100;
-        
-        // X position is straightforward - map to content width
-        const normalizedX = ((e.clientX - contentRect.left) / contentRect.width) * 100;
-        
-        // Clamp to reasonable range that still allows gradient movement
-        const clampedX = Math.max(0, Math.min(100, normalizedX));
-        const clampedY = Math.max(0, Math.min(100, normalizedY));
+        // Extended clamp range to allow smooth tracking when mouse is far above/below banner
+        // -300% to 400% gives enough range for carousel above and publications below
+        const clampedX = Math.max(-300, Math.min(400, x));
+        const clampedY = Math.max(-300, Math.min(400, y));
         targetPosRef.current = { x: clampedX, y: clampedY };
       } else {
         setIsTrackingMouse(false);
