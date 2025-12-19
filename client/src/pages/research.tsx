@@ -17,7 +17,6 @@ import type { ImperativePanelHandle } from "react-resizable-panels";
 import { PaginationControls } from "@/components/pagination-controls";
 import { sanitizeText } from "@shared/sanitize";
 import { getChildJournals, isParentJournal, type JournalGroup, JOURNAL_GROUPS } from "@shared/journal-mappings";
-import "@/styles/research-styles.css";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
