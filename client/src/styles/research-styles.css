@@ -118,6 +118,7 @@
   align-self: flex-start;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 .research-sidebar-section {
@@ -167,6 +168,7 @@
 .research-sidebar-journals {
   flex: 1;
   min-height: 0;
+  overflow-x: hidden;
 }
 
 .research-journals-container {
