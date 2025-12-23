@@ -573,6 +573,24 @@ export default function Admin() {
     }
   };
 
+  const handleRefetchAbstracts = async () => {
+    try {
+      await apiRequest("POST", "/api/admin/refetch-abstracts");
+      toast({
+        title: "Abstract Refetch Started",
+        description: "Fetching missing abstracts from PubMed. Progress will update automatically.",
+      });
+      // Start polling immediately
+      fetchSyncStatus();
+    } catch (error: any) {
+      toast({
+        title: "Refetch Failed",
+        description: error.message || "Failed to start abstract refetch",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Poll batch categorization status
   const fetchBatchCategorizationStatus = async () => {
     try {
@@ -1361,6 +1379,28 @@ export default function Admin() {
                     </>
                   ) : (
                     "Sync New Publications"
+                  )}
+                </Button>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium mb-2 text-sm text-[#1d1d1f] dark:text-white">Refetch Abstracts</h3>
+                <p className="text-sm text-[#6e6e73] dark:text-gray-400 mb-3">
+                  Fetch missing abstracts for publications that don't have them. Uses improved parser.
+                </p>
+                <Button 
+                  onClick={handleRefetchAbstracts} 
+                  disabled={syncStatus?.status === "running"}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  data-testid="button-refetch-abstracts"
+                >
+                  {syncStatus?.status === "running" && syncStatus.phase?.includes("abstract") ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Fetching...
+                    </>
+                  ) : (
+                    "Refetch Missing Abstracts"
                   )}
                 </Button>
               </div>
