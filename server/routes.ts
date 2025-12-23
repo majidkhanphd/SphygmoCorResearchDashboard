@@ -601,6 +601,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to re-fetch abstracts for publications missing them
+  app.post("/api/admin/refetch-abstracts", async (req, res) => {
+    try {
+      // Check if sync is already running
+      if (syncTracker.isRunning()) {
+        return res.status(409).json({
+          success: false,
+          message: "A sync is already running. Please wait for it to complete.",
+        });
+      }
+
+      // Get publications without abstracts
+      const { db } = await import("./db");
+      const { publications } = await import("@shared/schema");
+      const { isNull } = await import("drizzle-orm");
+      
+      const pubsWithoutAbstract = await db
+        .select({ id: publications.id, pmid: publications.pmid, title: publications.title })
+        .from(publications)
+        .where(isNull(publications.abstract));
+      
+      if (pubsWithoutAbstract.length === 0) {
+        return res.json({
+          success: true,
+          message: "All publications already have abstracts.",
+          updated: 0,
+          total: 0
+        });
+      }
+
+      console.log(`Found ${pubsWithoutAbstract.length} publications without abstracts. Starting re-fetch...`);
+      
+      // Start tracking (use "incremental" type since abstract-refetch is not a defined type)
+      syncTracker.start("incremental");
+      syncTracker.updatePhase("Re-fetching missing abstracts from PubMed...");
+      
+      // Respond immediately
+      res.json({
+        success: true,
+        message: `Re-fetching abstracts for ${pubsWithoutAbstract.length} publications. Poll /api/admin/sync-status for progress.`,
+        total: pubsWithoutAbstract.length
+      });
+
+      // Run in background
+      (async () => {
+        let updated = 0;
+        let failed = 0;
+        const BATCH_SIZE = 50;
+        const pmids = pubsWithoutAbstract.map(p => p.pmid).filter(Boolean) as string[];
+        
+        try {
+          for (let i = 0; i < pmids.length; i += BATCH_SIZE) {
+            const batch = pmids.slice(i, i + BATCH_SIZE);
+            syncTracker.updateProgress(i, pmids.length);
+            syncTracker.updatePhase(`Fetching batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(pmids.length / BATCH_SIZE)}...`);
+            
+            try {
+              // Fetch article details from PubMed Central
+              const fetchedArticles = await pubmedService.fetchArticleDetails(batch);
+              
+              // Update each publication that now has an abstract
+              for (const article of fetchedArticles) {
+                if (article.abstract) {
+                  const pub = pubsWithoutAbstract.find(p => p.pmid === article.pmid);
+                  if (pub) {
+                    await storage.updatePublication(pub.id, { abstract: article.abstract });
+                    updated++;
+                    console.log(`  Updated abstract for: ${pub.title?.substring(0, 50)}...`);
+                  }
+                }
+              }
+            } catch (batchError: any) {
+              console.error(`Error processing batch ${i}-${i + BATCH_SIZE}:`, batchError.message);
+              failed += batch.length;
+            }
+            
+            // Rate limit: wait 400ms between batches
+            if (i + BATCH_SIZE < pmids.length) {
+              await new Promise(resolve => setTimeout(resolve, 400));
+            }
+          }
+          
+          console.log(`Abstract re-fetch complete. Updated: ${updated}, Failed: ${failed}`);
+          syncTracker.updateStats(updated, failed, 0, 0);
+          syncTracker.complete();
+        } catch (error: any) {
+          console.error("Abstract re-fetch error:", error);
+          syncTracker.error(error.message || "Unknown error");
+        }
+      })();
+      
+    } catch (error: any) {
+      console.error("Error starting abstract re-fetch:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to start abstract re-fetch", 
+        error: error.message 
+      });
+    }
+  });
+
   // Admin endpoint to approve a publication
   app.post("/api/admin/publications/:id/approve", async (req, res) => {
     try {
