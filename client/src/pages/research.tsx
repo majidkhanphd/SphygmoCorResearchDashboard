@@ -1188,10 +1188,17 @@ export default function Home() {
                                   setExpandedPublicationId(publication.id);
                                 }
                               }}
-                              className="text-left transition-colors duration-200 research-publication-link cursor-pointer hover:text-[#AF87FF]"
+                              className="text-left transition-colors duration-200 research-publication-link cursor-pointer hover:text-[#AF87FF] inline-flex items-start gap-2"
                               data-testid="publication-title-link"
                             >
-                              {sanitizeText(publication.title)}
+                              <span className="flex-shrink-0 mt-1">
+                                {expandedPublicationId === publication.id ? (
+                                  <ExternalLink className="h-4 w-4 text-[#AF87FF]" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 text-[#6E6E73]" />
+                                )}
+                              </span>
+                              <span>{sanitizeText(publication.title)}</span>
                             </button>
                           </h3>
                           
@@ -1244,9 +1251,9 @@ export default function Home() {
                                 className="overflow-hidden"
                               >
                                 <div
-                                  className="mt-4 pt-4 border-t border-gray-200"
+                                  className="mb-3 pt-2"
                                   style={{
-                                    fontSize: '14px',
+                                    fontSize: '12px',
                                     color: '#6E6E73',
                                     lineHeight: '1.6',
                                   }}
