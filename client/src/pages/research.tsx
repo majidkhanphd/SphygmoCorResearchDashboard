@@ -17,6 +17,7 @@ import type { ImperativePanelHandle } from "react-resizable-panels";
 import { PaginationControls } from "@/components/pagination-controls";
 import { sanitizeText } from "@shared/sanitize";
 import { getChildJournals, isParentJournal, type JournalGroup, JOURNAL_GROUPS } from "@shared/journal-mappings";
+import { formatAbstract } from "@/lib/format-abstract";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
@@ -73,6 +74,7 @@ export default function Home() {
   const [isMobileScreen, setIsMobileScreen] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth < 640;
   });
+  const [expandedPublicationId, setExpandedPublicationId] = useState<string | null>(null);
   const [isPublicationsSectionVisible, setIsPublicationsSectionVisible] = useState(false);
   const [publicationsHeight, setPublicationsHeight] = useState<number | null>(null);
   const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() => {
@@ -1170,16 +1172,27 @@ export default function Home() {
                           )}
                           
                           {/* Title - Apple's conservative typography - Responsive */}
+                          {/* Click once to expand abstract, click again to go to PubMed */}
                           <h3 className="text-lg sm:text-xl font-semibold mb-2 research-publication-title">
-                            <a 
-                              href={publication.pubmedUrl || publication.doi || '#'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="transition-colors duration-200 research-publication-link"
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (expandedPublicationId === publication.id) {
+                                  // Already expanded - go to PubMed
+                                  const url = publication.pubmedUrl || (publication.doi ? `https://doi.org/${publication.doi}` : null);
+                                  if (url) {
+                                    window.open(url, '_blank', 'noopener,noreferrer');
+                                  }
+                                } else {
+                                  // Expand this publication
+                                  setExpandedPublicationId(publication.id);
+                                }
+                              }}
+                              className="text-left transition-colors duration-200 research-publication-link cursor-pointer hover:text-[#AF87FF]"
                               data-testid="publication-title-link"
                             >
                               {sanitizeText(publication.title)}
-                            </a>
+                            </button>
                           </h3>
                           
                           {/* Citation metadata - Apple's exact layout */}
@@ -1219,6 +1232,42 @@ export default function Home() {
                           <div className="research-authors" data-testid="publication-authors">
                             {formattedAuthors}
                           </div>
+                          
+                          {/* Expandable Abstract */}
+                          <AnimatePresence>
+                            {expandedPublicationId === publication.id && publication.abstract && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                className="overflow-hidden"
+                              >
+                                <div
+                                  className="mt-4 pt-4 border-t border-gray-200"
+                                  style={{
+                                    fontSize: '14px',
+                                    color: '#6E6E73',
+                                    lineHeight: '1.6',
+                                  }}
+                                  data-testid={`abstract-${publication.id}`}
+                                >
+                                  {formatAbstract(publication.abstract)}
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedPublicationId(null);
+                                  }}
+                                  className="mt-3 text-sm text-[#AF87FF] hover:text-[#9B6FFF] transition-colors flex items-center gap-1"
+                                  data-testid={`collapse-abstract-${publication.id}`}
+                                >
+                                  <ChevronUp className="h-4 w-4" />
+                                  Collapse abstract
+                                </button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </motion.div>
                     );
