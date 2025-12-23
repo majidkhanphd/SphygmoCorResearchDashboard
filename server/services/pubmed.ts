@@ -399,6 +399,29 @@ export class PubMedService {
   private parseAbstract(abstractData?: any): string | null {
     if (!abstractData) return null;
 
+    // Handle array of abstract elements (multiple <abstract> tags in XML)
+    // This happens when article has both regular abstract and graphical abstract
+    if (Array.isArray(abstractData)) {
+      // Prefer non-graphical abstract (regular text abstract)
+      const regularAbstract = abstractData.find((abs: any) => 
+        !abs["@_abstract-type"] || abs["@_abstract-type"] === "summary"
+      );
+      // Fall back to first abstract if no regular one found
+      const abstractToUse = regularAbstract || abstractData[0];
+      return this.parseSingleAbstract(abstractToUse);
+    }
+
+    return this.parseSingleAbstract(abstractData);
+  }
+
+  private parseSingleAbstract(abstractData: any): string | null {
+    if (!abstractData) return null;
+
+    // Skip graphical abstracts - they typically don't have useful text
+    if (abstractData["@_abstract-type"] === "graphical") {
+      return null;
+    }
+
     // Handle string abstract
     if (typeof abstractData === "string") {
       return abstractData;
@@ -412,28 +435,25 @@ export class PubMedService {
     // Handle abstract with paragraphs
     if (abstractData.p) {
       const paragraphs = Array.isArray(abstractData.p) ? abstractData.p : [abstractData.p];
-      return paragraphs
-        .map((p: any) => {
-          if (typeof p === "string") return p;
-          if (p["#text"]) return p["#text"];
-          return "";
-        })
+      const text = paragraphs
+        .map((p: any) => this.extractParagraphText(p))
         .filter(Boolean)
         .join(" ");
+      if (text.trim()) return text;
     }
 
-    // Handle abstract with sections
+    // Handle abstract with sections (structured abstracts: Background, Methods, Results, etc.)
     if (abstractData.sec) {
       const sections = Array.isArray(abstractData.sec) ? abstractData.sec : [abstractData.sec];
-      return sections
+      const text = sections
         .map((sec: any) => {
-          const title = sec.title ? `${sec.title}: ` : "";
+          const title = sec.title ? `${this.extractText(sec.title) || sec.title}: ` : "";
           let content = "";
           
           if (sec.p) {
             const paragraphs = Array.isArray(sec.p) ? sec.p : [sec.p];
             content = paragraphs
-              .map((p: any) => (typeof p === "string" ? p : p["#text"] || ""))
+              .map((p: any) => this.extractParagraphText(p))
               .join(" ");
           }
           
@@ -441,9 +461,54 @@ export class PubMedService {
         })
         .filter(Boolean)
         .join(" ");
+      if (text.trim()) return text;
+    }
+
+    // Handle abstract with title element containing text
+    if (abstractData.title) {
+      const titleText = this.extractText(abstractData.title);
+      if (titleText && titleText.length > 50) {
+        return titleText;
+      }
     }
 
     return null;
+  }
+
+  private extractParagraphText(p: any): string {
+    if (typeof p === "string") return p;
+    if (p["#text"]) return p["#text"];
+    
+    // Handle complex paragraph with mixed content (text + inline elements)
+    // The parser may create an object with multiple keys for inline formatting
+    const textParts: string[] = [];
+    
+    // Check for direct text content
+    if (typeof p === "object") {
+      // Collect all text-like values from the paragraph object
+      for (const key of Object.keys(p)) {
+        if (key === "#text") {
+          textParts.push(p[key]);
+        } else if (!key.startsWith("@_")) {
+          // Handle inline elements like <italic>, <bold>, <xref>, etc.
+          const value = p[key];
+          if (typeof value === "string") {
+            textParts.push(value);
+          } else if (value && typeof value === "object") {
+            if (value["#text"]) {
+              textParts.push(value["#text"]);
+            } else if (Array.isArray(value)) {
+              value.forEach((v: any) => {
+                if (typeof v === "string") textParts.push(v);
+                else if (v["#text"]) textParts.push(v["#text"]);
+              });
+            }
+          }
+        }
+      }
+    }
+    
+    return textParts.join(" ").trim();
   }
 
   private parsePublicationDate(pubDates?: any): Date {

@@ -702,6 +702,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to test fetching a single article (for debugging abstract parsing)
+  app.get("/api/admin/test-fetch/:pmcid", async (req, res) => {
+    try {
+      const { pmcid } = req.params;
+      console.log(`Testing fetch for PMC${pmcid}...`);
+      
+      const articles = await pubmedService.fetchArticleDetails([pmcid]);
+      
+      if (articles.length === 0) {
+        return res.json({
+          success: false,
+          message: "No article returned from PubMed",
+          pmcid
+        });
+      }
+      
+      const article = articles[0];
+      res.json({
+        success: true,
+        pmcid,
+        title: article.title,
+        hasAbstract: !!article.abstract,
+        abstractLength: article.abstract?.length || 0,
+        abstractPreview: article.abstract?.substring(0, 500) || null,
+        authors: article.authors,
+        journal: article.journal
+      });
+    } catch (error: any) {
+      console.error("Test fetch error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch article",
+        error: error.message
+      });
+    }
+  });
+
   // Admin endpoint to approve a publication
   app.post("/api/admin/publications/:id/approve", async (req, res) => {
     try {
