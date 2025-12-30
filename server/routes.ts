@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertPublicationSchema, searchPublicationsSchema, type InsertPublication, databaseBackups, publications } from "@shared/schema";
 import { db } from "./db";
-import { sql, desc, eq } from "drizzle-orm";
+import { sql, desc, eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { XMLParser } from "fast-xml-parser";
 import { pubmedService } from "./services/pubmed";
@@ -1681,6 +1681,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Failed to create backup",
         error: error.message,
       });
+    }
+  });
+
+  // Backfill syncSource for existing publications
+  app.post("/api/admin/backfill-sync-source", async (req, res) => {
+    try {
+      // Count publications with 'unknown' or NULL syncSource
+      const beforeCount = await db.select({ count: sql<number>`count(*)::int` })
+        .from(publications)
+        .where(sql`"sync_source" IS NULL OR "sync_source" = 'unknown'`);
+      
+      // Update all unknown/null syncSource to 'pubmed-sync'
+      await db.update(publications)
+        .set({ syncSource: 'pubmed-sync' })
+        .where(sql`"sync_source" IS NULL OR "sync_source" = 'unknown'`);
+      
+      res.json({
+        success: true,
+        updated: beforeCount[0]?.count || 0,
+        message: `Updated ${beforeCount[0]?.count || 0} publications to syncSource='pubmed-sync'`
+      });
+    } catch (error: any) {
+      console.error("Error backfilling syncSource:", error);
+      res.status(500).json({ success: false, message: error.message });
     }
   });
 
