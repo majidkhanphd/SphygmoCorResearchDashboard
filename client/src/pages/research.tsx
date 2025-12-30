@@ -100,14 +100,22 @@ export default function Home() {
   
   // Mouse-reactive gradient for Publications banner with smooth animation
   const [isTrackingMouse, setIsTrackingMouse] = useState(false);
+  const [animationsReady, setAnimationsReady] = useState(false);
   const targetPosRef = useRef({ x: 50, y: 50 });
   const [smoothPos, setSmoothPos] = useState({ x: 50, y: 50 });
   const bannerRef = useRef<HTMLDivElement>(null);
   const bannerSectionRef = useRef<HTMLDivElement>(null);
   
-  
-  // Continuous smooth position interpolation - runs always
+  // Defer heavy animations until after initial render (300ms)
   useEffect(() => {
+    const timer = setTimeout(() => setAnimationsReady(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Continuous smooth position interpolation - only runs after initial render
+  useEffect(() => {
+    if (!animationsReady) return;
+    
     let animationFrame: number;
     const startTime = Date.now();
     
@@ -132,14 +140,17 @@ export default function Home() {
     
     animationFrame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame);
-  }, [isTrackingMouse]);
+  }, [isTrackingMouse, animationsReady]);
   
   // Content area ref for real-time bounds checking
   const contentAreaRef = useRef<HTMLDivElement>(null);
   const TRACKING_BUFFER = 50; // Pixels of buffer around content area
   
   // Window-level mouse tracking - check bounds in real-time on each move
+  // Deferred until animations are ready to avoid blocking initial render
   useEffect(() => {
+    if (!animationsReady) return;
+    
     const handleWindowMouseMove = (e: MouseEvent) => {
       if (!bannerRef.current || !contentAreaRef.current) {
         setIsTrackingMouse(false);
@@ -180,7 +191,7 @@ export default function Home() {
     return () => {
       window.removeEventListener('mousemove', handleWindowMouseMove);
     };
-  }, []);
+  }, [animationsReady]);
 
   // Update sidebar default size and min size on window resize
   useEffect(() => {
