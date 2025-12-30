@@ -1100,6 +1100,215 @@ export class PubMedService {
     console.log(`Fetching ${pmcIds.length} missing publications from PMC...`);
     return this.fetchArticleDetails(pmcIds);
   }
+
+  // Get all PMCIDs from PMC using body search (matches website "sphygmocor"[body])
+  async getAllPmcIdsFromBodySearch(): Promise<Set<string>> {
+    const allIds = new Set<string>();
+    const term = '"sphygmocor"[body]';
+    
+    console.log(`Querying PMC with body search: ${term}`);
+    
+    const countUrl = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${encodeURIComponent(term)}&retmax=0&retmode=xml`;
+    try {
+      const countResponse = await fetch(countUrl);
+      const countXml = await countResponse.text();
+      const countResult = this.parser.parse(countXml) as PubMedSearchResult;
+      const totalCount = parseInt(countResult.eSearchResult?.Count || '0', 10);
+      
+      console.log(`  PMC body search total: ${totalCount}`);
+      
+      const batchSize = 1000;
+      for (let retstart = 0; retstart < totalCount; retstart += batchSize) {
+        const url = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${encodeURIComponent(term)}&retmax=${batchSize}&retstart=${retstart}&retmode=xml`;
+        const response = await fetch(url);
+        const xmlText = await response.text();
+        const result = this.parser.parse(xmlText) as PubMedSearchResult;
+        
+        if (result.eSearchResult?.IdList?.Id) {
+          const ids = Array.isArray(result.eSearchResult.IdList.Id)
+            ? result.eSearchResult.IdList.Id
+            : [result.eSearchResult.IdList.Id];
+          ids.forEach(id => allIds.add(String(id)));
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 350));
+      }
+    } catch (error) {
+      console.error(`Error getting PMC body search IDs:`, error);
+    }
+    
+    return allIds;
+  }
+
+  // Get all PMCIDs from PMC using all-fields search (includes embargoed + metadata-only)
+  async getAllPmcIdsFromAllFieldsSearch(): Promise<Set<string>> {
+    const allIds = new Set<string>();
+    const term = 'sphygmocor';
+    
+    console.log(`Querying PMC with all-fields search: ${term}`);
+    
+    const countUrl = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${encodeURIComponent(term)}&retmax=0&retmode=xml`;
+    try {
+      const countResponse = await fetch(countUrl);
+      const countXml = await countResponse.text();
+      const countResult = this.parser.parse(countXml) as PubMedSearchResult;
+      const totalCount = parseInt(countResult.eSearchResult?.Count || '0', 10);
+      
+      console.log(`  PMC all-fields search total: ${totalCount}`);
+      
+      const batchSize = 1000;
+      for (let retstart = 0; retstart < totalCount; retstart += batchSize) {
+        const url = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${encodeURIComponent(term)}&retmax=${batchSize}&retstart=${retstart}&retmode=xml`;
+        const response = await fetch(url);
+        const xmlText = await response.text();
+        const result = this.parser.parse(xmlText) as PubMedSearchResult;
+        
+        if (result.eSearchResult?.IdList?.Id) {
+          const ids = Array.isArray(result.eSearchResult.IdList.Id)
+            ? result.eSearchResult.IdList.Id
+            : [result.eSearchResult.IdList.Id];
+          ids.forEach(id => allIds.add(String(id)));
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 350));
+      }
+    } catch (error) {
+      console.error(`Error getting PMC all-fields search IDs:`, error);
+    }
+    
+    return allIds;
+  }
+
+  // Convert PMCIDs to PMIDs using the ID converter API
+  async convertPmcIdsToPmids(pmcIds: string[]): Promise<Map<string, string>> {
+    const pmcidToPmid = new Map<string, string>();
+    const batchSize = 100; // API accepts up to 200, use 100 for safety
+    
+    console.log(`Converting ${pmcIds.length} PMCIDs to PMIDs...`);
+    
+    for (let i = 0; i < pmcIds.length; i += batchSize) {
+      const batch = pmcIds.slice(i, i + batchSize);
+      const idsParam = batch.map(id => `PMC${id}`).join(',');
+      
+      try {
+        const url = `https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=${idsParam}&format=json`;
+        const response = await fetch(url);
+        const data = await response.json() as any;
+        
+        if (data.status === 'ok' && data.records) {
+          for (const record of data.records) {
+            if (record.pmcid && record.pmid) {
+              // Extract numeric PMCID (remove "PMC" prefix)
+              const pmcidNumeric = String(record.pmcid).replace(/^PMC/, '');
+              pmcidToPmid.set(pmcidNumeric, String(record.pmid));
+            }
+          }
+        }
+        
+        // Rate limit
+        await new Promise(resolve => setTimeout(resolve, 350));
+        
+        if ((i + batchSize) % 500 === 0) {
+          console.log(`  Converted ${Math.min(i + batchSize, pmcIds.length)}/${pmcIds.length} PMCIDs...`);
+        }
+      } catch (error) {
+        console.error(`Error converting PMCIDs batch:`, error);
+      }
+    }
+    
+    console.log(`  Successfully converted ${pmcidToPmid.size} PMCIDs to PMIDs`);
+    return pmcidToPmid;
+  }
+
+  // Find missing publications using PMC with classification (body vs metadata-only)
+  async findMissingPublicationsFromPmc(databasePmids: Set<string>): Promise<{
+    missingBodyPmids: string[];      // Articles in body search, not in DB (includes embargoed)
+    missingMetadataOnlyPmids: string[]; // Articles only in all-fields, not in body (need review)
+    pmcBodyTotal: number;
+    pmcAllFieldsTotal: number;
+    dbTotal: number;
+    matchCount: number;
+    pmcidToPmidMap: Map<string, string>;
+  }> {
+    console.log('Starting PMC comparison with dual-search classification...');
+    
+    // Step 1: Get both search results
+    const [bodyPmcIds, allFieldsPmcIds] = await Promise.all([
+      this.getAllPmcIdsFromBodySearch(),
+      this.getAllPmcIdsFromAllFieldsSearch()
+    ]);
+    
+    console.log(`  Body search: ${bodyPmcIds.size} PMCIDs`);
+    console.log(`  All-fields search: ${allFieldsPmcIds.size} PMCIDs`);
+    
+    // Step 2: Identify metadata-only PMCIDs (in all-fields but not in body)
+    const metadataOnlyPmcIds = new Set<string>();
+    allFieldsPmcIds.forEach(id => {
+      if (!bodyPmcIds.has(id)) {
+        metadataOnlyPmcIds.add(id);
+      }
+    });
+    console.log(`  Metadata-only articles: ${metadataOnlyPmcIds.size}`);
+    
+    // Step 3: Convert ALL PMCIDs to PMIDs
+    const allPmcIds = Array.from(allFieldsPmcIds);
+    const pmcidToPmid = await this.convertPmcIdsToPmids(allPmcIds);
+    
+    // Step 4: Find missing publications by comparing PMIDs with database
+    const missingBodyPmids: string[] = [];
+    const missingMetadataOnlyPmids: string[] = [];
+    let matchCount = 0;
+    
+    for (const [pmcid, pmid] of pmcidToPmid) {
+      if (databasePmids.has(pmid)) {
+        matchCount++;
+      } else {
+        // Classify as body or metadata-only
+        if (bodyPmcIds.has(pmcid)) {
+          missingBodyPmids.push(pmid);
+        } else {
+          missingMetadataOnlyPmids.push(pmid);
+        }
+      }
+    }
+    
+    console.log(`  Match count: ${matchCount}`);
+    console.log(`  Missing (body): ${missingBodyPmids.length}`);
+    console.log(`  Missing (metadata-only): ${missingMetadataOnlyPmids.length}`);
+    
+    return {
+      missingBodyPmids,
+      missingMetadataOnlyPmids,
+      pmcBodyTotal: bodyPmcIds.size,
+      pmcAllFieldsTotal: allFieldsPmcIds.size,
+      dbTotal: databasePmids.size,
+      matchCount,
+      pmcidToPmidMap: pmcidToPmid
+    };
+  }
+
+  // Fetch publications with heuristic classification
+  async fetchPublicationsWithHeuristic(pmids: string[], isMetadataOnly: boolean): Promise<InsertPublication[]> {
+    const publications = await this.fetchPublicationsByPmid(pmids);
+    
+    // Apply heuristic for metadata-only articles
+    if (isMetadataOnly) {
+      return publications.map(pub => {
+        const titleLower = (pub.title || '').toLowerCase();
+        const abstractLower = (pub.abstract || '').toLowerCase();
+        const hasKeywordInContent = titleLower.includes('sphygmocor') || abstractLower.includes('sphygmocor');
+        
+        // If sphygmocor in title/abstract, it's likely embargoed - auto-approve
+        // If not, it's likely a reference mention - flag for review
+        return {
+          ...pub,
+          status: hasKeywordInContent ? 'pending' : 'pending-metadata-review'
+        };
+      });
+    }
+    
+    return publications;
+  }
 }
 
 export const pubmedService = new PubMedService();
