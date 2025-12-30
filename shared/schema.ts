@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, json, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -9,23 +9,9 @@ export type SuggestedCategory = {
   source: 'ml' | 'keyword';
 };
 
-// Sync source tracking for PMC comparison
-export type SyncSource = 'pubmed-sync' | 'pmc-body-match' | 'pmc-metadata-only' | 'manual' | 'unknown';
-
-// Where the keyword was found
-export type KeywordEvidence = {
-  inTitle: boolean;
-  inAbstract: boolean;
-  inBody: boolean; // From PMC body search
-  referenceOnly: boolean; // Only found in references/citations
-  source: SyncSource;
-  syncedAt: string; // ISO date string
-};
-
 export const publications = pgTable("publications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  pmid: varchar("pmid").unique(), // PubMed ID (actual PMID like "12345678")
-  pmcId: varchar("pmc_id"), // PMC accession number (like "PMC1234567")
+  pmid: varchar("pmid").unique(), // PubMed ID
   title: text("title").notNull(),
   authors: text("authors").notNull(),
   journal: text("journal").notNull(),
@@ -44,10 +30,7 @@ export const publications = pgTable("publications", {
   categoryReviewedBy: varchar("category_reviewed_by"),
   categoryReviewedAt: timestamp("category_reviewed_at"),
   categoriesLastUpdatedBy: varchar("categories_last_updated_by"),
-  createdAt: timestamp("created_at").defaultNow(),
-  // New fields for PMC sync tracking
-  syncSource: text("sync_source").$type<SyncSource>().default("unknown"), // Where the article came from
-  keywordEvidence: json("keyword_evidence").$type<KeywordEvidence>() // Where SphygmoCor was found
+  createdAt: timestamp("created_at").defaultNow()
 });
 
 export const categories = pgTable("categories", {
@@ -55,14 +38,6 @@ export const categories = pgTable("categories", {
   name: text("name").notNull().unique(),
   description: text("description"),
   color: varchar("color").notNull(), // for UI category badges
-});
-
-export const databaseBackups = pgTable("database_backups", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  description: text("description"),
-  recordCount: integer("record_count").notNull(),
-  data: jsonb("data").$type<Publication[]>().notNull(),
 });
 
 export const insertPublicationSchema = createInsertSchema(publications).omit({
@@ -75,17 +50,10 @@ export const insertCategorySchema = createInsertSchema(categories).omit({
   id: true,
 });
 
-export const insertDatabaseBackupSchema = createInsertSchema(databaseBackups).omit({
-  id: true,
-  createdAt: true,
-});
-
 export type InsertPublication = z.infer<typeof insertPublicationSchema>;
 export type Publication = typeof publications.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Category = typeof categories.$inferSelect;
-export type InsertDatabaseBackup = z.infer<typeof insertDatabaseBackupSchema>;
-export type DatabaseBackup = typeof databaseBackups.$inferSelect;
 
 // Search and filter schemas
 export const searchPublicationsSchema = z.object({

@@ -1,9 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPublicationSchema, searchPublicationsSchema, type InsertPublication, databaseBackups, publications } from "@shared/schema";
-import { db } from "./db";
-import { sql, desc, eq, and } from "drizzle-orm";
+import { insertPublicationSchema, searchPublicationsSchema, type InsertPublication } from "@shared/schema";
 import { z } from "zod";
 import { XMLParser } from "fast-xml-parser";
 import { pubmedService } from "./services/pubmed";
@@ -14,27 +12,6 @@ import { batchCategorizationTracker } from "./batch-categorization-tracker";
 // Helper to escape SQL LIKE special characters
 function escapeLikePattern(str: string): string {
   return str.replace(/[%_\\]/g, '\\$&');
-}
-
-// Helper function to create automatic backup before sync/categorization operations
-async function createAutoBackup(description: string): Promise<{ id: string; recordCount: number } | null> {
-  try {
-    const allPublications = await db.select().from(publications);
-    const [backup] = await db
-      .insert(databaseBackups)
-      .values({
-        description: `[Auto] ${description} - ${new Date().toISOString()}`,
-        recordCount: allPublications.length,
-        data: allPublications,
-      })
-      .returning();
-    
-    console.log(`Auto-backup created: ${backup.id} with ${allPublications.length} publications`);
-    return { id: backup.id, recordCount: backup.recordCount };
-  } catch (error: any) {
-    console.error("Failed to create auto-backup:", error.message);
-    return null;
-  }
 }
 
 // Helper to normalize XML text from fast-xml-parser
@@ -416,9 +393,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Create automatic backup before sync
-      const backup = await createAutoBackup("Before PubMed Full Sync");
-      
       // Start tracking
       syncTracker.start("full");
       console.log("Starting PubMed full sync (progressive mode - saves in batches)...");
@@ -427,7 +401,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         message: "Full sync started. Poll /api/admin/sync-status for progress.",
-        backupCreated: backup ? { id: backup.id, recordCount: backup.recordCount } : null,
       });
       
       // Run sync in background
@@ -458,26 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     continue;
                   }
                   
-                  // Add syncSource and keywordEvidence for regular PubMed sync
-                  const titleLower = (pub.title || '').toLowerCase();
-                  const abstractLower = (pub.abstract || '').toLowerCase();
-                  const inTitle = titleLower.includes('sphygmocor');
-                  const inAbstract = abstractLower.includes('sphygmocor');
-                  
-                  const pubWithTracking = {
-                    ...pub,
-                    syncSource: 'pubmed-sync' as const,
-                    keywordEvidence: {
-                      inTitle,
-                      inAbstract,
-                      inBody: true, // PubMed sync searches full text
-                      referenceOnly: false,
-                      source: 'pubmed-sync' as const,
-                      syncedAt: new Date().toISOString()
-                    }
-                  };
-                  
-                  await storage.createPublication(pubWithTracking);
+                  await storage.createPublication(pub);
                   imported++;
                   
                   // Track status breakdown
@@ -546,9 +500,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Create automatic backup before sync
-      const backup = await createAutoBackup("Before PubMed Incremental Sync");
-      
       // Start tracking
       syncTracker.start("incremental");
       syncTracker.updatePhase(`Syncing from ${mostRecentDate.toLocaleDateString()}...`);
@@ -559,8 +510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         message: `Incremental sync started. Poll /api/admin/sync-status for progress.`,
-        fromDate: mostRecentDate.toISOString(),
-        backupCreated: backup ? { id: backup.id, recordCount: backup.recordCount } : null,
+        fromDate: mostRecentDate.toISOString()
       });
       
       // Run sync in background
@@ -586,26 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (existing) {
                 skipped++;
               } else {
-                // Add syncSource and keywordEvidence for incremental PubMed sync
-                const titleLower = (pub.title || '').toLowerCase();
-                const abstractLower = (pub.abstract || '').toLowerCase();
-                const inTitle = titleLower.includes('sphygmocor');
-                const inAbstract = abstractLower.includes('sphygmocor');
-                
-                const pubWithTracking = {
-                  ...pub,
-                  syncSource: 'pubmed-sync' as const,
-                  keywordEvidence: {
-                    inTitle,
-                    inAbstract,
-                    inBody: true,
-                    referenceOnly: false,
-                    source: 'pubmed-sync' as const,
-                    syncedAt: new Date().toISOString()
-                  }
-                };
-                
-                await storage.createPublication(pubWithTracking);
+                await storage.createPublication(pub);
                 imported++;
                 
                 // Track status breakdown
@@ -948,71 +879,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false,
         message: "Failed to fetch publications needing review", 
         error: error.message 
-      });
-    }
-  });
-
-  // Get publications filtered by sync source (MUST be before :status route)
-  app.get("/api/admin/publications/by-sync-source", async (req, res) => {
-    try {
-      const source = String(req.query.source || 'all');
-      const limit = parseInt(String(req.query.limit)) || 25;
-      const offset = parseInt(String(req.query.offset)) || 0;
-      
-      let whereCondition;
-      
-      if (source === 'pmc-all') {
-        // Show all PMC imports (body-match and metadata-only)
-        whereCondition = sql`"sync_source" IN ('pmc-body-match', 'pmc-metadata-only')`;
-      } else if (source !== 'all') {
-        whereCondition = eq(publications.syncSource, source as any);
-      }
-      
-      const pubs = await db
-        .select()
-        .from(publications)
-        .where(whereCondition)
-        .orderBy(desc(publications.createdAt))
-        .limit(limit)
-        .offset(offset);
-      
-      const [countResult] = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(publications)
-        .where(whereCondition);
-      
-      const total = countResult?.count || 0;
-      const totalPages = Math.ceil(total / limit);
-      const currentPage = Math.floor(offset / limit) + 1;
-      
-      const sourceCounts = await db
-        .select({
-          syncSource: publications.syncSource,
-          count: sql<number>`count(*)::int`,
-        })
-        .from(publications)
-        .groupBy(publications.syncSource);
-      
-      const counts: Record<string, number> = {};
-      for (const row of sourceCounts) {
-        const src = row.syncSource || 'unknown';
-        counts[src] = row.count;
-      }
-      
-      res.json({
-        success: true,
-        publications: pubs,
-        total,
-        totalPages,
-        currentPage,
-        sourceCounts: counts,
-      });
-    } catch (error: any) {
-      console.error("Error fetching publications by sync source:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch publications by sync source",
-        error: error.message,
       });
     }
   });
@@ -1428,15 +1294,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create automatic backup before batch categorization
-      const backup = await createAutoBackup(`Before Batch Categorization (${filter})`);
-      
       const result = await startBatchCategorization(filter);
-      res.json({ 
-        success: true, 
-        ...result,
-        backupCreated: backup ? { id: backup.id, recordCount: backup.recordCount } : null,
-      });
+      res.json({ success: true, ...result });
     } catch (error: any) {
       console.error("Error starting batch categorization:", error);
       res.status(500).json({
@@ -1455,387 +1314,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to fetch batch categorization status"
-      });
-    }
-  });
-
-  // Compare database with PMC to find missing publications (uses dual-search classification)
-  app.get("/api/admin/compare-pmc", async (req, res) => {
-    try {
-      console.log("Starting PMC comparison with dual-search classification...");
-      
-      // Get all valid numeric PMIDs from database (excludes journal IDs, DOIs, etc.)
-      const databasePmids = await storage.getAllPmcIds();
-      const invalidPmidCount = await storage.getInvalidPmidCount();
-      console.log(`Database has ${databasePmids.size} valid PMIDs (${invalidPmidCount} publications with non-standard IDs excluded)`);
-      
-      // Compare with PMC using dual-search (body + all-fields)
-      const comparison = await pubmedService.findMissingPublicationsFromPmc(databasePmids);
-      
-      res.json({
-        success: true,
-        databaseTotal: databasePmids.size + invalidPmidCount,
-        databaseValidPmids: databasePmids.size,
-        databaseInvalidPmids: invalidPmidCount,
-        pmcBodyTotal: comparison.pmcBodyTotal,
-        pmcAllFieldsTotal: comparison.pmcAllFieldsTotal,
-        pmcTotal: comparison.pmcAllFieldsTotal, // For backward compatibility
-        matchCount: comparison.matchCount,
-        missingBodyCount: comparison.missingBodyPmids.length,
-        missingMetadataOnlyCount: comparison.missingMetadataOnlyPmids.length,
-        missingCount: comparison.missingBodyPmids.length + comparison.missingMetadataOnlyPmids.length,
-        missingBodyIds: comparison.missingBodyPmids.slice(0, 100),
-        missingMetadataOnlyIds: comparison.missingMetadataOnlyPmids.slice(0, 100),
-        missingIds: comparison.missingBodyPmids.slice(0, 100), // For backward compatibility
-        allMissingBodyIds: comparison.missingBodyPmids,
-        allMissingMetadataOnlyIds: comparison.missingMetadataOnlyPmids,
-        allMissingIds: [...comparison.missingBodyPmids, ...comparison.missingMetadataOnlyPmids]
-      });
-    } catch (error: any) {
-      console.error("Error comparing with PMC:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to compare with PMC",
-        error: error.message
-      });
-    }
-  });
-
-  // Sync specific missing publications by PMID (supports both body and metadata-only with heuristic)
-  app.post("/api/admin/sync-missing", async (req, res) => {
-    try {
-      const { pmcIds, bodyIds, metadataOnlyIds } = req.body;
-      
-      // Support both old format (pmcIds) and new format (bodyIds + metadataOnlyIds)
-      const bodyPmids: string[] = bodyIds || pmcIds || [];
-      const metadataOnlyPmids: string[] = metadataOnlyIds || [];
-      
-      if (bodyPmids.length === 0 && metadataOnlyPmids.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Please provide PMIDs to sync (bodyIds and/or metadataOnlyIds)"
-        });
-      }
-
-      console.log(`Syncing ${bodyPmids.length} body + ${metadataOnlyPmids.length} metadata-only publications...`);
-      
-      // Fetch body publications (with syncSource and keywordEvidence tracking)
-      let bodyPublications: any[] = [];
-      if (bodyPmids.length > 0) {
-        bodyPublications = await pubmedService.fetchPublicationsWithHeuristic(bodyPmids, false);
-      }
-      
-      // Fetch metadata-only publications (with heuristic classification)
-      let metadataOnlyPublications: any[] = [];
-      if (metadataOnlyPmids.length > 0) {
-        metadataOnlyPublications = await pubmedService.fetchPublicationsWithHeuristic(metadataOnlyPmids, true);
-      }
-      
-      const allPublications = [...bodyPublications, ...metadataOnlyPublications];
-      console.log(`Fetched ${allPublications.length} publications from PubMed`);
-      
-      // Save to database
-      let savedCount = 0;
-      let skippedCount = 0;
-      let metadataReviewCount = 0;
-      const errors: string[] = [];
-      
-      for (const pub of allPublications) {
-        try {
-          // Check if already exists
-          const existing = await storage.getPublicationByPmid(pub.pmid!);
-          if (existing) {
-            skippedCount++;
-            continue;
-          }
-          
-          await storage.createPublication(pub);
-          savedCount++;
-          if (pub.status === 'pending-metadata-review') {
-            metadataReviewCount++;
-          }
-        } catch (err: any) {
-          errors.push(`${pub.pmid}: ${err.message}`);
-        }
-      }
-      
-      res.json({
-        success: true,
-        requested: bodyPmids.length + metadataOnlyPmids.length,
-        fetched: allPublications.length,
-        saved: savedCount,
-        skipped: skippedCount,
-        metadataReviewCount,
-        errors: errors.length > 0 ? errors : undefined
-      });
-    } catch (error: any) {
-      console.error("Error syncing missing publications:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to sync missing publications",
-        error: error.message
-      });
-    }
-  });
-
-  // Backfill PMIDs for existing publications that have PMC IDs stored in pmid field
-  app.post("/api/admin/backfill-pmids", async (req, res) => {
-    try {
-      console.log("Starting PMID backfill for publications with PMC IDs...");
-      
-      // Get all publications that have PMC-style IDs (numeric, 6-8 digits, no dots)
-      const publicationsToBackfill = await storage.getPublicationsWithPmcStyleIds();
-      console.log(`Found ${publicationsToBackfill.length} publications to backfill`);
-      
-      if (publicationsToBackfill.length === 0) {
-        return res.json({
-          success: true,
-          message: "No publications need backfilling",
-          total: 0,
-          converted: 0,
-          failed: 0
-        });
-      }
-      
-      // Extract the PMC IDs (currently stored in pmid field)
-      const pmcIdsToConvert = publicationsToBackfill.map(p => p.pmid!);
-      
-      // Convert PMC IDs to PMIDs using the converter API
-      const pmcIdToPmidMap = await pubmedService.convertPmcIdsToPmids(pmcIdsToConvert);
-      console.log(`Converted ${pmcIdToPmidMap.size} PMCIDs to PMIDs`);
-      
-      // Update each publication
-      let convertedCount = 0;
-      let failedCount = 0;
-      const errors: string[] = [];
-      
-      for (const pub of publicationsToBackfill) {
-        const oldPmcId = pub.pmid!;
-        const newPmid = pmcIdToPmidMap.get(oldPmcId);
-        
-        if (newPmid) {
-          try {
-            await storage.updatePublicationIds(pub.id, newPmid, `PMC${oldPmcId}`);
-            convertedCount++;
-          } catch (err: any) {
-            errors.push(`${oldPmcId}: ${err.message}`);
-            failedCount++;
-          }
-        } else {
-          // No PMID found, just move the ID to pmcId column
-          try {
-            await storage.updatePublicationIds(pub.id, null, `PMC${oldPmcId}`);
-            failedCount++; // Count as failed since we couldn't get actual PMID
-          } catch (err: any) {
-            errors.push(`${oldPmcId}: ${err.message}`);
-            failedCount++;
-          }
-        }
-      }
-      
-      res.json({
-        success: true,
-        total: publicationsToBackfill.length,
-        converted: convertedCount,
-        failed: failedCount,
-        errors: errors.length > 0 ? errors.slice(0, 20) : undefined
-      });
-    } catch (error: any) {
-      console.error("Error backfilling PMIDs:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to backfill PMIDs",
-        error: error.message
-      });
-    }
-  });
-
-  // ============ DATABASE BACKUP/RESTORE ENDPOINTS ============
-
-  // Create a database backup with retention policy (max 8 backups)
-  app.post("/api/admin/backup", async (req, res) => {
-    try {
-      const { description } = req.body;
-      const MAX_BACKUPS = 8;
-      
-      // Get all publications
-      const allPublications = await db.select().from(publications);
-      
-      // Create backup record
-      const [backup] = await db
-        .insert(databaseBackups)
-        .values({
-          description: description || `Backup created on ${new Date().toISOString()}`,
-          recordCount: allPublications.length,
-          data: allPublications,
-        })
-        .returning();
-      
-      // Enforce retention policy: delete oldest backups beyond MAX_BACKUPS
-      const allBackups = await db
-        .select({ id: databaseBackups.id, createdAt: databaseBackups.createdAt })
-        .from(databaseBackups)
-        .orderBy(desc(databaseBackups.createdAt));
-      
-      let deletedCount = 0;
-      if (allBackups.length > MAX_BACKUPS) {
-        const backupsToDelete = allBackups.slice(MAX_BACKUPS);
-        for (const oldBackup of backupsToDelete) {
-          await db.delete(databaseBackups).where(eq(databaseBackups.id, oldBackup.id));
-          deletedCount++;
-        }
-      }
-      
-      res.json({
-        success: true,
-        backupId: backup.id,
-        timestamp: backup.createdAt,
-        recordCount: backup.recordCount,
-        deletedOldBackups: deletedCount,
-        message: `Successfully created backup with ${allPublications.length} publications${deletedCount > 0 ? `. Removed ${deletedCount} old backup(s) to maintain limit of ${MAX_BACKUPS}.` : ''}`,
-      });
-    } catch (error: any) {
-      console.error("Error creating backup:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to create backup",
-        error: error.message,
-      });
-    }
-  });
-
-  // Backfill syncSource for existing publications
-  app.post("/api/admin/backfill-sync-source", async (req, res) => {
-    try {
-      // Count publications with 'unknown' or NULL syncSource
-      const beforeCount = await db.select({ count: sql<number>`count(*)::int` })
-        .from(publications)
-        .where(sql`"sync_source" IS NULL OR "sync_source" = 'unknown'`);
-      
-      // Update all unknown/null syncSource to 'pubmed-sync'
-      await db.update(publications)
-        .set({ syncSource: 'pubmed-sync' })
-        .where(sql`"sync_source" IS NULL OR "sync_source" = 'unknown'`);
-      
-      res.json({
-        success: true,
-        updated: beforeCount[0]?.count || 0,
-        message: `Updated ${beforeCount[0]?.count || 0} publications to syncSource='pubmed-sync'`
-      });
-    } catch (error: any) {
-      console.error("Error backfilling syncSource:", error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  });
-
-  // List all available backups
-  app.get("/api/admin/backups", async (req, res) => {
-    try {
-      const backups = await db
-        .select({
-          id: databaseBackups.id,
-          createdAt: databaseBackups.createdAt,
-          description: databaseBackups.description,
-          recordCount: databaseBackups.recordCount,
-        })
-        .from(databaseBackups)
-        .orderBy(desc(databaseBackups.createdAt));
-      
-      res.json({
-        success: true,
-        backups,
-      });
-    } catch (error: any) {
-      console.error("Error listing backups:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to list backups",
-        error: error.message,
-      });
-    }
-  });
-
-  // Restore from a backup
-  app.post("/api/admin/restore/:backupId", async (req, res) => {
-    try {
-      const { backupId } = req.params;
-      const { confirm } = req.body;
-      
-      if (!confirm) {
-        return res.status(400).json({
-          success: false,
-          message: "Restore requires confirmation. Set 'confirm: true' in the request body.",
-        });
-      }
-      
-      // Get the backup
-      const [backup] = await db
-        .select()
-        .from(databaseBackups)
-        .where(eq(databaseBackups.id, backupId));
-      
-      if (!backup) {
-        return res.status(404).json({
-          success: false,
-          message: "Backup not found",
-        });
-      }
-      
-      // Delete all current publications
-      await db.delete(publications);
-      
-      // Restore publications from backup
-      const backupData = backup.data as any[];
-      let restoredCount = 0;
-      
-      for (const pub of backupData) {
-        try {
-          // Remove the id to let the database generate a new one, or use the original id
-          await db.insert(publications).values({
-            id: pub.id,
-            pmid: pub.pmid,
-            pmcId: pub.pmcId,
-            title: pub.title,
-            authors: pub.authors,
-            journal: pub.journal,
-            publicationDate: new Date(pub.publicationDate),
-            abstract: pub.abstract,
-            doi: pub.doi,
-            keywords: pub.keywords,
-            categories: pub.categories,
-            citationCount: pub.citationCount,
-            isFeatured: pub.isFeatured,
-            pubmedUrl: pub.pubmedUrl,
-            journalImpactFactor: pub.journalImpactFactor,
-            status: pub.status,
-            suggestedCategories: pub.suggestedCategories,
-            categoryReviewStatus: pub.categoryReviewStatus,
-            categoryReviewedBy: pub.categoryReviewedBy,
-            categoryReviewedAt: pub.categoryReviewedAt ? new Date(pub.categoryReviewedAt) : null,
-            categoriesLastUpdatedBy: pub.categoriesLastUpdatedBy,
-            createdAt: pub.createdAt ? new Date(pub.createdAt) : new Date(),
-            syncSource: pub.syncSource,
-            keywordEvidence: pub.keywordEvidence,
-          });
-          restoredCount++;
-        } catch (err) {
-          console.error(`Error restoring publication ${pub.pmid}:`, err);
-        }
-      }
-      
-      res.json({
-        success: true,
-        restoredCount,
-        backupId: backup.id,
-        backupTimestamp: backup.createdAt,
-        message: `Successfully restored ${restoredCount} publications from backup`,
-      });
-    } catch (error: any) {
-      console.error("Error restoring backup:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to restore backup",
-        error: error.message,
       });
     }
   });

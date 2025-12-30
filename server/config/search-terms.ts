@@ -2,14 +2,8 @@
 // Update these terms as needed to refine publication searches
 
 export const PUBMED_SEARCH_TERMS = [
-  // Search all fields (matches PMC website default search behavior)
-  'sphygmocor',
-];
-
-// PMC-specific search terms (for PMC database queries)
-export const PMC_SEARCH_TERMS = [
-  // Search all fields without restriction to match website results
-  'sphygmocor',
+  // Search for SphygmoCor in the full text of articles in PubMed Central
+  'sphygmocor*[body]',
 ];
 
 // Maximum results per search term - set high to get all 2900+ articles
