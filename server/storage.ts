@@ -552,6 +552,41 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(desc(publications.publicationDate));
   }
+
+  // Get publications where pmid looks like a PMC ID (numeric, 6-8 digits without dots)
+  // These need to be backfilled with actual PMIDs
+  async getPublicationsWithPmcStyleIds(): Promise<Publication[]> {
+    // PMC IDs are typically 6-8 digit numbers
+    // PMIDs can also be similar length but we check for those without dots (DOIs have dots)
+    // and where pmcId is NULL (meaning we haven't migrated them yet)
+    return db
+      .select()
+      .from(publications)
+      .where(
+        and(
+          sql`${publications.pmid} ~ '^[0-9]{5,8}$'`, // 5-8 digit numbers only
+          sql`${publications.pmcId} IS NULL` // Not yet migrated
+        )
+      );
+  }
+
+  // Update publication to set the actual PMID and PMC ID
+  async updatePublicationIds(id: string, newPmid: string | null, pmcId: string): Promise<Publication | undefined> {
+    const updateData: any = { pmcId };
+    
+    if (newPmid) {
+      updateData.pmid = newPmid;
+      // Also update the pubmedUrl to point to PubMed instead of PMC
+      updateData.pubmedUrl = `https://pubmed.ncbi.nlm.nih.gov/${newPmid}/`;
+    }
+    
+    const [updated] = await db
+      .update(publications)
+      .set(updateData)
+      .where(eq(publications.id, id))
+      .returning();
+    return updated || undefined;
+  }
 }
 
 export const storage = new DatabaseStorage();

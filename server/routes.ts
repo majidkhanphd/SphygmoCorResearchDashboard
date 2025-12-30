@@ -1434,6 +1434,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Backfill PMIDs for existing publications that have PMC IDs stored in pmid field
+  app.post("/api/admin/backfill-pmids", async (req, res) => {
+    try {
+      console.log("Starting PMID backfill for publications with PMC IDs...");
+      
+      // Get all publications that have PMC-style IDs (numeric, 6-8 digits, no dots)
+      const publicationsToBackfill = await storage.getPublicationsWithPmcStyleIds();
+      console.log(`Found ${publicationsToBackfill.length} publications to backfill`);
+      
+      if (publicationsToBackfill.length === 0) {
+        return res.json({
+          success: true,
+          message: "No publications need backfilling",
+          total: 0,
+          converted: 0,
+          failed: 0
+        });
+      }
+      
+      // Extract the PMC IDs (currently stored in pmid field)
+      const pmcIdsToConvert = publicationsToBackfill.map(p => p.pmid!);
+      
+      // Convert PMC IDs to PMIDs using the converter API
+      const pmcIdToPmidMap = await pubmedService.convertPmcIdsToPmids(pmcIdsToConvert);
+      console.log(`Converted ${pmcIdToPmidMap.size} PMCIDs to PMIDs`);
+      
+      // Update each publication
+      let convertedCount = 0;
+      let failedCount = 0;
+      const errors: string[] = [];
+      
+      for (const pub of publicationsToBackfill) {
+        const oldPmcId = pub.pmid!;
+        const newPmid = pmcIdToPmidMap.get(oldPmcId);
+        
+        if (newPmid) {
+          try {
+            await storage.updatePublicationIds(pub.id, newPmid, `PMC${oldPmcId}`);
+            convertedCount++;
+          } catch (err: any) {
+            errors.push(`${oldPmcId}: ${err.message}`);
+            failedCount++;
+          }
+        } else {
+          // No PMID found, just move the ID to pmcId column
+          try {
+            await storage.updatePublicationIds(pub.id, null, `PMC${oldPmcId}`);
+            failedCount++; // Count as failed since we couldn't get actual PMID
+          } catch (err: any) {
+            errors.push(`${oldPmcId}: ${err.message}`);
+            failedCount++;
+          }
+        }
+      }
+      
+      res.json({
+        success: true,
+        total: publicationsToBackfill.length,
+        converted: convertedCount,
+        failed: failedCount,
+        errors: errors.length > 0 ? errors.slice(0, 20) : undefined
+      });
+    } catch (error: any) {
+      console.error("Error backfilling PMIDs:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to backfill PMIDs",
+        error: error.message
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
