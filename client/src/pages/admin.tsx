@@ -61,6 +61,8 @@ interface BatchCategorizationStatus {
 interface PmcComparisonResult {
   success: boolean;
   databaseTotal: number;
+  databaseValidPmids?: number;
+  databaseInvalidPmids?: number;
   pmcBodyTotal: number;
   pmcAllFieldsTotal: number;
   pmcTotal: number;
@@ -209,8 +211,11 @@ function PmcComparisonCard() {
             <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div>
-                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">Your Database</p>
-                  <p className="text-2xl font-semibold text-[#1d1d1f] dark:text-white">{result.databaseTotal.toLocaleString()}</p>
+                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">Your Database (Valid PMIDs)</p>
+                  <p className="text-2xl font-semibold text-[#1d1d1f] dark:text-white">{(result.databaseValidPmids || result.databaseTotal).toLocaleString()}</p>
+                  {result.databaseInvalidPmids && result.databaseInvalidPmids > 0 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">+{result.databaseInvalidPmids} without PMID</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-xs text-[#6e6e73] dark:text-gray-400">PMC Body Search</p>

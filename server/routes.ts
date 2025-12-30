@@ -1323,9 +1323,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Starting PMC comparison with dual-search classification...");
       
-      // Get all PMIDs from database
-      const databasePmids = await storage.getAllPmcIds(); // Returns PMIDs despite the name
-      console.log(`Database has ${databasePmids.size} publications with PMIDs`);
+      // Get all valid numeric PMIDs from database (excludes journal IDs, DOIs, etc.)
+      const databasePmids = await storage.getAllPmcIds();
+      const invalidPmidCount = await storage.getInvalidPmidCount();
+      console.log(`Database has ${databasePmids.size} valid PMIDs (${invalidPmidCount} publications with non-standard IDs excluded)`);
       
       // Compare with PMC using dual-search (body + all-fields)
       const comparison = await pubmedService.findMissingPublicationsFromPmc(databasePmids);
@@ -1333,6 +1334,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         databaseTotal: comparison.dbTotal,
+        databaseValidPmids: databasePmids.size,
+        databaseInvalidPmids: invalidPmidCount,
         pmcBodyTotal: comparison.pmcBodyTotal,
         pmcAllFieldsTotal: comparison.pmcAllFieldsTotal,
         pmcTotal: comparison.pmcAllFieldsTotal, // For backward compatibility

@@ -66,6 +66,7 @@ export interface IStorage {
   getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number, totalByStatus?: Record<string, number>}>;
   getMostRecentPublicationDate(): Promise<Date | null>;
   getAllPmcIds(): Promise<Set<string>>;
+  getInvalidPmidCount(): Promise<number>;
 
   // Category methods
   getCategories(): Promise<Category[]>;
@@ -419,11 +420,26 @@ export class DatabaseStorage implements IStorage {
     
     const ids = new Set<string>();
     for (const row of results) {
-      if (row.pmid) {
+      // Only include valid numeric PMIDs (filter out journal IDs, DOIs, etc.)
+      if (row.pmid && /^\d+$/.test(row.pmid)) {
         ids.add(row.pmid);
       }
     }
     return ids;
+  }
+
+  async getInvalidPmidCount(): Promise<number> {
+    const results = await db
+      .select({ pmid: publications.pmid })
+      .from(publications);
+    
+    let count = 0;
+    for (const row of results) {
+      if (row.pmid && !/^\d+$/.test(row.pmid)) {
+        count++;
+      }
+    }
+    return count;
   }
 
   // Category methods
