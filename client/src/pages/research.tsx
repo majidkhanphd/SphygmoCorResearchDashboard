@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, Suspense, lazy } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import FeaturedCarousel from "@/components/featured-carousel";
@@ -18,6 +18,7 @@ import { PaginationControls } from "@/components/pagination-controls";
 import { sanitizeText } from "@shared/sanitize";
 import { getChildJournals, isParentJournal, type JournalGroup, JOURNAL_GROUPS } from "@shared/journal-mappings";
 import { formatAbstract } from "@/lib/format-abstract";
+import { PublicationsListSkeleton, SidebarFiltersSkeleton } from "@/components/research-skeletons";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "ckd": { bg: "#E3F2FD", text: "#0D47A1", border: "#90CAF9" },
@@ -56,10 +57,16 @@ export default function Home() {
     const saved = localStorage.getItem('publicationsPerPage');
     return saved ? parseInt(saved) : 25;
   });
-  // Fetch batch size - starts at 100, upgrades to 200 when user selects 200 per page
+  // Fetch batch size - starts small for fast initial load, upgrades when user selects more per page
   const [fetchBatchSize, setFetchBatchSize] = useState<number>(() => {
     const savedPerPage = localStorage.getItem('publicationsPerPage');
-    return savedPerPage && parseInt(savedPerPage) > 100 ? 200 : 100;
+    // Start with 25 for fast initial load, upgrade to 100 or 200 based on user preference
+    if (savedPerPage) {
+      const saved = parseInt(savedPerPage);
+      if (saved > 100) return 200;
+      if (saved > 25) return 100;
+    }
+    return 25; // Fast initial load
   });
   const resultsRef = useRef<HTMLDivElement>(null);
   const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
@@ -219,9 +226,11 @@ export default function Home() {
   useEffect(() => {
     // Reset to page 1 when perPage changes
     setCurrentPage(1);
-    // Upgrade batch size if user selects 200
+    // Upgrade batch size based on user selection
     if (perPage > 100 && fetchBatchSize < 200) {
       setFetchBatchSize(200);
+    } else if (perPage > 25 && fetchBatchSize < 100) {
+      setFetchBatchSize(100);
     }
     // Persist to localStorage
     localStorage.setItem('publicationsPerPage', perPage.toString());
@@ -1092,15 +1101,7 @@ export default function Home() {
               aria-label="Publications list"
             >
             {isLoading ? (
-              <div className="research-loading-container">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className="research-loading-item">
-                    <div className="h-6 rounded research-skeleton research-skeleton-title"></div>
-                    <div className="h-4 rounded research-skeleton research-skeleton-subtitle"></div>
-                    <div className="h-4 rounded research-skeleton research-skeleton-meta"></div>
-                  </div>
-                ))}
-              </div>
+              <PublicationsListSkeleton count={perPage > 10 ? 10 : perPage} />
             ) : allPublications?.length === 0 ? (
               <div className="py-8 sm:py-10 md:py-12">
                 <p className="text-base sm:text-lg mb-2 research-empty-primary">
@@ -1113,12 +1114,9 @@ export default function Home() {
             ) : (
               <>
                 {/* Publications List - Single Column Layout */}
-                <motion.div 
+                <div 
                   className="min-w-0 research-publications-list"
                   data-testid="publications-list"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.4 }}
                 >
                   <AnimatePresence>
                   {allPublications?.map((publication: Publication, index) => {
@@ -1131,16 +1129,14 @@ export default function Home() {
                         key={publication.id} 
                         data-testid={`publication-${publication.id}`}
                         className="min-w-0 py-4 sm:py-5 md:py-6 research-publication-item"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                         transition={{ 
-                          duration: 0.4,
-                          delay: index * 0.05,
-                          ease: [0.25, 0.46, 0.45, 0.94]
+                          duration: 0.2,
+                          delay: Math.min(index * 0.02, 0.2),
+                          ease: "easeOut"
                         }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, amount: 0.1 }}
                       >
                         {/* Publication entry - no card styling */}
                         <div className="min-w-0 break-words research-publication-content">
@@ -1280,7 +1276,7 @@ export default function Home() {
                     );
                   })}
                   </AnimatePresence>
-                </motion.div>
+                </div>
               </>
             )}
           </section>
