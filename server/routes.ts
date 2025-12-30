@@ -1,7 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPublicationSchema, searchPublicationsSchema, type InsertPublication } from "@shared/schema";
+import { insertPublicationSchema, searchPublicationsSchema, type InsertPublication, databaseBackups, publications } from "@shared/schema";
+import { db } from "./db";
+import { sql, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { XMLParser } from "fast-xml-parser";
 import { pubmedService } from "./services/pubmed";
@@ -1505,6 +1507,155 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false,
         message: "Failed to backfill PMIDs",
         error: error.message
+      });
+    }
+  });
+
+  // ============ DATABASE BACKUP/RESTORE ENDPOINTS ============
+
+  // Create a database backup
+  app.post("/api/admin/backup", async (req, res) => {
+    try {
+      const { description } = req.body;
+      
+      // Get all publications
+      const allPublications = await db.select().from(publications);
+      
+      // Create backup record
+      const [backup] = await db
+        .insert(databaseBackups)
+        .values({
+          description: description || `Backup created on ${new Date().toISOString()}`,
+          recordCount: allPublications.length,
+          data: allPublications,
+        })
+        .returning();
+      
+      res.json({
+        success: true,
+        backupId: backup.id,
+        timestamp: backup.createdAt,
+        recordCount: backup.recordCount,
+        message: `Successfully created backup with ${allPublications.length} publications`,
+      });
+    } catch (error: any) {
+      console.error("Error creating backup:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to create backup",
+        error: error.message,
+      });
+    }
+  });
+
+  // List all available backups
+  app.get("/api/admin/backups", async (req, res) => {
+    try {
+      const backups = await db
+        .select({
+          id: databaseBackups.id,
+          createdAt: databaseBackups.createdAt,
+          description: databaseBackups.description,
+          recordCount: databaseBackups.recordCount,
+        })
+        .from(databaseBackups)
+        .orderBy(desc(databaseBackups.createdAt));
+      
+      res.json({
+        success: true,
+        backups,
+      });
+    } catch (error: any) {
+      console.error("Error listing backups:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to list backups",
+        error: error.message,
+      });
+    }
+  });
+
+  // Restore from a backup
+  app.post("/api/admin/restore/:backupId", async (req, res) => {
+    try {
+      const { backupId } = req.params;
+      const { confirm } = req.body;
+      
+      if (!confirm) {
+        return res.status(400).json({
+          success: false,
+          message: "Restore requires confirmation. Set 'confirm: true' in the request body.",
+        });
+      }
+      
+      // Get the backup
+      const [backup] = await db
+        .select()
+        .from(databaseBackups)
+        .where(eq(databaseBackups.id, backupId));
+      
+      if (!backup) {
+        return res.status(404).json({
+          success: false,
+          message: "Backup not found",
+        });
+      }
+      
+      // Delete all current publications
+      await db.delete(publications);
+      
+      // Restore publications from backup
+      const backupData = backup.data as any[];
+      let restoredCount = 0;
+      
+      for (const pub of backupData) {
+        try {
+          // Remove the id to let the database generate a new one, or use the original id
+          await db.insert(publications).values({
+            id: pub.id,
+            pmid: pub.pmid,
+            pmcId: pub.pmcId,
+            title: pub.title,
+            authors: pub.authors,
+            journal: pub.journal,
+            publicationDate: new Date(pub.publicationDate),
+            abstract: pub.abstract,
+            doi: pub.doi,
+            keywords: pub.keywords,
+            categories: pub.categories,
+            citationCount: pub.citationCount,
+            isFeatured: pub.isFeatured,
+            pubmedUrl: pub.pubmedUrl,
+            journalImpactFactor: pub.journalImpactFactor,
+            status: pub.status,
+            suggestedCategories: pub.suggestedCategories,
+            categoryReviewStatus: pub.categoryReviewStatus,
+            categoryReviewedBy: pub.categoryReviewedBy,
+            categoryReviewedAt: pub.categoryReviewedAt ? new Date(pub.categoryReviewedAt) : null,
+            categoriesLastUpdatedBy: pub.categoriesLastUpdatedBy,
+            createdAt: pub.createdAt ? new Date(pub.createdAt) : new Date(),
+            syncSource: pub.syncSource,
+            keywordEvidence: pub.keywordEvidence,
+          });
+          restoredCount++;
+        } catch (err) {
+          console.error(`Error restoring publication ${pub.pmid}:`, err);
+        }
+      }
+      
+      res.json({
+        success: true,
+        restoredCount,
+        backupId: backup.id,
+        backupTimestamp: backup.createdAt,
+        message: `Successfully restored ${restoredCount} publications from backup`,
+      });
+    } catch (error: any) {
+      console.error("Error restoring backup:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to restore backup",
+        error: error.message,
       });
     }
   });
