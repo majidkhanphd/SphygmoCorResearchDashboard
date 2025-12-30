@@ -178,14 +178,17 @@ export class PubMedService {
       const articleMeta = article.front["article-meta"];
       const journalMeta = article.front["journal-meta"];
 
-      // Parse PMC ID
-      const pmcId = this.parsePmcId(articleMeta["article-id"], article["@_id"]);
+      // Parse PMC ID (the PMC accession number like "1234567")
+      const pmcIdNumeric = this.parsePmcId(articleMeta["article-id"], article["@_id"]);
+      
+      // Parse actual PMID (PubMed ID like "12345678")
+      const actualPmid = this.parseActualPmid(articleMeta["article-id"]);
       
       // Parse DOI
       const doi = this.parseDoi(articleMeta["article-id"]);
       
-      // Require at least PMID or DOI
-      if (!pmcId && !doi) {
+      // Require at least PMC ID or DOI
+      if (!pmcIdNumeric && !doi) {
         console.error("Article has neither PMC ID nor DOI - skipping");
         return null;
       }
@@ -221,11 +224,15 @@ export class PubMedService {
       const status = isComplete ? "approved" : "pending";
 
       if (!isComplete) {
-        console.log(`Article ${pmcId || doi} marked as pending (missing: ${title === "Untitled Publication" ? "title" : ""} ${authors === "Unknown" ? "authors" : ""})`);
+        console.log(`Article PMC${pmcIdNumeric || ''} / PMID:${actualPmid || 'none'} marked as pending (missing: ${title === "Untitled Publication" ? "title" : ""} ${authors === "Unknown" ? "authors" : ""})`);
       }
 
+      // Use actual PMID if available, otherwise use PMC ID or DOI as fallback
+      const pmidForStorage = actualPmid || pmcIdNumeric || doi!;
+
       return {
-        pmid: pmcId || doi!, // Store PMC ID or DOI in the pmid field
+        pmid: pmidForStorage,
+        pmcId: pmcIdNumeric ? `PMC${pmcIdNumeric}` : null, // Store full PMC ID with prefix
         title,
         authors,
         journal,
@@ -236,7 +243,11 @@ export class PubMedService {
         keywords,
         citationCount: 0,
         isFeatured: 0,
-        pubmedUrl: pmcId ? `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${pmcId}/` : `https://doi.org/${doi}`,
+        pubmedUrl: actualPmid 
+          ? `https://pubmed.ncbi.nlm.nih.gov/${actualPmid}/`
+          : pmcIdNumeric 
+            ? `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${pmcIdNumeric}/` 
+            : `https://doi.org/${doi}`,
         journalImpactFactor: null,
         status,
       };
@@ -244,6 +255,23 @@ export class PubMedService {
       console.error("Error parsing PMC article:", error);
       return null;
     }
+  }
+
+  // Parse the actual PubMed ID from article-id elements
+  private parseActualPmid(articleIds: any): string | null {
+    if (!articleIds) return null;
+
+    const idArray = Array.isArray(articleIds) ? articleIds : [articleIds];
+    
+    // Look for actual PMID specifically (pub-id-type="pmid")
+    const pmidObj = idArray.find((id: any) => id["@_pub-id-type"] === "pmid");
+
+    if (pmidObj) {
+      const idText = pmidObj["#text"] || pmidObj;
+      return String(idText);
+    }
+
+    return null;
   }
 
   private parsePmcId(articleIds: any, attributeId?: string): string | null {

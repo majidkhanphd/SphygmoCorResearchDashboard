@@ -11,7 +11,8 @@ export type SuggestedCategory = {
 
 export const publications = pgTable("publications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  pmid: varchar("pmid").unique(), // PubMed ID
+  pmid: varchar("pmid").unique(), // PubMed ID (actual PMID like "12345678")
+  pmcId: varchar("pmc_id"), // PMC accession number (like "PMC1234567")
   title: text("title").notNull(),
   authors: text("authors").notNull(),
   journal: text("journal").notNull(),
