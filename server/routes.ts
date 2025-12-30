@@ -1318,6 +1318,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Compare database with PMC to find missing publications
+  app.get("/api/admin/compare-pmc", async (req, res) => {
+    try {
+      console.log("Starting PMC comparison...");
+      
+      // Get all PMC IDs from database
+      const databasePmcIds = await storage.getAllPmcIds();
+      console.log(`Database has ${databasePmcIds.size} publications`);
+      
+      // Compare with PMC
+      const comparison = await pubmedService.findMissingPublications(databasePmcIds);
+      
+      res.json({
+        success: true,
+        databaseTotal: comparison.dbTotal,
+        pmcTotal: comparison.pmcTotal,
+        matchCount: comparison.matchCount,
+        missingCount: comparison.missingIds.length,
+        missingIds: comparison.missingIds.slice(0, 100), // Return first 100 for preview
+        allMissingIds: comparison.missingIds
+      });
+    } catch (error: any) {
+      console.error("Error comparing with PMC:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to compare with PMC",
+        error: error.message
+      });
+    }
+  });
+
+  // Sync specific missing publications by PMC ID
+  app.post("/api/admin/sync-missing", async (req, res) => {
+    try {
+      const { pmcIds } = req.body;
+      
+      if (!pmcIds || !Array.isArray(pmcIds) || pmcIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Please provide an array of PMC IDs to sync"
+        });
+      }
+
+      console.log(`Syncing ${pmcIds.length} missing publications...`);
+      
+      // Fetch publications from PMC
+      const publications = await pubmedService.fetchMissingPublications(pmcIds);
+      console.log(`Fetched ${publications.length} publications from PMC`);
+      
+      // Save to database
+      let savedCount = 0;
+      let skippedCount = 0;
+      const errors: string[] = [];
+      
+      for (const pub of publications) {
+        try {
+          // Check if already exists
+          const existing = await storage.getPublicationByPmid(pub.pmid!);
+          if (existing) {
+            skippedCount++;
+            continue;
+          }
+          
+          await storage.createPublication(pub);
+          savedCount++;
+        } catch (err: any) {
+          errors.push(`${pub.pmid}: ${err.message}`);
+        }
+      }
+      
+      res.json({
+        success: true,
+        requested: pmcIds.length,
+        fetched: publications.length,
+        saved: savedCount,
+        skipped: skippedCount,
+        errors: errors.length > 0 ? errors : undefined
+      });
+    } catch (error: any) {
+      console.error("Error syncing missing publications:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to sync missing publications",
+        error: error.message
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -65,6 +65,7 @@ export interface IStorage {
   toggleFeatured(id: string): Promise<Publication | undefined>;
   getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number, totalByStatus?: Record<string, number>}>;
   getMostRecentPublicationDate(): Promise<Date | null>;
+  getAllPmcIds(): Promise<Set<string>>;
 
   // Category methods
   getCategories(): Promise<Category[]>;
@@ -409,6 +410,20 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
     
     return result?.publicationDate || null;
+  }
+
+  async getAllPmcIds(): Promise<Set<string>> {
+    const results = await db
+      .select({ pmid: publications.pmid })
+      .from(publications);
+    
+    const ids = new Set<string>();
+    for (const row of results) {
+      if (row.pmid) {
+        ids.add(row.pmid);
+      }
+    }
+    return ids;
   }
 
   // Category methods

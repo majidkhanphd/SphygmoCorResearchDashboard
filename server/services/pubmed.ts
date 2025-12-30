@@ -851,6 +851,78 @@ export class PubMedService {
 
     return unique;
   }
+
+  // Get ALL PMC IDs from PMC using pagination (for comparison with database)
+  async getAllPmcIdsFromPmc(searchTerms?: string[]): Promise<{ ids: string[]; totalCount: number }> {
+    const terms = searchTerms || this.cardiovascularTerms;
+    const allIds = new Set<string>();
+    let totalCount = 0;
+
+    for (const term of terms) {
+      console.log(`Querying PMC for total count: ${term}`);
+      
+      // First, get the total count
+      const countUrl = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${encodeURIComponent(term)}&retmax=0&retmode=xml`;
+      try {
+        const countResponse = await fetch(countUrl);
+        const countXml = await countResponse.text();
+        const countResult = this.parser.parse(countXml) as PubMedSearchResult;
+        const termCount = parseInt(countResult.eSearchResult?.Count || '0', 10);
+        totalCount = Math.max(totalCount, termCount);
+        
+        console.log(`  Total available in PMC: ${termCount}`);
+        
+        // Fetch all IDs with pagination
+        const batchSize = 1000;
+        for (let retstart = 0; retstart < termCount; retstart += batchSize) {
+          const url = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${encodeURIComponent(term)}&retmax=${batchSize}&retstart=${retstart}&retmode=xml`;
+          const response = await fetch(url);
+          const xmlText = await response.text();
+          const result = this.parser.parse(xmlText) as PubMedSearchResult;
+          
+          if (result.eSearchResult?.IdList?.Id) {
+            const ids = Array.isArray(result.eSearchResult.IdList.Id)
+              ? result.eSearchResult.IdList.Id
+              : [result.eSearchResult.IdList.Id];
+            ids.forEach(id => allIds.add(id));
+          }
+          
+          // Rate limit
+          await new Promise(resolve => setTimeout(resolve, 350));
+        }
+      } catch (error) {
+        console.error(`Error getting PMC count for "${term}":`, error);
+      }
+    }
+
+    return { ids: Array.from(allIds), totalCount };
+  }
+
+  // Compare PMC IDs with database and find missing ones
+  async findMissingPublications(databasePmcIds: Set<string>): Promise<{
+    missingIds: string[];
+    pmcTotal: number;
+    dbTotal: number;
+    matchCount: number;
+  }> {
+    const { ids: pmcIds, totalCount } = await this.getAllPmcIdsFromPmc();
+    
+    // Find IDs in PMC but not in database
+    const missingIds = pmcIds.filter(id => !databasePmcIds.has(id));
+    
+    return {
+      missingIds,
+      pmcTotal: pmcIds.length,
+      dbTotal: databasePmcIds.size,
+      matchCount: pmcIds.length - missingIds.length
+    };
+  }
+
+  // Fetch and return publications for specific PMC IDs (for syncing missing ones)
+  async fetchMissingPublications(pmcIds: string[]): Promise<InsertPublication[]> {
+    console.log(`Fetching ${pmcIds.length} missing publications from PMC...`);
+    return this.fetchArticleDetails(pmcIds);
+  }
 }
 
 export const pubmedService = new PubMedService();

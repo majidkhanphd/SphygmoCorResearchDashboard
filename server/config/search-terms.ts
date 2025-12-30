@@ -2,7 +2,10 @@
 // Update these terms as needed to refine publication searches
 
 export const PUBMED_SEARCH_TERMS = [
-  // Search for SphygmoCor in the full text of articles in PubMed Central
+  // Both exact match and wildcard for comprehensive coverage
+  // Exact match (how PMC web search does it)
+  '"sphygmocor"[body]',
+  // Wildcard for variations (sphygmocor, sphygmocors, etc.)
   'sphygmocor*[body]',
 ];
 
