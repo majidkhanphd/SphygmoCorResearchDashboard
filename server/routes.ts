@@ -923,6 +923,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get publications filtered by sync source (MUST be before :status route)
+  app.get("/api/admin/publications/by-sync-source", async (req, res) => {
+    try {
+      const source = String(req.query.source || 'all');
+      const limit = parseInt(String(req.query.limit)) || 25;
+      const offset = parseInt(String(req.query.offset)) || 0;
+      
+      const conditions: any[] = [];
+      
+      if (source !== 'all') {
+        conditions.push(eq(publications.syncSource, source as any));
+      }
+      
+      const pubs = await db
+        .select()
+        .from(publications)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(publications.createdAt))
+        .limit(limit)
+        .offset(offset);
+      
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(publications)
+        .where(conditions.length > 0 ? and(...conditions) : undefined);
+      
+      const total = countResult?.count || 0;
+      const totalPages = Math.ceil(total / limit);
+      const currentPage = Math.floor(offset / limit) + 1;
+      
+      const sourceCounts = await db
+        .select({
+          syncSource: publications.syncSource,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(publications)
+        .groupBy(publications.syncSource);
+      
+      const counts: Record<string, number> = {};
+      for (const row of sourceCounts) {
+        const src = row.syncSource || 'unknown';
+        counts[src] = row.count;
+      }
+      
+      res.json({
+        success: true,
+        publications: pubs,
+        total,
+        totalPages,
+        currentPage,
+        sourceCounts: counts,
+      });
+    } catch (error: any) {
+      console.error("Error fetching publications by sync source:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch publications by sync source",
+        error: error.message,
+      });
+    }
+  });
+
   // Admin endpoint to get publications by status (pending, approved, rejected)
   app.get("/api/admin/publications/:status", async (req, res) => {
     try {

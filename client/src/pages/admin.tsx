@@ -78,6 +78,215 @@ interface PmcComparisonResult {
   allMissingIds: string[];
 }
 
+interface BackupInfo {
+  id: string;
+  createdAt: string;
+  description: string | null;
+  recordCount: number;
+}
+
+function DatabaseBackupCard() {
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [selectedBackup, setSelectedBackup] = useState<BackupInfo | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const { toast } = useToast();
+
+  const { data: backupsData, refetch: refetchBackups } = useQuery<{ success: boolean; backups: BackupInfo[] }>({
+    queryKey: ['/api/admin/backups'],
+  });
+
+  const handleBackup = async () => {
+    setIsBackingUp(true);
+    try {
+      const response = await apiRequest('POST', '/api/admin/backup', {
+        description: `Manual backup - ${new Date().toLocaleString()}`
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        toast({
+          title: "Backup Created",
+          description: `Successfully backed up ${data.recordCount} publications.`,
+        });
+        refetchBackups();
+      } else {
+        throw new Error(data.message || 'Backup failed');
+      }
+    } catch (err: any) {
+      toast({
+        title: "Backup Failed",
+        description: err.message || 'Failed to create backup',
+        variant: "destructive",
+      });
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!selectedBackup) return;
+    
+    setIsRestoring(true);
+    try {
+      const response = await apiRequest('POST', `/api/admin/restore/${selectedBackup.id}`, {
+        confirm: true
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        toast({
+          title: "Restore Complete",
+          description: `Successfully restored ${data.restoredCount} publications from backup.`,
+        });
+        setRestoreDialogOpen(false);
+        setSelectedBackup(null);
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/publications'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/publications'] });
+      } else {
+        throw new Error(data.message || 'Restore failed');
+      }
+    } catch (err: any) {
+      toast({
+        title: "Restore Failed",
+        description: err.message || 'Failed to restore from backup',
+        variant: "destructive",
+      });
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
+  const openRestoreDialog = (backup: BackupInfo) => {
+    setSelectedBackup(backup);
+    setRestoreDialogOpen(true);
+  };
+
+  return (
+    <>
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Database Backup & Restore</CardTitle>
+          <CardDescription>Create backups and restore your publication database</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Button 
+                onClick={handleBackup}
+                disabled={isBackingUp}
+                data-testid="button-backup-now"
+              >
+                {isBackingUp ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Backup...
+                  </>
+                ) : (
+                  "Backup Now"
+                )}
+              </Button>
+              <span className="text-sm text-[#6e6e73] dark:text-gray-400">
+                Creates a snapshot of all publications
+              </span>
+            </div>
+            
+            {backupsData?.backups && backupsData.backups.length > 0 ? (
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[#6e6e73] dark:text-gray-400">Timestamp</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[#6e6e73] dark:text-gray-400">Description</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[#6e6e73] dark:text-gray-400">Records</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-[#6e6e73] dark:text-gray-400">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {backupsData.backups.map((backup) => (
+                      <tr key={backup.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/30" data-testid={`row-backup-${backup.id}`}>
+                        <td className="px-4 py-3 text-sm">
+                          {new Date(backup.createdAt).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#6e6e73] dark:text-gray-400">
+                          {backup.description || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <Badge variant="secondary">{backup.recordCount.toLocaleString()}</Badge>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => openRestoreDialog(backup)}
+                            data-testid={`button-restore-${backup.id}`}
+                          >
+                            Restore
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-[#6e6e73] dark:text-gray-400">
+                No backups available. Create one to protect your data.
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Restore</DialogTitle>
+            <DialogDescription>
+              This will replace ALL current publications with the backup data. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBackup && (
+            <div className="py-4">
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-2">
+                  Restore from:
+                </p>
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  {new Date(selectedBackup.createdAt).toLocaleString()}
+                </p>
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  {selectedBackup.recordCount.toLocaleString()} publications
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRestoreDialogOpen(false)} data-testid="button-cancel-restore">
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleRestore}
+              disabled={isRestoring}
+              data-testid="button-confirm-restore"
+            >
+              {isRestoring ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Restoring...
+                </>
+              ) : (
+                "Confirm Restore"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 function PmcComparisonCard() {
   const [isComparing, setIsComparing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -309,6 +518,296 @@ function PmcComparisonCard() {
                 </div>
               )}
             </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface PmcPublicationWithEvidence extends Publication {
+  syncSource: string | null;
+  keywordEvidence: {
+    inTitle: boolean;
+    inAbstract: boolean;
+    inBody: boolean;
+    referenceOnly: boolean;
+    source: string;
+    syncedAt: string;
+  } | null;
+}
+
+function PmcReviewSection() {
+  const [syncSourceFilter, setSyncSourceFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage] = useState(10);
+  const { toast } = useToast();
+
+  const offset = (currentPage - 1) * perPage;
+
+  const { data: publicationsData, isLoading, refetch } = useQuery<{
+    success: boolean;
+    publications: PmcPublicationWithEvidence[];
+    total: number;
+    totalPages: number;
+    sourceCounts: Record<string, number>;
+  }>({
+    queryKey: ['/api/admin/publications/by-sync-source', { source: syncSourceFilter, limit: perPage, offset }],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/publications/by-sync-source?source=${syncSourceFilter}&limit=${perPage}&offset=${offset}`);
+      if (!response.ok) throw new Error('Failed to fetch publications');
+      return response.json();
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (publicationId: string) => {
+      return await apiRequest("POST", `/api/admin/publications/${publicationId}/approve`);
+    },
+    onSuccess: () => {
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      toast({
+        title: "Publication Approved",
+        description: "The publication is now visible on the website.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message || "Failed to approve publication",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async (publicationId: string) => {
+      return await apiRequest("POST", `/api/admin/publications/${publicationId}/reject`);
+    },
+    onSuccess: () => {
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
+      toast({
+        title: "Publication Rejected",
+        description: "The publication has been rejected.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Rejection Failed",
+        description: error.message || "Failed to reject publication",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const getKeywordEvidenceBadges = (pub: PmcPublicationWithEvidence) => {
+    const evidence = pub.keywordEvidence;
+    if (!evidence) return null;
+
+    const badges = [];
+    if (evidence.inTitle) {
+      badges.push(
+        <Badge key="title" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+          Title
+        </Badge>
+      );
+    }
+    if (evidence.inAbstract) {
+      badges.push(
+        <Badge key="abstract" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+          Abstract
+        </Badge>
+      );
+    }
+    if (evidence.inBody) {
+      badges.push(
+        <Badge key="body" className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+          Body
+        </Badge>
+      );
+    }
+    if (evidence.referenceOnly) {
+      badges.push(
+        <Badge key="reference" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+          Reference-Only
+        </Badge>
+      );
+    }
+    return badges.length > 0 ? badges : null;
+  };
+
+  const getSyncSourceBadge = (syncSource: string | null) => {
+    switch (syncSource) {
+      case 'pmc-body-match':
+        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Body Match</Badge>;
+      case 'pmc-metadata-only':
+        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">Metadata Only</Badge>;
+      case 'pubmed-sync':
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">PubMed Sync</Badge>;
+      case 'manual':
+        return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">Manual</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">Unknown</Badge>;
+    }
+  };
+
+  const publications = publicationsData?.publications || [];
+  const sourceCounts = publicationsData?.sourceCounts || {};
+
+  return (
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle>PMC Review</CardTitle>
+        <CardDescription>Review publications by sync source and keyword evidence</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="sync-source-filter" className="text-sm">Filter by Source:</Label>
+              <Select value={syncSourceFilter} onValueChange={(value) => { setSyncSourceFilter(value); setCurrentPage(1); }}>
+                <SelectTrigger id="sync-source-filter" className="w-[200px]" data-testid="select-sync-source-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sources</SelectItem>
+                  <SelectItem value="pmc-body-match">Body Match ({sourceCounts['pmc-body-match'] || 0})</SelectItem>
+                  <SelectItem value="pmc-metadata-only">Metadata Only ({sourceCounts['pmc-metadata-only'] || 0})</SelectItem>
+                  <SelectItem value="pubmed-sync">PubMed Sync ({sourceCounts['pubmed-sync'] || 0})</SelectItem>
+                  <SelectItem value="unknown">Unknown ({sourceCounts['unknown'] || 0})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex gap-2 flex-wrap">
+              {Object.entries(sourceCounts).map(([source, count]) => (
+                <Badge key={source} variant="outline" className="text-xs">
+                  {source}: {count}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-[#0071e3]" />
+            </div>
+          ) : publications.length === 0 ? (
+            <p className="text-sm text-[#6e6e73] dark:text-gray-400 py-4">No publications found for this filter.</p>
+          ) : (
+            <>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[#6e6e73] dark:text-gray-400">Publication</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[#6e6e73] dark:text-gray-400">Source</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[#6e6e73] dark:text-gray-400">Keyword Evidence</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-[#6e6e73] dark:text-gray-400">Status</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-[#6e6e73] dark:text-gray-400">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {publications.map((pub) => (
+                      <tr key={pub.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/30" data-testid={`row-pmc-review-${pub.id}`}>
+                        <td className="px-4 py-3">
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium line-clamp-2">{pub.title}</div>
+                            <div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1">{pub.authors}</div>
+                            <div className="text-xs text-[#6e6e73] dark:text-gray-400">
+                              {pub.journal} • {new Date(pub.publicationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {getSyncSourceBadge(pub.syncSource)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {getKeywordEvidenceBadges(pub) || (
+                              <span className="text-xs text-[#6e6e73] dark:text-gray-400">No evidence data</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant={pub.status === 'approved' ? 'default' : pub.status === 'rejected' ? 'destructive' : 'secondary'}>
+                            {pub.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => pub.pubmedUrl && window.open(pub.pubmedUrl, '_blank')}
+                              className="h-8 w-8 p-0"
+                              title="View on PubMed"
+                              data-testid={`button-view-pmc-${pub.id}`}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                            {pub.status !== 'approved' && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() => approveMutation.mutate(pub.id)}
+                                disabled={approveMutation.isPending}
+                                className="h-8 bg-green-600 hover:bg-green-700 text-white"
+                                data-testid={`button-approve-pmc-${pub.id}`}
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                Approve
+                              </Button>
+                            )}
+                            {pub.status !== 'rejected' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => rejectMutation.mutate(pub.id)}
+                                disabled={rejectMutation.isPending}
+                                className="h-8"
+                                data-testid={`button-reject-pmc-${pub.id}`}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-[#6e6e73] dark:text-gray-400">
+                  Showing {publications.length} of {publicationsData?.total || 0} publications
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    data-testid="button-prev-page-pmc"
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    disabled={currentPage >= (publicationsData?.totalPages || 1)}
+                    data-testid="button-next-page-pmc"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </CardContent>
@@ -1691,7 +2190,11 @@ export default function Admin() {
           </CardContent>
         </Card>
 
+        <DatabaseBackupCard />
+
         <PmcComparisonCard />
+
+        <PmcReviewSection />
 
         <Card className="mb-8">
           <CardHeader>
