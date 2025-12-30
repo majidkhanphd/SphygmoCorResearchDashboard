@@ -382,18 +382,16 @@ function PmcReviewSection() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="pmc-metadata-only">Metadata Only ({sourceCounts['pmc-metadata-only'] || 0})</SelectItem>
-              <SelectItem value="pmc-body-match">Body Match ({sourceCounts['pmc-body-match'] || 0})</SelectItem>
-              <SelectItem value="all">All Sources</SelectItem>
-              <SelectItem value="pubmed-sync">PubMed Sync ({sourceCounts['pubmed-sync'] || 0})</SelectItem>
-              <SelectItem value="unknown">Unknown ({sourceCounts['unknown'] || 0})</SelectItem>
+              <SelectItem value="pmc-metadata-only">Metadata Only - Needs Review ({sourceCounts['pmc-metadata-only'] || 0})</SelectItem>
+              <SelectItem value="pmc-body-match">Embargoed/Body Match ({sourceCounts['pmc-body-match'] || 0})</SelectItem>
+              <SelectItem value="pmc-all">All PMC Imports ({(sourceCounts['pmc-metadata-only'] || 0) + (sourceCounts['pmc-body-match'] || 0)})</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {Object.entries(sourceCounts).map(([source, count]) => (
-            <Badge key={source} variant="outline" className="text-xs">{source}: {count}</Badge>
-          ))}
+          <Badge variant="outline" className="text-xs bg-amber-50 dark:bg-amber-900/20">Metadata Only: {sourceCounts['pmc-metadata-only'] || 0}</Badge>
+          <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20">Embargoed: {sourceCounts['pmc-body-match'] || 0}</Badge>
+          <Badge variant="outline" className="text-xs">Total PMC: {(sourceCounts['pmc-metadata-only'] || 0) + (sourceCounts['pmc-body-match'] || 0)}</Badge>
         </div>
       </div>
 
@@ -839,17 +837,27 @@ export default function Admin() {
   const filteredPublications = publicationsData?.publications || [];
   const stats = statsData?.stats?.totalByStatus || { pending: 0, approved: 0, rejected: 0 };
 
+  const getSourceBadge = (syncSource: string | null | undefined) => {
+    switch (syncSource) {
+      case 'pmc-body-match': return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-xs">Embargoed</Badge>;
+      case 'pmc-metadata-only': return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 text-xs">Metadata</Badge>;
+      case 'pubmed-sync': return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 text-xs">PubMed</Badge>;
+      default: return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 text-xs">Unknown</Badge>;
+    }
+  };
+
   const pendingColumns = useMemo<ColumnDef<Publication>[]>(() => [
-    { accessorKey: "title", header: "Title", size: 350, minSize: 200, cell: ({ row }) => (<div className="space-y-1"><div className="text-sm" data-testid={`text-title-${row.original.id}`}>{row.original.title}</div><div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${row.original.id}`}>{row.original.authors}</div></div>) },
-    { accessorKey: "journal", header: "Journal", size: 150, cell: ({ row }) => (<div className="text-sm line-clamp-2" data-testid={`text-journal-${row.original.id}`}>{row.original.journal}</div>) },
-    { accessorKey: "publicationDate", header: "Date", size: 120, cell: ({ row }) => (<div className="text-sm" data-testid={`text-date-${row.original.id}`}>{new Date(row.original.publicationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</div>) },
+    { accessorKey: "title", header: "Title", size: 300, minSize: 180, cell: ({ row }) => (<div className="space-y-1"><div className="text-sm line-clamp-2" data-testid={`text-title-${row.original.id}`}>{row.original.title}</div><div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${row.original.id}`}>{row.original.authors}</div></div>) },
+    { accessorKey: "journal", header: "Journal", size: 120, cell: ({ row }) => (<div className="text-sm line-clamp-1" data-testid={`text-journal-${row.original.id}`}>{row.original.journal}</div>) },
+    { accessorKey: "publicationDate", header: "Date", size: 90, cell: ({ row }) => (<div className="text-sm" data-testid={`text-date-${row.original.id}`}>{new Date(row.original.publicationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</div>) },
+    { accessorKey: "syncSource", header: "Source", size: 90, cell: ({ row }) => getSourceBadge(row.original.syncSource) },
     { accessorKey: "categories", header: "Categories", size: 100, cell: ({ row }) => (<div className="flex flex-wrap gap-1">{row.original.categories && row.original.categories.length > 0 ? row.original.categories.map((category) => (<Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-category-${row.original.id}-${category}`}>{RESEARCH_AREA_DISPLAY_NAMES[category] || category}</Badge>)) : (<span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>)}</div>) },
     { id: "actions", header: "Actions", size: 200, enableResizing: false, cell: ({ row }) => (<div className="flex items-center justify-end gap-2 flex-wrap"><Button size="sm" variant="ghost" onClick={() => row.original.pubmedUrl && window.open(row.original.pubmedUrl, '_blank')} className="h-8 w-8 p-0" title="View on PubMed" data-testid={`button-view-${row.original.id}`}><ExternalLink className="h-4 w-4" /></Button><Button size="sm" variant="default" onClick={() => approveMutation.mutate(row.original.id)} disabled={approveMutation.isPending} className="h-8 bg-green-600 hover:bg-green-700 text-white" data-testid={`button-approve-${row.original.id}`}><Check className="h-4 w-4 mr-1" />Approve</Button><Button size="sm" variant="outline" onClick={() => rejectMutation.mutate(row.original.id)} disabled={rejectMutation.isPending} className="h-8" data-testid={`button-reject-${row.original.id}`}><X className="h-4 w-4 mr-1" />Reject</Button><Button size="sm" variant="outline" onClick={() => openEditDialog(row.original)} className="h-8 w-8 p-0" title="Edit Categories" data-testid={`button-edit-${row.original.id}`}><Pencil className="h-4 w-4" /></Button></div>) },
   ], [approveMutation, rejectMutation]);
 
   const approvedRejectedColumns = useMemo<ColumnDef<Publication>[]>(() => [
-    { accessorKey: "title", header: "Title", size: 350, minSize: 200, cell: ({ row }) => (<div className="space-y-1"><div className="text-sm" data-testid={`text-title-${row.original.id}`}>{row.original.title}</div><div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${row.original.id}`}>{row.original.authors}</div></div>) },
-    { accessorKey: "journal", header: "Journal", size: 150, cell: ({ row }) => (<div className="text-sm line-clamp-2" data-testid={`text-journal-${row.original.id}`}>{row.original.journal}</div>) },
+    { accessorKey: "title", header: "Title", size: 300, minSize: 180, cell: ({ row }) => (<div className="space-y-1"><div className="text-sm line-clamp-2" data-testid={`text-title-${row.original.id}`}>{row.original.title}</div><div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${row.original.id}`}>{row.original.authors}</div></div>) },
+    { accessorKey: "journal", header: "Journal", size: 120, cell: ({ row }) => (<div className="text-sm line-clamp-1" data-testid={`text-journal-${row.original.id}`}>{row.original.journal}</div>) },
     { accessorKey: "publicationDate", header: "Date", size: 120, cell: ({ row }) => (<div className="text-sm" data-testid={`text-date-${row.original.id}`}>{new Date(row.original.publicationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</div>) },
     { accessorKey: "categories", header: "Categories", size: 100, cell: ({ row }) => (<div className="flex flex-wrap gap-1">{row.original.categories && row.original.categories.length > 0 ? row.original.categories.map((category) => (<Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-category-${row.original.id}-${category}`}>{RESEARCH_AREA_DISPLAY_NAMES[category] || category}</Badge>)) : (<span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>)}</div>) },
     { id: "featured", header: "Featured", size: 80, cell: ({ row }) => (<Button size="sm" variant="ghost" onClick={() => toggleFeaturedMutation.mutate(row.original.id)} disabled={toggleFeaturedMutation.isPending} className={`h-8 w-8 p-0 ${row.original.isFeatured ? "text-yellow-500" : "text-gray-400"}`} title={row.original.isFeatured ? "Unmark Featured" : "Mark Featured"} data-testid={`button-featured-${row.original.id}`}><Star className="h-4 w-4" fill={row.original.isFeatured ? "currentColor" : "none"} /></Button>) },

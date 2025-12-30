@@ -959,16 +959,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(String(req.query.limit)) || 25;
       const offset = parseInt(String(req.query.offset)) || 0;
       
-      const conditions: any[] = [];
+      let whereCondition;
       
-      if (source !== 'all') {
-        conditions.push(eq(publications.syncSource, source as any));
+      if (source === 'pmc-all') {
+        // Show all PMC imports (body-match and metadata-only)
+        whereCondition = sql`"sync_source" IN ('pmc-body-match', 'pmc-metadata-only')`;
+      } else if (source !== 'all') {
+        whereCondition = eq(publications.syncSource, source as any);
       }
       
       const pubs = await db
         .select()
         .from(publications)
-        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .where(whereCondition)
         .orderBy(desc(publications.createdAt))
         .limit(limit)
         .offset(offset);
@@ -976,7 +979,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [countResult] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(publications)
-        .where(conditions.length > 0 ? and(...conditions) : undefined);
+        .where(whereCondition);
       
       const total = countResult?.count || 0;
       const totalPages = Math.ceil(total / limit);
