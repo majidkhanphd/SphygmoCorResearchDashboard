@@ -16,6 +16,27 @@ function escapeLikePattern(str: string): string {
   return str.replace(/[%_\\]/g, '\\$&');
 }
 
+// Helper function to create automatic backup before sync/categorization operations
+async function createAutoBackup(description: string): Promise<{ id: string; recordCount: number } | null> {
+  try {
+    const allPublications = await db.select().from(publications);
+    const [backup] = await db
+      .insert(databaseBackups)
+      .values({
+        description: `[Auto] ${description} - ${new Date().toISOString()}`,
+        recordCount: allPublications.length,
+        data: allPublications,
+      })
+      .returning();
+    
+    console.log(`Auto-backup created: ${backup.id} with ${allPublications.length} publications`);
+    return { id: backup.id, recordCount: backup.recordCount };
+  } catch (error: any) {
+    console.error("Failed to create auto-backup:", error.message);
+    return null;
+  }
+}
+
 // Helper to normalize XML text from fast-xml-parser
 function normalizeXmlText(value: any): string {
   if (typeof value === 'string') {
@@ -395,6 +416,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Create automatic backup before sync
+      const backup = await createAutoBackup("Before PubMed Full Sync");
+      
       // Start tracking
       syncTracker.start("full");
       console.log("Starting PubMed full sync (progressive mode - saves in batches)...");
@@ -403,6 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         message: "Full sync started. Poll /api/admin/sync-status for progress.",
+        backupCreated: backup ? { id: backup.id, recordCount: backup.recordCount } : null,
       });
       
       // Run sync in background
@@ -521,6 +546,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Create automatic backup before sync
+      const backup = await createAutoBackup("Before PubMed Incremental Sync");
+      
       // Start tracking
       syncTracker.start("incremental");
       syncTracker.updatePhase(`Syncing from ${mostRecentDate.toLocaleDateString()}...`);
@@ -531,7 +559,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         message: `Incremental sync started. Poll /api/admin/sync-status for progress.`,
-        fromDate: mostRecentDate.toISOString()
+        fromDate: mostRecentDate.toISOString(),
+        backupCreated: backup ? { id: backup.id, recordCount: backup.recordCount } : null,
       });
       
       // Run sync in background
@@ -1396,8 +1425,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Create automatic backup before batch categorization
+      const backup = await createAutoBackup(`Before Batch Categorization (${filter})`);
+      
       const result = await startBatchCategorization(filter);
-      res.json({ success: true, ...result });
+      res.json({ 
+        success: true, 
+        ...result,
+        backupCreated: backup ? { id: backup.id, recordCount: backup.recordCount } : null,
+      });
     } catch (error: any) {
       console.error("Error starting batch categorization:", error);
       res.status(500).json({
