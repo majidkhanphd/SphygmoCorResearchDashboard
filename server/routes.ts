@@ -1349,23 +1349,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sync specific missing publications by PMC ID
+  // Sync specific missing publications by PMID
   app.post("/api/admin/sync-missing", async (req, res) => {
     try {
-      const { pmcIds } = req.body;
+      const { pmcIds } = req.body; // Field name kept for API compatibility, but these are PMIDs now
       
       if (!pmcIds || !Array.isArray(pmcIds) || pmcIds.length === 0) {
         return res.status(400).json({
           success: false,
-          message: "Please provide an array of PMC IDs to sync"
+          message: "Please provide an array of PMIDs to sync"
         });
       }
 
-      console.log(`Syncing ${pmcIds.length} missing publications...`);
+      console.log(`Syncing ${pmcIds.length} missing publications by PMID...`);
       
-      // Fetch publications from PMC
-      const publications = await pubmedService.fetchMissingPublications(pmcIds);
-      console.log(`Fetched ${publications.length} publications from PMC`);
+      // Fetch publications from PubMed using PMIDs
+      const publications = await pubmedService.fetchPublicationsByPmid(pmcIds);
+      console.log(`Fetched ${publications.length} publications from PubMed`);
       
       // Save to database
       let savedCount = 0;

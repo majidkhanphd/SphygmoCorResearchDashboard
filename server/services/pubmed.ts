@@ -898,24 +898,201 @@ export class PubMedService {
     return { ids: Array.from(allIds), totalCount };
   }
 
-  // Compare PMC IDs with database and find missing ones
-  async findMissingPublications(databasePmcIds: Set<string>): Promise<{
+  // Get ALL PMIDs from PubMed (not PMC) for accurate comparison with database
+  async getAllPmidsFromPubMed(searchTerms?: string[]): Promise<{ ids: string[]; totalCount: number }> {
+    const terms = searchTerms || ['sphygmocor'];
+    const allIds = new Set<string>();
+    let totalCount = 0;
+
+    for (const term of terms) {
+      console.log(`Querying PubMed for total count: ${term}`);
+      
+      // First, get the total count - using db=pubmed (not pmc)
+      const countUrl = `${this.baseUrl}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(term)}&retmax=0&retmode=xml`;
+      try {
+        const countResponse = await fetch(countUrl);
+        const countXml = await countResponse.text();
+        const countResult = this.parser.parse(countXml) as PubMedSearchResult;
+        const termCount = parseInt(countResult.eSearchResult?.Count || '0', 10);
+        totalCount = Math.max(totalCount, termCount);
+        
+        console.log(`  Total available in PubMed: ${termCount}`);
+        
+        // Fetch all IDs with pagination
+        const batchSize = 1000;
+        for (let retstart = 0; retstart < termCount; retstart += batchSize) {
+          const url = `${this.baseUrl}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(term)}&retmax=${batchSize}&retstart=${retstart}&retmode=xml`;
+          const response = await fetch(url);
+          const xmlText = await response.text();
+          const result = this.parser.parse(xmlText) as PubMedSearchResult;
+          
+          if (result.eSearchResult?.IdList?.Id) {
+            const ids = Array.isArray(result.eSearchResult.IdList.Id)
+              ? result.eSearchResult.IdList.Id
+              : [result.eSearchResult.IdList.Id];
+            ids.forEach(id => allIds.add(String(id)));
+          }
+          
+          // Rate limit
+          await new Promise(resolve => setTimeout(resolve, 350));
+        }
+      } catch (error) {
+        console.error(`Error getting PubMed count for "${term}":`, error);
+      }
+    }
+
+    return { ids: Array.from(allIds), totalCount };
+  }
+
+  // Compare PMIDs with database and find missing ones (uses PubMed, not PMC)
+  async findMissingPublications(databasePmids: Set<string>): Promise<{
     missingIds: string[];
     pmcTotal: number;
     dbTotal: number;
     matchCount: number;
   }> {
-    const { ids: pmcIds, totalCount } = await this.getAllPmcIdsFromPmc();
+    // Use PubMed (PMIDs) for accurate comparison with database
+    const { ids: pubmedIds, totalCount } = await this.getAllPmidsFromPubMed();
     
-    // Find IDs in PMC but not in database
-    const missingIds = pmcIds.filter(id => !databasePmcIds.has(id));
+    // Find IDs in PubMed but not in database
+    const missingIds = pubmedIds.filter(id => !databasePmids.has(String(id)));
     
     return {
       missingIds,
-      pmcTotal: pmcIds.length,
-      dbTotal: databasePmcIds.size,
-      matchCount: pmcIds.length - missingIds.length
+      pmcTotal: pubmedIds.length, // Keep field name for API compatibility
+      dbTotal: databasePmids.size,
+      matchCount: pubmedIds.length - missingIds.length
     };
+  }
+
+  // Fetch publication details from PubMed by PMID
+  async fetchPublicationsByPmid(pmids: string[]): Promise<InsertPublication[]> {
+    console.log(`Fetching ${pmids.length} publications from PubMed by PMID...`);
+    const publications: InsertPublication[] = [];
+    const batchSize = 100;
+
+    for (let i = 0; i < pmids.length; i += batchSize) {
+      const batch = pmids.slice(i, i + batchSize);
+      const idsParam = batch.join(',');
+      
+      try {
+        const url = `${this.baseUrl}/efetch.fcgi?db=pubmed&id=${idsParam}&retmode=xml`;
+        const response = await fetch(url);
+        const xmlText = await response.text();
+        
+        // Parse PubMed XML (different structure from PMC)
+        const result = this.parser.parse(xmlText);
+        const articles = result?.PubmedArticleSet?.PubmedArticle;
+        
+        if (articles) {
+          const articleList = Array.isArray(articles) ? articles : [articles];
+          
+          for (const article of articleList) {
+            try {
+              const medlineCitation = article?.MedlineCitation;
+              const articleData = medlineCitation?.Article;
+              
+              if (!articleData) continue;
+              
+              const pmid = String(medlineCitation?.PMID?.['#text'] || medlineCitation?.PMID || '');
+              const title = sanitizeText(articleData?.ArticleTitle?.['#text'] || articleData?.ArticleTitle || '');
+              
+              // Extract abstract
+              let abstract = '';
+              const abstractData = articleData?.Abstract?.AbstractText;
+              if (abstractData) {
+                if (Array.isArray(abstractData)) {
+                  abstract = abstractData.map((t: any) => sanitizeText(t?.['#text'] || t || '')).join(' ');
+                } else {
+                  abstract = sanitizeText(abstractData?.['#text'] || abstractData || '');
+                }
+              }
+              
+              // Extract authors (as comma-separated string per schema)
+              const authorList = articleData?.AuthorList?.Author;
+              const authorNames: string[] = [];
+              if (authorList) {
+                const authorArray = Array.isArray(authorList) ? authorList : [authorList];
+                for (const author of authorArray) {
+                  const lastName = author?.LastName || '';
+                  const foreName = author?.ForeName || author?.Initials || '';
+                  if (lastName) {
+                    authorNames.push(`${lastName} ${foreName}`.trim());
+                  }
+                }
+              }
+              const authors = authorNames.join(', ');
+              
+              // Extract journal
+              const journal = articleData?.Journal?.Title || articleData?.Journal?.ISOAbbreviation || '';
+              
+              // Extract publication date
+              const pubDate = articleData?.Journal?.JournalIssue?.PubDate;
+              let publicationDate: Date = new Date();
+              if (pubDate) {
+                const year = pubDate?.Year || new Date().getFullYear().toString();
+                const month = pubDate?.Month || '01';
+                const day = pubDate?.Day || '01';
+                const monthNum = this.monthToNumber(month);
+                const dayStr = String(day).padStart(2, '0');
+                publicationDate = new Date(`${year}-${monthNum}-${dayStr}`);
+              }
+              
+              // Extract DOI
+              const articleIdList = article?.PubmedData?.ArticleIdList?.ArticleId;
+              let doi = '';
+              if (articleIdList) {
+                const idArray = Array.isArray(articleIdList) ? articleIdList : [articleIdList];
+                for (const id of idArray) {
+                  if (id?.['@_IdType'] === 'doi') {
+                    doi = id?.['#text'] || id || '';
+                    break;
+                  }
+                }
+              }
+              
+              if (pmid && title) {
+                publications.push({
+                  pmid,
+                  title,
+                  authors,
+                  journal,
+                  abstract,
+                  doi,
+                  publicationDate,
+                  keywords: this.extractKeywords(title, abstract),
+                  citationCount: 0,
+                  status: 'pending',
+                  isFeatured: 0,
+                  categories: [],
+                  suggestedCategories: [],
+                  categoryReviewStatus: 'pending',
+                  pubmedUrl: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
+                });
+              }
+            } catch (parseError) {
+              console.error(`Error parsing PubMed article:`, parseError);
+            }
+          }
+        }
+        
+        // Rate limit
+        await new Promise(resolve => setTimeout(resolve, 350));
+      } catch (error) {
+        console.error(`Error fetching PubMed batch:`, error);
+      }
+    }
+
+    return publications;
+  }
+
+  private monthToNumber(month: string): string {
+    const months: { [key: string]: string } = {
+      'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+      'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+      'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+    };
+    return months[month] || String(month).padStart(2, '0');
   }
 
   // Fetch and return publications for specific PMC IDs (for syncing missing ones)

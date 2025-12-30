@@ -128,13 +128,13 @@ function PmcComparisonCard() {
   return (
     <Card className="mb-8">
       <CardHeader>
-        <CardTitle>PMC Comparison</CardTitle>
-        <CardDescription>Compare your database with PubMed Central to find missing publications</CardDescription>
+        <CardTitle>PubMed Comparison</CardTitle>
+        <CardDescription>Compare your database with PubMed to find missing publications</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <p className="text-sm text-[#6e6e73] dark:text-gray-400">
-            Query PMC live and identify publications that exist in PubMed Central but are missing from your database.
+            Query PubMed live and identify publications that exist in PubMed but are missing from your database.
           </p>
           
           <div className="flex gap-3">
@@ -142,7 +142,7 @@ function PmcComparisonCard() {
               onClick={handleCompare}
               disabled={isComparing || isSyncing}
               variant="outline"
-              data-testid="button-compare-pmc"
+              data-testid="button-compare-pubmed"
             >
               {isComparing ? (
                 <>
@@ -150,7 +150,7 @@ function PmcComparisonCard() {
                   Comparing...
                 </>
               ) : (
-                "Compare with PMC"
+                "Compare with PubMed"
               )}
             </Button>
             
@@ -186,7 +186,7 @@ function PmcComparisonCard() {
                   <p className="text-2xl font-semibold text-[#1d1d1f] dark:text-white">{result.databaseTotal.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">PMC Total</p>
+                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">PubMed Total</p>
                   <p className="text-2xl font-semibold text-[#1d1d1f] dark:text-white">{result.pmcTotal.toLocaleString()}</p>
                 </div>
                 <div>
@@ -202,18 +202,18 @@ function PmcComparisonCard() {
               {result.missingCount > 0 && result.missingIds.length > 0 && (
                 <div>
                   <p className="text-xs text-[#6e6e73] dark:text-gray-400 mb-2">
-                    Missing PMC IDs (first {Math.min(result.missingIds.length, 100)}):
+                    Missing PMIDs (first {Math.min(result.missingIds.length, 100)}):
                   </p>
                   <div className="max-h-32 overflow-y-auto text-xs font-mono bg-white dark:bg-black p-2 rounded border">
                     {result.missingIds.slice(0, 100).map(id => (
                       <a 
                         key={id}
-                        href={`https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${id}/`}
+                        href={`https://pubmed.ncbi.nlm.nih.gov/${id}/`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-block mr-2 mb-1 text-blue-600 hover:underline"
                       >
-                        PMC{id}
+                        {id}
                       </a>
                     ))}
                   </div>
@@ -223,7 +223,7 @@ function PmcComparisonCard() {
               {result.missingCount === 0 && (
                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                   <Check className="h-5 w-5" />
-                  <span className="font-medium">Your database is fully in sync with PMC!</span>
+                  <span className="font-medium">Your database is fully in sync with PubMed!</span>
                 </div>
               )}
             </div>

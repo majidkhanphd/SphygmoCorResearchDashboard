@@ -2,11 +2,14 @@
 // Update these terms as needed to refine publication searches
 
 export const PUBMED_SEARCH_TERMS = [
-  // Both exact match and wildcard for comprehensive coverage
-  // Exact match (how PMC web search does it)
-  '"sphygmocor"[body]',
-  // Wildcard for variations (sphygmocor, sphygmocors, etc.)
-  'sphygmocor*[body]',
+  // Search all fields (matches PMC website default search behavior)
+  'sphygmocor',
+];
+
+// PMC-specific search terms (for PMC database queries)
+export const PMC_SEARCH_TERMS = [
+  // Search all fields without restriction to match website results
+  'sphygmocor',
 ];
 
 // Maximum results per search term - set high to get all 2900+ articles
