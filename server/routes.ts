@@ -1333,7 +1333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         success: true,
-        databaseTotal: comparison.dbTotal,
+        databaseTotal: databasePmids.size + invalidPmidCount,
         databaseValidPmids: databasePmids.size,
         databaseInvalidPmids: invalidPmidCount,
         pmcBodyTotal: comparison.pmcBodyTotal,
