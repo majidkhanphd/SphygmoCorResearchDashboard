@@ -1150,46 +1150,82 @@ export class PubMedService {
       return { ids: allIds, total: 0 };
     }
     
-    // Paginate through all results
-    const batchSize = 500; // Smaller batch for reliability
+    // Paginate through all results with smaller batch size for reliability
+    const batchSize = 500;
     let batchNum = 0;
+    let retryCount = 0;
+    const maxRetries = 3;
     
-    for (let retstart = 0; retstart < totalCount; retstart += batchSize) {
+    for (let retstart = 0; retstart < totalCount; ) {
       batchNum++;
+      // Calculate actual batch size to not exceed totalCount
+      const currentBatchSize = Math.min(batchSize, totalCount - retstart);
+      
       try {
-        const url = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${encodeURIComponent(term)}&retmax=${batchSize}&retstart=${retstart}&retmode=xml`;
+        const url = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${encodeURIComponent(term)}&retmax=${currentBatchSize}&retstart=${retstart}&retmode=xml`;
         const response = await fetch(url);
         
         if (!response.ok) {
           console.error(`  Batch ${batchNum}: HTTP ${response.status}`);
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Longer wait on error
+          if (retryCount < maxRetries) {
+            retryCount++;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue; // Retry same batch
+          }
+          retstart += currentBatchSize; // Skip after max retries
+          retryCount = 0;
           continue;
         }
         
         const xmlText = await response.text();
         const result = this.parser.parse(xmlText) as PubMedSearchResult;
         
+        const prevSize = allIds.size;
         if (result.eSearchResult?.IdList?.Id) {
           const ids = Array.isArray(result.eSearchResult.IdList.Id)
             ? result.eSearchResult.IdList.Id
             : [result.eSearchResult.IdList.Id];
           ids.forEach(id => allIds.add(String(id)));
         }
+        const addedCount = allIds.size - prevSize;
         
-        // Log progress every 5 batches
-        if (batchNum % 5 === 0) {
+        // If we got fewer IDs than expected, retry
+        if (addedCount < currentBatchSize * 0.9 && retryCount < maxRetries) {
+          console.warn(`  Batch ${batchNum}: got ${addedCount}/${currentBatchSize}, retrying...`);
+          retryCount++;
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          continue;
+        }
+        
+        // Log progress every 5 batches or on last batch
+        if (batchNum % 5 === 0 || retstart + currentBatchSize >= totalCount) {
           console.log(`  ${searchName}: fetched ${allIds.size}/${totalCount} (batch ${batchNum})`);
         }
+        
+        // Move to next batch
+        retstart += currentBatchSize;
+        retryCount = 0;
         
         // Rate limit - 350ms between requests
         await new Promise(resolve => setTimeout(resolve, 350));
       } catch (error) {
         console.error(`  ${searchName} batch ${batchNum} error:`, error);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Longer wait on error
+        if (retryCount < maxRetries) {
+          retryCount++;
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          continue;
+        }
+        retstart += currentBatchSize;
+        retryCount = 0;
       }
     }
     
-    console.log(`  ${searchName}: completed with ${allIds.size} PMCIDs`);
+    // Verify we got all results
+    if (allIds.size < totalCount * 0.95) {
+      console.warn(`  ${searchName}: WARNING - only fetched ${allIds.size}/${totalCount} IDs (${((allIds.size/totalCount)*100).toFixed(1)}%)`);
+    }
+    
+    console.log(`  ${searchName}: completed with ${allIds.size}/${totalCount} PMCIDs`);
     return { ids: allIds, total: totalCount };
   }
 
