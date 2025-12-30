@@ -58,6 +58,182 @@ interface BatchCategorizationStatus {
   etaSeconds: number | null;
 }
 
+interface PmcComparisonResult {
+  success: boolean;
+  databaseTotal: number;
+  pmcTotal: number;
+  matchCount: number;
+  missingCount: number;
+  missingIds: string[];
+  allMissingIds: string[];
+}
+
+function PmcComparisonCard() {
+  const [isComparing, setIsComparing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [result, setResult] = useState<PmcComparisonResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleCompare = async () => {
+    setIsComparing(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/admin/compare-pmc');
+      const data = await response.json();
+      if (data.success) {
+        setResult(data);
+      } else {
+        setError(data.message || 'Comparison failed');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to compare with PMC');
+    } finally {
+      setIsComparing(false);
+    }
+  };
+
+  const handleSyncMissing = async () => {
+    if (!result?.allMissingIds?.length) return;
+    
+    setIsSyncing(true);
+    try {
+      const response = await apiRequest('POST', '/api/admin/sync-missing', {
+        pmcIds: result.allMissingIds
+      });
+      const data = await response.json();
+      
+      toast({
+        title: "Sync Complete",
+        description: `Saved ${data.saved} new publications. Skipped ${data.skipped} duplicates.`,
+      });
+      
+      // Refresh the comparison
+      await handleCompare();
+      
+      // Invalidate publications cache
+      queryClient.invalidateQueries({ queryKey: ['/api/publications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/publications'] });
+    } catch (err: any) {
+      toast({
+        title: "Sync Failed",
+        description: err.message || 'Failed to sync missing publications',
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  return (
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle>PMC Comparison</CardTitle>
+        <CardDescription>Compare your database with PubMed Central to find missing publications</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <p className="text-sm text-[#6e6e73] dark:text-gray-400">
+            Query PMC live and identify publications that exist in PubMed Central but are missing from your database.
+          </p>
+          
+          <div className="flex gap-3">
+            <Button 
+              onClick={handleCompare}
+              disabled={isComparing || isSyncing}
+              variant="outline"
+              data-testid="button-compare-pmc"
+            >
+              {isComparing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Comparing...
+                </>
+              ) : (
+                "Compare with PMC"
+              )}
+            </Button>
+            
+            {result && result.missingCount > 0 && (
+              <Button 
+                onClick={handleSyncMissing}
+                disabled={isComparing || isSyncing}
+                data-testid="button-sync-missing"
+              >
+                {isSyncing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Syncing {result.missingCount}...
+                  </>
+                ) : (
+                  `Sync ${result.missingCount} Missing`
+                )}
+              </Button>
+            )}
+          </div>
+          
+          {error && (
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            </div>
+          )}
+          
+          {result && (
+            <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">Your Database</p>
+                  <p className="text-2xl font-semibold text-[#1d1d1f] dark:text-white">{result.databaseTotal.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">PMC Total</p>
+                  <p className="text-2xl font-semibold text-[#1d1d1f] dark:text-white">{result.pmcTotal.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">Matched</p>
+                  <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{result.matchCount.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">Missing</p>
+                  <p className="text-2xl font-semibold text-orange-600 dark:text-orange-400">{result.missingCount.toLocaleString()}</p>
+                </div>
+              </div>
+              
+              {result.missingCount > 0 && result.missingIds.length > 0 && (
+                <div>
+                  <p className="text-xs text-[#6e6e73] dark:text-gray-400 mb-2">
+                    Missing PMC IDs (first {Math.min(result.missingIds.length, 100)}):
+                  </p>
+                  <div className="max-h-32 overflow-y-auto text-xs font-mono bg-white dark:bg-black p-2 rounded border">
+                    {result.missingIds.slice(0, 100).map(id => (
+                      <a 
+                        key={id}
+                        href={`https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${id}/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block mr-2 mb-1 text-blue-600 hover:underline"
+                      >
+                        PMC{id}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {result.missingCount === 0 && (
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <Check className="h-5 w-5" />
+                  <span className="font-medium">Your database is fully in sync with PMC!</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected" | "featured" | "category-review">("pending");
@@ -1432,6 +1608,8 @@ export default function Admin() {
             )}
           </CardContent>
         </Card>
+
+        <PmcComparisonCard />
 
         <Card className="mb-8">
           <CardHeader>
