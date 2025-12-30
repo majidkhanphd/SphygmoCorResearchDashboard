@@ -79,9 +79,7 @@ interface PmcComparisonResult {
 function PmcComparisonCard() {
   const [isComparing, setIsComparing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isBackfilling, setIsBackfilling] = useState(false);
   const [result, setResult] = useState<PmcComparisonResult | null>(null);
-  const [backfillResult, setBackfillResult] = useState<{ total: number; converted: number; failed: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -153,42 +151,6 @@ function PmcComparisonCard() {
     }
   };
 
-  const handleBackfillPmids = async () => {
-    setIsBackfilling(true);
-    setError(null);
-    try {
-      const response = await apiRequest('POST', '/api/admin/backfill-pmids', {});
-      const data = await response.json();
-      
-      if (data.success) {
-        setBackfillResult({
-          total: data.total,
-          converted: data.converted,
-          failed: data.failed
-        });
-        toast({
-          title: "Backfill Complete",
-          description: `Converted ${data.converted} PMC IDs to actual PMIDs. ${data.failed} could not be converted.`,
-        });
-        
-        // Invalidate caches
-        queryClient.invalidateQueries({ queryKey: ['/api/publications'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/admin/publications'] });
-      } else {
-        setError(data.message || 'Backfill failed');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to backfill PMIDs');
-      toast({
-        title: "Backfill Failed",
-        description: err.message || 'Failed to backfill PMIDs',
-        variant: "destructive",
-      });
-    } finally {
-      setIsBackfilling(false);
-    }
-  };
-
   return (
     <Card className="mb-8">
       <CardHeader>
@@ -199,44 +161,20 @@ function PmcComparisonCard() {
         <div className="space-y-4">
           <p className="text-sm text-[#6e6e73] dark:text-gray-400">
             Query PMC live using dual-search (body + all-fields) to identify missing publications and classify them.
+            This may take 1-2 minutes to fetch all ~3,000+ articles.
           </p>
-          
-          {backfillResult && (
-            <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-              <p className="text-sm text-green-700 dark:text-green-300">
-                PMID Backfill Complete: Converted {backfillResult.converted} of {backfillResult.total} records to actual PMIDs.
-                {backfillResult.failed > 0 && ` ${backfillResult.failed} could not be converted (may lack PMID).`}
-              </p>
-            </div>
-          )}
           
           <div className="flex flex-wrap gap-3">
             <Button 
-              onClick={handleBackfillPmids}
-              disabled={isBackfilling || isComparing || isSyncing}
-              variant="outline"
-              data-testid="button-backfill-pmids"
-            >
-              {isBackfilling ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Backfilling...
-                </>
-              ) : (
-                "Backfill PMIDs"
-              )}
-            </Button>
-            
-            <Button 
               onClick={handleCompare}
-              disabled={isComparing || isSyncing || isBackfilling}
+              disabled={isComparing || isSyncing}
               variant="outline"
               data-testid="button-compare-pmc"
             >
               {isComparing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Comparing...
+                  Comparing (fetching all pages)...
                 </>
               ) : (
                 "Compare with PMC"

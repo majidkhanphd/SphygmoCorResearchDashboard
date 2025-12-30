@@ -1129,26 +1129,43 @@ export class PubMedService {
     return this.fetchArticleDetails(pmcIds);
   }
 
-  // Get all PMCIDs from PMC using body search (matches website "sphygmocor"[body])
-  async getAllPmcIdsFromBodySearch(): Promise<Set<string>> {
+  // Get all PMCIDs from PMC search with full pagination
+  private async getAllPmcIdsFromSearch(term: string, searchName: string): Promise<{ ids: Set<string>; total: number }> {
     const allIds = new Set<string>();
-    const term = '"sphygmocor"[body]';
     
-    console.log(`Querying PMC with body search: ${term}`);
+    console.log(`Querying PMC with ${searchName}: ${term}`);
     
+    // First get the total count
     const countUrl = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${encodeURIComponent(term)}&retmax=0&retmode=xml`;
+    let totalCount = 0;
+    
     try {
       const countResponse = await fetch(countUrl);
       const countXml = await countResponse.text();
       const countResult = this.parser.parse(countXml) as PubMedSearchResult;
-      const totalCount = parseInt(countResult.eSearchResult?.Count || '0', 10);
-      
-      console.log(`  PMC body search total: ${totalCount}`);
-      
-      const batchSize = 1000;
-      for (let retstart = 0; retstart < totalCount; retstart += batchSize) {
+      totalCount = parseInt(countResult.eSearchResult?.Count || '0', 10);
+      console.log(`  ${searchName} total: ${totalCount}`);
+    } catch (error) {
+      console.error(`Error getting ${searchName} count:`, error);
+      return { ids: allIds, total: 0 };
+    }
+    
+    // Paginate through all results
+    const batchSize = 500; // Smaller batch for reliability
+    let batchNum = 0;
+    
+    for (let retstart = 0; retstart < totalCount; retstart += batchSize) {
+      batchNum++;
+      try {
         const url = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${encodeURIComponent(term)}&retmax=${batchSize}&retstart=${retstart}&retmode=xml`;
         const response = await fetch(url);
+        
+        if (!response.ok) {
+          console.error(`  Batch ${batchNum}: HTTP ${response.status}`);
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Longer wait on error
+          continue;
+        }
+        
         const xmlText = await response.text();
         const result = this.parser.parse(xmlText) as PubMedSearchResult;
         
@@ -1159,52 +1176,33 @@ export class PubMedService {
           ids.forEach(id => allIds.add(String(id)));
         }
         
+        // Log progress every 5 batches
+        if (batchNum % 5 === 0) {
+          console.log(`  ${searchName}: fetched ${allIds.size}/${totalCount} (batch ${batchNum})`);
+        }
+        
+        // Rate limit - 350ms between requests
         await new Promise(resolve => setTimeout(resolve, 350));
+      } catch (error) {
+        console.error(`  ${searchName} batch ${batchNum} error:`, error);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Longer wait on error
       }
-    } catch (error) {
-      console.error(`Error getting PMC body search IDs:`, error);
     }
     
-    return allIds;
+    console.log(`  ${searchName}: completed with ${allIds.size} PMCIDs`);
+    return { ids: allIds, total: totalCount };
+  }
+
+  // Get all PMCIDs from PMC using body search (matches website "sphygmocor"[body])
+  async getAllPmcIdsFromBodySearch(): Promise<Set<string>> {
+    const result = await this.getAllPmcIdsFromSearch('"sphygmocor"[body]', 'body search');
+    return result.ids;
   }
 
   // Get all PMCIDs from PMC using all-fields search (includes embargoed + metadata-only)
   async getAllPmcIdsFromAllFieldsSearch(): Promise<Set<string>> {
-    const allIds = new Set<string>();
-    const term = 'sphygmocor';
-    
-    console.log(`Querying PMC with all-fields search: ${term}`);
-    
-    const countUrl = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${encodeURIComponent(term)}&retmax=0&retmode=xml`;
-    try {
-      const countResponse = await fetch(countUrl);
-      const countXml = await countResponse.text();
-      const countResult = this.parser.parse(countXml) as PubMedSearchResult;
-      const totalCount = parseInt(countResult.eSearchResult?.Count || '0', 10);
-      
-      console.log(`  PMC all-fields search total: ${totalCount}`);
-      
-      const batchSize = 1000;
-      for (let retstart = 0; retstart < totalCount; retstart += batchSize) {
-        const url = `${this.baseUrl}/esearch.fcgi?db=pmc&term=${encodeURIComponent(term)}&retmax=${batchSize}&retstart=${retstart}&retmode=xml`;
-        const response = await fetch(url);
-        const xmlText = await response.text();
-        const result = this.parser.parse(xmlText) as PubMedSearchResult;
-        
-        if (result.eSearchResult?.IdList?.Id) {
-          const ids = Array.isArray(result.eSearchResult.IdList.Id)
-            ? result.eSearchResult.IdList.Id
-            : [result.eSearchResult.IdList.Id];
-          ids.forEach(id => allIds.add(String(id)));
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 350));
-      }
-    } catch (error) {
-      console.error(`Error getting PMC all-fields search IDs:`, error);
-    }
-    
-    return allIds;
+    const result = await this.getAllPmcIdsFromSearch('sphygmocor', 'all-fields search');
+    return result.ids;
   }
 
   // Convert PMCIDs to PMIDs using the ID converter API
@@ -1260,11 +1258,12 @@ export class PubMedService {
   }> {
     console.log('Starting PMC comparison with dual-search classification...');
     
-    // Step 1: Get both search results
-    const [bodyPmcIds, allFieldsPmcIds] = await Promise.all([
-      this.getAllPmcIdsFromBodySearch(),
-      this.getAllPmcIdsFromAllFieldsSearch()
-    ]);
+    // Step 1: Get both search results SEQUENTIALLY to avoid rate limiting
+    console.log('Step 1: Fetching body search results...');
+    const bodyPmcIds = await this.getAllPmcIdsFromBodySearch();
+    
+    console.log('Step 2: Fetching all-fields search results...');
+    const allFieldsPmcIds = await this.getAllPmcIdsFromAllFieldsSearch();
     
     console.log(`  Body search: ${bodyPmcIds.size} PMCIDs`);
     console.log(`  All-fields search: ${allFieldsPmcIds.size} PMCIDs`);
