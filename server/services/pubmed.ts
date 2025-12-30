@@ -1,5 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
-import type { InsertPublication } from "@shared/schema";
+import type { InsertPublication, SyncSource, KeywordEvidence } from "@shared/schema";
 import { PUBMED_SEARCH_TERMS, MAX_RESULTS_PER_TERM } from "../config/search-terms";
 import { sanitizeText } from "@shared/sanitize";
 
@@ -1353,27 +1353,52 @@ export class PubMedService {
     };
   }
 
-  // Fetch publications with heuristic classification
+  // Fetch publications with heuristic classification and sync tracking
   async fetchPublicationsWithHeuristic(pmids: string[], isMetadataOnly: boolean): Promise<InsertPublication[]> {
     const publications = await this.fetchPublicationsByPmid(pmids);
+    const syncedAt = new Date().toISOString();
     
-    // Apply heuristic for metadata-only articles
-    if (isMetadataOnly) {
-      return publications.map(pub => {
-        const titleLower = (pub.title || '').toLowerCase();
-        const abstractLower = (pub.abstract || '').toLowerCase();
-        const hasKeywordInContent = titleLower.includes('sphygmocor') || abstractLower.includes('sphygmocor');
-        
-        // If sphygmocor in title/abstract, it's likely embargoed - auto-approve
-        // If not, it's likely a reference mention - flag for review
-        return {
-          ...pub,
-          status: hasKeywordInContent ? 'pending' : 'pending-metadata-review'
-        };
-      });
-    }
-    
-    return publications;
+    return publications.map(pub => {
+      const titleLower = (pub.title || '').toLowerCase();
+      const abstractLower = (pub.abstract || '').toLowerCase();
+      
+      // Detect where "sphygmocor" appears (case-insensitive)
+      const inTitle = titleLower.includes('sphygmocor');
+      const inAbstract = abstractLower.includes('sphygmocor');
+      
+      // Determine syncSource based on isMetadataOnly parameter
+      const syncSource: SyncSource = isMetadataOnly ? 'pmc-metadata-only' : 'pmc-body-match';
+      
+      // For body matches, inBody is true (keyword found in full text)
+      // For metadata-only, inBody is false
+      const inBody = !isMetadataOnly;
+      
+      // referenceOnly: true if NOT in title AND NOT in abstract AND isMetadataOnly
+      // This indicates the keyword was only found in references/citations, not actual content
+      const referenceOnly = !inTitle && !inAbstract && isMetadataOnly;
+      
+      const keywordEvidence: KeywordEvidence = {
+        inTitle,
+        inAbstract,
+        inBody,
+        referenceOnly,
+        source: syncSource,
+        syncedAt
+      };
+      
+      // Determine status based on heuristic
+      // If sphygmocor in title/abstract, it's likely relevant - use pending
+      // If referenceOnly, flag for review
+      const hasKeywordInContent = inTitle || inAbstract;
+      const status = isMetadataOnly && !hasKeywordInContent ? 'pending-metadata-review' : 'pending';
+      
+      return {
+        ...pub,
+        status,
+        syncSource,
+        keywordEvidence
+      };
+    });
   }
 }
 

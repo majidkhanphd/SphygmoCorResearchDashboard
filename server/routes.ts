@@ -433,7 +433,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     continue;
                   }
                   
-                  await storage.createPublication(pub);
+                  // Add syncSource and keywordEvidence for regular PubMed sync
+                  const titleLower = (pub.title || '').toLowerCase();
+                  const abstractLower = (pub.abstract || '').toLowerCase();
+                  const inTitle = titleLower.includes('sphygmocor');
+                  const inAbstract = abstractLower.includes('sphygmocor');
+                  
+                  const pubWithTracking = {
+                    ...pub,
+                    syncSource: 'pubmed-sync' as const,
+                    keywordEvidence: {
+                      inTitle,
+                      inAbstract,
+                      inBody: true, // PubMed sync searches full text
+                      referenceOnly: false,
+                      source: 'pubmed-sync' as const,
+                      syncedAt: new Date().toISOString()
+                    }
+                  };
+                  
+                  await storage.createPublication(pubWithTracking);
                   imported++;
                   
                   // Track status breakdown
@@ -538,7 +557,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (existing) {
                 skipped++;
               } else {
-                await storage.createPublication(pub);
+                // Add syncSource and keywordEvidence for incremental PubMed sync
+                const titleLower = (pub.title || '').toLowerCase();
+                const abstractLower = (pub.abstract || '').toLowerCase();
+                const inTitle = titleLower.includes('sphygmocor');
+                const inAbstract = abstractLower.includes('sphygmocor');
+                
+                const pubWithTracking = {
+                  ...pub,
+                  syncSource: 'pubmed-sync' as const,
+                  keywordEvidence: {
+                    inTitle,
+                    inAbstract,
+                    inBody: true,
+                    referenceOnly: false,
+                    source: 'pubmed-sync' as const,
+                    syncedAt: new Date().toISOString()
+                  }
+                };
+                
+                await storage.createPublication(pubWithTracking);
                 imported++;
                 
                 // Track status breakdown
@@ -1380,10 +1418,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Syncing ${bodyPmids.length} body + ${metadataOnlyPmids.length} metadata-only publications...`);
       
-      // Fetch body publications (normal status)
+      // Fetch body publications (with syncSource and keywordEvidence tracking)
       let bodyPublications: any[] = [];
       if (bodyPmids.length > 0) {
-        bodyPublications = await pubmedService.fetchPublicationsByPmid(bodyPmids);
+        bodyPublications = await pubmedService.fetchPublicationsWithHeuristic(bodyPmids, false);
       }
       
       // Fetch metadata-only publications (with heuristic classification)
