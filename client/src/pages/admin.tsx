@@ -120,19 +120,27 @@ function BackupRestoreSection() {
     }
   };
 
+  const MAX_BACKUPS = 8;
+  const backupCount = backupsData?.backups?.length || 0;
+
   return (
     <>
       <div className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Button onClick={handleBackup} disabled={isBackingUp} data-testid="button-backup-now">
-            {isBackingUp ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>) : "Backup Now"}
-          </Button>
-          <span className="text-sm text-[#6e6e73] dark:text-gray-400">Creates a snapshot of all publications</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button onClick={handleBackup} disabled={isBackingUp} data-testid="button-backup-now">
+              {isBackingUp ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>) : "Backup Now"}
+            </Button>
+            <span className="text-sm text-[#6e6e73] dark:text-gray-400">Creates a snapshot of all publications</span>
+          </div>
+          <Badge variant={backupCount >= MAX_BACKUPS ? "secondary" : "outline"} className="text-xs">
+            {backupCount}/{MAX_BACKUPS} backups stored
+          </Badge>
         </div>
         {backupsData?.backups && backupsData.backups.length > 0 ? (
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-900/50">
+              <thead className="bg-gray-50 dark:bg-gray-900/50 sticky top-0">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-[#6e6e73] dark:text-gray-400">Timestamp</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-[#6e6e73] dark:text-gray-400">Description</th>
@@ -143,8 +151,8 @@ function BackupRestoreSection() {
               <tbody className="divide-y">
                 {backupsData.backups.map((backup) => (
                   <tr key={backup.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/30" data-testid={`row-backup-${backup.id}`}>
-                    <td className="px-4 py-3 text-sm">{new Date(backup.createdAt).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-sm text-[#6e6e73] dark:text-gray-400">{backup.description || '-'}</td>
+                    <td className="px-4 py-3 text-sm whitespace-nowrap">{new Date(backup.createdAt).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm text-[#6e6e73] dark:text-gray-400 max-w-[200px] truncate">{backup.description || '-'}</td>
                     <td className="px-4 py-3 text-sm"><Badge variant="secondary">{backup.recordCount.toLocaleString()}</Badge></td>
                     <td className="px-4 py-3 text-right">
                       <Button size="sm" variant="outline" onClick={() => { setSelectedBackup(backup); setRestoreDialogOpen(true); }} data-testid={`button-restore-${backup.id}`}>Restore</Button>
@@ -293,6 +301,129 @@ function StatisticsSection({ stats }: { stats: { pending: number; approved: numb
         <p className="text-3xl font-semibold text-red-600">{stats.rejected.toLocaleString()}</p>
         <p className="text-sm text-[#6e6e73] dark:text-gray-400">Rejected</p>
       </div>
+    </div>
+  );
+}
+
+interface PmcCompareResult {
+  success: boolean;
+  databaseTotal: number;
+  pmcBodyTotal: number;
+  pmcAllFieldsTotal: number;
+  missingBodyCount: number;
+  missingMetadataOnlyCount: number;
+  allMissingBodyIds: string[];
+  allMissingMetadataOnlyIds: string[];
+}
+
+function PmcImportSection() {
+  const [isComparing, setIsComparing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [compareResult, setCompareResult] = useState<PmcCompareResult | null>(null);
+  const [syncProgress, setSyncProgress] = useState({ imported: 0, total: 0 });
+  const { toast } = useToast();
+
+  const handleCompare = async () => {
+    setIsComparing(true);
+    setCompareResult(null);
+    try {
+      const response = await fetch('/api/admin/compare-pmc');
+      const data = await response.json();
+      if (data.success) {
+        setCompareResult(data);
+        toast({ title: "Comparison Complete", description: `Found ${data.missingBodyCount} embargoed and ${data.missingMetadataOnlyCount} metadata-only articles missing.` });
+      } else {
+        throw new Error(data.message || 'Comparison failed');
+      }
+    } catch (err: any) {
+      toast({ title: "Comparison Failed", description: err.message || 'Failed to compare with PMC', variant: "destructive" });
+    } finally {
+      setIsComparing(false);
+    }
+  };
+
+  const handleImport = async (type: 'body' | 'metadata' | 'all') => {
+    if (!compareResult) return;
+    setIsSyncing(true);
+    
+    const bodyIds = type === 'metadata' ? [] : compareResult.allMissingBodyIds;
+    const metadataOnlyIds = type === 'body' ? [] : compareResult.allMissingMetadataOnlyIds;
+    const total = bodyIds.length + metadataOnlyIds.length;
+    setSyncProgress({ imported: 0, total });
+
+    try {
+      const response = await apiRequest('POST', '/api/admin/sync-missing', {
+        bodyIds,
+        metadataOnlyIds
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast({ title: "Import Complete", description: `Imported ${data.imported} publications (${data.bodyImported || 0} embargoed, ${data.metadataOnlyImported || 0} metadata-only).` });
+        setCompareResult(null);
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/publications'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/publications/by-sync-source'] });
+      } else {
+        throw new Error(data.message || 'Import failed');
+      }
+    } catch (err: any) {
+      toast({ title: "Import Failed", description: err.message || 'Failed to import publications', variant: "destructive" });
+    } finally {
+      setIsSyncing(false);
+      setSyncProgress({ imported: 0, total: 0 });
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-[#6e6e73] dark:text-gray-400">
+        Compare database with PMC to find missing embargoed (body match) and metadata-only articles for review.
+      </p>
+      
+      <Button onClick={handleCompare} disabled={isComparing || isSyncing} data-testid="button-compare-pmc">
+        {isComparing ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Comparing...</>) : "Compare with PMC"}
+      </Button>
+
+      {compareResult && (
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 space-y-3">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-blue-900 dark:text-blue-100 font-medium">Database</p>
+              <p className="text-blue-700 dark:text-blue-300">{compareResult.databaseTotal.toLocaleString()} publications</p>
+            </div>
+            <div>
+              <p className="text-blue-900 dark:text-blue-100 font-medium">PMC Total</p>
+              <p className="text-blue-700 dark:text-blue-300">{compareResult.pmcAllFieldsTotal.toLocaleString()} articles</p>
+            </div>
+          </div>
+          
+          <div className="border-t border-blue-200 dark:border-blue-700 pt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Embargoed (Body Match)</Badge>
+                <span className="ml-2 text-sm font-medium text-blue-900 dark:text-blue-100">{compareResult.missingBodyCount} missing</span>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => handleImport('body')} disabled={isSyncing || compareResult.missingBodyCount === 0} data-testid="button-import-body">
+                {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import"}
+              </Button>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">Metadata Only</Badge>
+                <span className="ml-2 text-sm font-medium text-blue-900 dark:text-blue-100">{compareResult.missingMetadataOnlyCount} missing</span>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => handleImport('metadata')} disabled={isSyncing || compareResult.missingMetadataOnlyCount === 0} data-testid="button-import-metadata">
+                {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="border-t border-blue-200 dark:border-blue-700 pt-3">
+            <Button onClick={() => handleImport('all')} disabled={isSyncing || (compareResult.missingBodyCount === 0 && compareResult.missingMetadataOnlyCount === 0)} className="w-full" data-testid="button-import-all">
+              {isSyncing ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Importing {syncProgress.imported}/{syncProgress.total}...</>) : `Import All (${compareResult.missingBodyCount + compareResult.missingMetadataOnlyCount} articles)`}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -846,22 +977,42 @@ export default function Admin() {
     }
   };
 
+  const renderCategoriesBadges = (categories: string[] | null | undefined, publicationId: string, maxDisplay: number = 2) => {
+    if (!categories || categories.length === 0) {
+      return <span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>;
+    }
+    const displayCategories = categories.slice(0, maxDisplay);
+    const remainingCount = categories.length - maxDisplay;
+    return (
+      <div className="flex items-center gap-1 flex-nowrap overflow-hidden">
+        {displayCategories.map((category) => (
+          <Badge key={category} variant="secondary" className="text-xs whitespace-nowrap" data-testid={`badge-category-${publicationId}-${category}`}>
+            {RESEARCH_AREA_DISPLAY_NAMES[category] || category}
+          </Badge>
+        ))}
+        {remainingCount > 0 && (
+          <span className="text-xs text-[#6e6e73] dark:text-gray-400 whitespace-nowrap">+{remainingCount}</span>
+        )}
+      </div>
+    );
+  };
+
   const pendingColumns = useMemo<ColumnDef<Publication>[]>(() => [
     { accessorKey: "title", header: "Title", size: 300, minSize: 180, cell: ({ row }) => (<div className="space-y-1"><div className="text-sm line-clamp-2" data-testid={`text-title-${row.original.id}`}>{row.original.title}</div><div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${row.original.id}`}>{row.original.authors}</div></div>) },
     { accessorKey: "journal", header: "Journal", size: 120, cell: ({ row }) => (<div className="text-sm line-clamp-1" data-testid={`text-journal-${row.original.id}`}>{row.original.journal}</div>) },
     { accessorKey: "publicationDate", header: "Date", size: 90, cell: ({ row }) => (<div className="text-sm" data-testid={`text-date-${row.original.id}`}>{new Date(row.original.publicationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</div>) },
     { accessorKey: "syncSource", header: "Source", size: 90, cell: ({ row }) => getSourceBadge(row.original.syncSource) },
-    { accessorKey: "categories", header: "Categories", size: 100, cell: ({ row }) => (<div className="flex flex-wrap gap-1">{row.original.categories && row.original.categories.length > 0 ? row.original.categories.map((category) => (<Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-category-${row.original.id}-${category}`}>{RESEARCH_AREA_DISPLAY_NAMES[category] || category}</Badge>)) : (<span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>)}</div>) },
-    { id: "actions", header: "Actions", size: 200, enableResizing: false, cell: ({ row }) => (<div className="flex items-center justify-end gap-2 flex-wrap"><Button size="sm" variant="ghost" onClick={() => row.original.pubmedUrl && window.open(row.original.pubmedUrl, '_blank')} className="h-8 w-8 p-0" title="View on PubMed" data-testid={`button-view-${row.original.id}`}><ExternalLink className="h-4 w-4" /></Button><Button size="sm" variant="default" onClick={() => approveMutation.mutate(row.original.id)} disabled={approveMutation.isPending} className="h-8 bg-green-600 hover:bg-green-700 text-white" data-testid={`button-approve-${row.original.id}`}><Check className="h-4 w-4 mr-1" />Approve</Button><Button size="sm" variant="outline" onClick={() => rejectMutation.mutate(row.original.id)} disabled={rejectMutation.isPending} className="h-8" data-testid={`button-reject-${row.original.id}`}><X className="h-4 w-4 mr-1" />Reject</Button><Button size="sm" variant="outline" onClick={() => openEditDialog(row.original)} className="h-8 w-8 p-0" title="Edit Categories" data-testid={`button-edit-${row.original.id}`}><Pencil className="h-4 w-4" /></Button></div>) },
+    { accessorKey: "categories", header: "Categories", size: 140, cell: ({ row }) => renderCategoriesBadges(row.original.categories, row.original.id) },
+    { id: "actions", header: "Actions", size: 200, enableResizing: false, cell: ({ row }) => (<div className="flex items-center justify-end gap-2 flex-nowrap"><Button size="sm" variant="ghost" onClick={() => row.original.pubmedUrl && window.open(row.original.pubmedUrl, '_blank')} className="h-8 w-8 p-0" title="View on PubMed" data-testid={`button-view-${row.original.id}`}><ExternalLink className="h-4 w-4" /></Button><Button size="sm" variant="default" onClick={() => approveMutation.mutate(row.original.id)} disabled={approveMutation.isPending} className="h-8 bg-green-600 hover:bg-green-700 text-white" data-testid={`button-approve-${row.original.id}`}><Check className="h-4 w-4 mr-1" />Approve</Button><Button size="sm" variant="outline" onClick={() => rejectMutation.mutate(row.original.id)} disabled={rejectMutation.isPending} className="h-8" data-testid={`button-reject-${row.original.id}`}><X className="h-4 w-4 mr-1" />Reject</Button><Button size="sm" variant="outline" onClick={() => openEditDialog(row.original)} className="h-8 w-8 p-0" title="Edit Categories" data-testid={`button-edit-${row.original.id}`}><Pencil className="h-4 w-4" /></Button></div>) },
   ], [approveMutation, rejectMutation]);
 
   const approvedRejectedColumns = useMemo<ColumnDef<Publication>[]>(() => [
     { accessorKey: "title", header: "Title", size: 300, minSize: 180, cell: ({ row }) => (<div className="space-y-1"><div className="text-sm line-clamp-2" data-testid={`text-title-${row.original.id}`}>{row.original.title}</div><div className="text-xs text-[#6e6e73] dark:text-gray-400 line-clamp-1" data-testid={`text-authors-${row.original.id}`}>{row.original.authors}</div></div>) },
     { accessorKey: "journal", header: "Journal", size: 120, cell: ({ row }) => (<div className="text-sm line-clamp-1" data-testid={`text-journal-${row.original.id}`}>{row.original.journal}</div>) },
-    { accessorKey: "publicationDate", header: "Date", size: 120, cell: ({ row }) => (<div className="text-sm" data-testid={`text-date-${row.original.id}`}>{new Date(row.original.publicationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</div>) },
-    { accessorKey: "categories", header: "Categories", size: 100, cell: ({ row }) => (<div className="flex flex-wrap gap-1">{row.original.categories && row.original.categories.length > 0 ? row.original.categories.map((category) => (<Badge key={category} variant="secondary" className="text-xs" data-testid={`badge-category-${row.original.id}-${category}`}>{RESEARCH_AREA_DISPLAY_NAMES[category] || category}</Badge>)) : (<span className="text-xs text-[#6e6e73] dark:text-gray-400">None</span>)}</div>) },
-    { id: "featured", header: "Featured", size: 80, cell: ({ row }) => (<Button size="sm" variant="ghost" onClick={() => toggleFeaturedMutation.mutate(row.original.id)} disabled={toggleFeaturedMutation.isPending} className={`h-8 w-8 p-0 ${row.original.isFeatured ? "text-yellow-500" : "text-gray-400"}`} title={row.original.isFeatured ? "Unmark Featured" : "Mark Featured"} data-testid={`button-featured-${row.original.id}`}><Star className="h-4 w-4" fill={row.original.isFeatured ? "currentColor" : "none"} /></Button>) },
-    { id: "actions", header: "Actions", size: 160, enableResizing: false, cell: ({ row }) => (<div className="flex items-center justify-end gap-2 flex-wrap"><Button size="sm" variant="ghost" onClick={() => row.original.pubmedUrl && window.open(row.original.pubmedUrl, '_blank')} className="h-8 w-8 p-0" title="View on PubMed" data-testid={`button-view-${row.original.id}`}><ExternalLink className="h-4 w-4" /></Button><Button size="sm" variant="outline" onClick={() => openEditDialog(row.original)} className="h-8 w-8 p-0" title="Edit Categories" data-testid={`button-edit-${row.original.id}`}><Pencil className="h-4 w-4" /></Button><Select value={row.original.status} onValueChange={(status: "pending" | "approved" | "rejected") => changeStatusMutation.mutate({ id: row.original.id, status })}><SelectTrigger className="h-8 w-28" data-testid={`select-status-${row.original.id}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pending">Pending</SelectItem><SelectItem value="approved">Approved</SelectItem><SelectItem value="rejected">Rejected</SelectItem></SelectContent></Select></div>) },
+    { accessorKey: "publicationDate", header: "Date", size: 90, cell: ({ row }) => (<div className="text-sm" data-testid={`text-date-${row.original.id}`}>{new Date(row.original.publicationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</div>) },
+    { accessorKey: "categories", header: "Categories", size: 140, cell: ({ row }) => renderCategoriesBadges(row.original.categories, row.original.id) },
+    { id: "featured", header: "Featured", size: 70, cell: ({ row }) => (<Button size="sm" variant="ghost" onClick={() => toggleFeaturedMutation.mutate(row.original.id)} disabled={toggleFeaturedMutation.isPending} className={`h-8 w-8 p-0 ${row.original.isFeatured ? "text-yellow-500" : "text-gray-400"}`} title={row.original.isFeatured ? "Unmark Featured" : "Mark Featured"} data-testid={`button-featured-${row.original.id}`}><Star className="h-4 w-4" fill={row.original.isFeatured ? "currentColor" : "none"} /></Button>) },
+    { id: "actions", header: "Actions", size: 160, enableResizing: false, cell: ({ row }) => (<div className="flex items-center justify-end gap-2 flex-nowrap"><Button size="sm" variant="ghost" onClick={() => row.original.pubmedUrl && window.open(row.original.pubmedUrl, '_blank')} className="h-8 w-8 p-0" title="View on PubMed" data-testid={`button-view-${row.original.id}`}><ExternalLink className="h-4 w-4" /></Button><Button size="sm" variant="outline" onClick={() => openEditDialog(row.original)} className="h-8 w-8 p-0" title="Edit Categories" data-testid={`button-edit-${row.original.id}`}><Pencil className="h-4 w-4" /></Button><Select value={row.original.status} onValueChange={(status: "pending" | "approved" | "rejected") => changeStatusMutation.mutate({ id: row.original.id, status })}><SelectTrigger className="h-8 w-28" data-testid={`select-status-${row.original.id}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pending">Pending</SelectItem><SelectItem value="approved">Approved</SelectItem><SelectItem value="rejected">Rejected</SelectItem></SelectContent></Select></div>) },
   ], [toggleFeaturedMutation, changeStatusMutation]);
 
   const categoryReviewColumns = useMemo<ColumnDef<Publication>[]>(() => [
@@ -920,7 +1071,7 @@ export default function Admin() {
           <TabsContent value="operations" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
-                <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2"><Database className="h-5 w-5" />Backup & Restore</CardTitle><CardDescription>Create backups and restore your publication database</CardDescription></CardHeader>
+                <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2"><Database className="h-5 w-5" />Backup & Restore</CardTitle><CardDescription>Create backups and restore your publication database (max 8 stored)</CardDescription></CardHeader>
                 <CardContent><BackupRestoreSection /></CardContent>
               </Card>
               <Card>
@@ -930,14 +1081,18 @@ export default function Admin() {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
+                <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />PMC Import</CardTitle><CardDescription>Import embargoed and metadata-only articles from PMC</CardDescription></CardHeader>
+                <CardContent><PmcImportSection /></CardContent>
+              </Card>
+              <Card>
                 <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5" />Batch Categorization</CardTitle><CardDescription>Generate ML-powered category suggestions</CardDescription></CardHeader>
                 <CardContent><BatchCategorizationSection status={batchCategorizationStatus} onStart={() => setBatchCategorizeDialogOpen(true)} /></CardContent>
               </Card>
-              <Card>
-                <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5" />Statistics</CardTitle><CardDescription>Publication counts and status breakdown</CardDescription></CardHeader>
-                <CardContent><StatisticsSection stats={stats} /></CardContent>
-              </Card>
             </div>
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5" />Statistics</CardTitle><CardDescription>Publication counts and status breakdown</CardDescription></CardHeader>
+              <CardContent><StatisticsSection stats={stats} /></CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="review">

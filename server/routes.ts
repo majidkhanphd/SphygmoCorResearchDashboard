@@ -1652,10 +1652,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ============ DATABASE BACKUP/RESTORE ENDPOINTS ============
 
-  // Create a database backup
+  // Create a database backup with retention policy (max 8 backups)
   app.post("/api/admin/backup", async (req, res) => {
     try {
       const { description } = req.body;
+      const MAX_BACKUPS = 8;
       
       // Get all publications
       const allPublications = await db.select().from(publications);
@@ -1670,12 +1671,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .returning();
       
+      // Enforce retention policy: delete oldest backups beyond MAX_BACKUPS
+      const allBackups = await db
+        .select({ id: databaseBackups.id, createdAt: databaseBackups.createdAt })
+        .from(databaseBackups)
+        .orderBy(desc(databaseBackups.createdAt));
+      
+      let deletedCount = 0;
+      if (allBackups.length > MAX_BACKUPS) {
+        const backupsToDelete = allBackups.slice(MAX_BACKUPS);
+        for (const oldBackup of backupsToDelete) {
+          await db.delete(databaseBackups).where(eq(databaseBackups.id, oldBackup.id));
+          deletedCount++;
+        }
+      }
+      
       res.json({
         success: true,
         backupId: backup.id,
         timestamp: backup.createdAt,
         recordCount: backup.recordCount,
-        message: `Successfully created backup with ${allPublications.length} publications`,
+        deletedOldBackups: deletedCount,
+        message: `Successfully created backup with ${allPublications.length} publications${deletedCount > 0 ? `. Removed ${deletedCount} old backup(s) to maintain limit of ${MAX_BACKUPS}.` : ''}`,
       });
     } catch (error: any) {
       console.error("Error creating backup:", error);
