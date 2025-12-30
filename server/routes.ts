@@ -1318,26 +1318,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Compare database with PMC to find missing publications
+  // Compare database with PMC to find missing publications (uses dual-search classification)
   app.get("/api/admin/compare-pmc", async (req, res) => {
     try {
-      console.log("Starting PMC comparison...");
+      console.log("Starting PMC comparison with dual-search classification...");
       
-      // Get all PMC IDs from database
-      const databasePmcIds = await storage.getAllPmcIds();
-      console.log(`Database has ${databasePmcIds.size} publications`);
+      // Get all PMIDs from database
+      const databasePmids = await storage.getAllPmcIds(); // Returns PMIDs despite the name
+      console.log(`Database has ${databasePmids.size} publications with PMIDs`);
       
-      // Compare with PMC
-      const comparison = await pubmedService.findMissingPublications(databasePmcIds);
+      // Compare with PMC using dual-search (body + all-fields)
+      const comparison = await pubmedService.findMissingPublicationsFromPmc(databasePmids);
       
       res.json({
         success: true,
         databaseTotal: comparison.dbTotal,
-        pmcTotal: comparison.pmcTotal,
+        pmcBodyTotal: comparison.pmcBodyTotal,
+        pmcAllFieldsTotal: comparison.pmcAllFieldsTotal,
+        pmcTotal: comparison.pmcAllFieldsTotal, // For backward compatibility
         matchCount: comparison.matchCount,
-        missingCount: comparison.missingIds.length,
-        missingIds: comparison.missingIds.slice(0, 100), // Return first 100 for preview
-        allMissingIds: comparison.missingIds
+        missingBodyCount: comparison.missingBodyPmids.length,
+        missingMetadataOnlyCount: comparison.missingMetadataOnlyPmids.length,
+        missingCount: comparison.missingBodyPmids.length + comparison.missingMetadataOnlyPmids.length,
+        missingBodyIds: comparison.missingBodyPmids.slice(0, 100),
+        missingMetadataOnlyIds: comparison.missingMetadataOnlyPmids.slice(0, 100),
+        missingIds: comparison.missingBodyPmids.slice(0, 100), // For backward compatibility
+        allMissingBodyIds: comparison.missingBodyPmids,
+        allMissingMetadataOnlyIds: comparison.missingMetadataOnlyPmids,
+        allMissingIds: [...comparison.missingBodyPmids, ...comparison.missingMetadataOnlyPmids]
       });
     } catch (error: any) {
       console.error("Error comparing with PMC:", error);
@@ -1349,30 +1357,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sync specific missing publications by PMID
+  // Sync specific missing publications by PMID (supports both body and metadata-only with heuristic)
   app.post("/api/admin/sync-missing", async (req, res) => {
     try {
-      const { pmcIds } = req.body; // Field name kept for API compatibility, but these are PMIDs now
+      const { pmcIds, bodyIds, metadataOnlyIds } = req.body;
       
-      if (!pmcIds || !Array.isArray(pmcIds) || pmcIds.length === 0) {
+      // Support both old format (pmcIds) and new format (bodyIds + metadataOnlyIds)
+      const bodyPmids: string[] = bodyIds || pmcIds || [];
+      const metadataOnlyPmids: string[] = metadataOnlyIds || [];
+      
+      if (bodyPmids.length === 0 && metadataOnlyPmids.length === 0) {
         return res.status(400).json({
           success: false,
-          message: "Please provide an array of PMIDs to sync"
+          message: "Please provide PMIDs to sync (bodyIds and/or metadataOnlyIds)"
         });
       }
 
-      console.log(`Syncing ${pmcIds.length} missing publications by PMID...`);
+      console.log(`Syncing ${bodyPmids.length} body + ${metadataOnlyPmids.length} metadata-only publications...`);
       
-      // Fetch publications from PubMed using PMIDs
-      const publications = await pubmedService.fetchPublicationsByPmid(pmcIds);
-      console.log(`Fetched ${publications.length} publications from PubMed`);
+      // Fetch body publications (normal status)
+      let bodyPublications: any[] = [];
+      if (bodyPmids.length > 0) {
+        bodyPublications = await pubmedService.fetchPublicationsByPmid(bodyPmids);
+      }
+      
+      // Fetch metadata-only publications (with heuristic classification)
+      let metadataOnlyPublications: any[] = [];
+      if (metadataOnlyPmids.length > 0) {
+        metadataOnlyPublications = await pubmedService.fetchPublicationsWithHeuristic(metadataOnlyPmids, true);
+      }
+      
+      const allPublications = [...bodyPublications, ...metadataOnlyPublications];
+      console.log(`Fetched ${allPublications.length} publications from PubMed`);
       
       // Save to database
       let savedCount = 0;
       let skippedCount = 0;
+      let metadataReviewCount = 0;
       const errors: string[] = [];
       
-      for (const pub of publications) {
+      for (const pub of allPublications) {
         try {
           // Check if already exists
           const existing = await storage.getPublicationByPmid(pub.pmid!);
@@ -1383,6 +1407,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           await storage.createPublication(pub);
           savedCount++;
+          if (pub.status === 'pending-metadata-review') {
+            metadataReviewCount++;
+          }
         } catch (err: any) {
           errors.push(`${pub.pmid}: ${err.message}`);
         }
@@ -1390,10 +1417,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         success: true,
-        requested: pmcIds.length,
-        fetched: publications.length,
+        requested: bodyPmids.length + metadataOnlyPmids.length,
+        fetched: allPublications.length,
         saved: savedCount,
         skipped: skippedCount,
+        metadataReviewCount,
         errors: errors.length > 0 ? errors : undefined
       });
     } catch (error: any) {

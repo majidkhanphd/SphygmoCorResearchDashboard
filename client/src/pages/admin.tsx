@@ -61,10 +61,18 @@ interface BatchCategorizationStatus {
 interface PmcComparisonResult {
   success: boolean;
   databaseTotal: number;
+  pmcBodyTotal: number;
+  pmcAllFieldsTotal: number;
   pmcTotal: number;
   matchCount: number;
+  missingBodyCount: number;
+  missingMetadataOnlyCount: number;
   missingCount: number;
+  missingBodyIds: string[];
+  missingMetadataOnlyIds: string[];
   missingIds: string[];
+  allMissingBodyIds: string[];
+  allMissingMetadataOnlyIds: string[];
   allMissingIds: string[];
 }
 
@@ -93,19 +101,37 @@ function PmcComparisonCard() {
     }
   };
 
-  const handleSyncMissing = async () => {
-    if (!result?.allMissingIds?.length) return;
+  const handleSyncMissing = async (syncType: 'all' | 'body' | 'metadata') => {
+    if (!result) return;
+    
+    let bodyIds: string[] = [];
+    let metadataOnlyIds: string[] = [];
+    
+    if (syncType === 'all' || syncType === 'body') {
+      bodyIds = result.allMissingBodyIds || [];
+    }
+    if (syncType === 'all' || syncType === 'metadata') {
+      metadataOnlyIds = result.allMissingMetadataOnlyIds || [];
+    }
+    
+    if (bodyIds.length === 0 && metadataOnlyIds.length === 0) return;
     
     setIsSyncing(true);
     try {
       const response = await apiRequest('POST', '/api/admin/sync-missing', {
-        pmcIds: result.allMissingIds
+        bodyIds,
+        metadataOnlyIds
       });
       const data = await response.json();
       
+      let description = `Saved ${data.saved} new publications. Skipped ${data.skipped} duplicates.`;
+      if (data.metadataReviewCount > 0) {
+        description += ` ${data.metadataReviewCount} flagged for metadata review.`;
+      }
+      
       toast({
         title: "Sync Complete",
-        description: `Saved ${data.saved} new publications. Skipped ${data.skipped} duplicates.`,
+        description,
       });
       
       // Refresh the comparison
@@ -128,21 +154,21 @@ function PmcComparisonCard() {
   return (
     <Card className="mb-8">
       <CardHeader>
-        <CardTitle>PubMed Comparison</CardTitle>
-        <CardDescription>Compare your database with PubMed to find missing publications</CardDescription>
+        <CardTitle>PMC Comparison</CardTitle>
+        <CardDescription>Compare your database with PubMed Central to find missing publications</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <p className="text-sm text-[#6e6e73] dark:text-gray-400">
-            Query PubMed live and identify publications that exist in PubMed but are missing from your database.
+            Query PMC live using dual-search (body + all-fields) to identify missing publications and classify them.
           </p>
           
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button 
               onClick={handleCompare}
               disabled={isComparing || isSyncing}
               variant="outline"
-              data-testid="button-compare-pubmed"
+              data-testid="button-compare-pmc"
             >
               {isComparing ? (
                 <>
@@ -150,23 +176,23 @@ function PmcComparisonCard() {
                   Comparing...
                 </>
               ) : (
-                "Compare with PubMed"
+                "Compare with PMC"
               )}
             </Button>
             
             {result && result.missingCount > 0 && (
               <Button 
-                onClick={handleSyncMissing}
+                onClick={() => handleSyncMissing('all')}
                 disabled={isComparing || isSyncing}
-                data-testid="button-sync-missing"
+                data-testid="button-sync-all"
               >
                 {isSyncing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Syncing {result.missingCount}...
+                    Syncing...
                   </>
                 ) : (
-                  `Sync ${result.missingCount} Missing`
+                  `Sync All ${result.missingCount} Missing`
                 )}
               </Button>
             )}
@@ -179,33 +205,83 @@ function PmcComparisonCard() {
           )}
           
           {result && (
-            <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div>
                   <p className="text-xs text-[#6e6e73] dark:text-gray-400">Your Database</p>
                   <p className="text-2xl font-semibold text-[#1d1d1f] dark:text-white">{result.databaseTotal.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">PubMed Total</p>
-                  <p className="text-2xl font-semibold text-[#1d1d1f] dark:text-white">{result.pmcTotal.toLocaleString()}</p>
+                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">PMC Body Search</p>
+                  <p className="text-2xl font-semibold text-[#1d1d1f] dark:text-white">{(result.pmcBodyTotal || 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">PMC All-Fields</p>
+                  <p className="text-2xl font-semibold text-[#1d1d1f] dark:text-white">{(result.pmcAllFieldsTotal || result.pmcTotal).toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-xs text-[#6e6e73] dark:text-gray-400">Matched</p>
                   <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{result.matchCount.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">Missing</p>
+                  <p className="text-xs text-[#6e6e73] dark:text-gray-400">Total Missing</p>
                   <p className="text-2xl font-semibold text-orange-600 dark:text-orange-400">{result.missingCount.toLocaleString()}</p>
                 </div>
               </div>
               
-              {result.missingCount > 0 && result.missingIds.length > 0 && (
+              {result.missingCount > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Body Matches (Auto-approve)</p>
+                        <p className="text-xs text-blue-600 dark:text-blue-400">Articles with SphygmoCor in full-text body</p>
+                      </div>
+                      <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{(result.missingBodyCount || 0).toLocaleString()}</p>
+                    </div>
+                    {(result.missingBodyCount || 0) > 0 && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleSyncMissing('body')}
+                        disabled={isSyncing}
+                        data-testid="button-sync-body"
+                      >
+                        Sync Body Only
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Metadata-Only (Needs Review)</p>
+                        <p className="text-xs text-amber-600 dark:text-amber-400">Likely reference mentions - heuristic applied</p>
+                      </div>
+                      <p className="text-xl font-semibold text-amber-700 dark:text-amber-300">{(result.missingMetadataOnlyCount || 0).toLocaleString()}</p>
+                    </div>
+                    {(result.missingMetadataOnlyCount || 0) > 0 && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleSyncMissing('metadata')}
+                        disabled={isSyncing}
+                        data-testid="button-sync-metadata"
+                      >
+                        Sync Metadata-Only
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {result.missingBodyIds && result.missingBodyIds.length > 0 && (
                 <div>
                   <p className="text-xs text-[#6e6e73] dark:text-gray-400 mb-2">
-                    Missing PMIDs (first {Math.min(result.missingIds.length, 100)}):
+                    Missing Body PMIDs (first {Math.min(result.missingBodyIds.length, 50)}):
                   </p>
-                  <div className="max-h-32 overflow-y-auto text-xs font-mono bg-white dark:bg-black p-2 rounded border">
-                    {result.missingIds.slice(0, 100).map(id => (
+                  <div className="max-h-24 overflow-y-auto text-xs font-mono bg-white dark:bg-black p-2 rounded border">
+                    {result.missingBodyIds.slice(0, 50).map(id => (
                       <a 
                         key={id}
                         href={`https://pubmed.ncbi.nlm.nih.gov/${id}/`}
@@ -223,7 +299,7 @@ function PmcComparisonCard() {
               {result.missingCount === 0 && (
                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                   <Check className="h-5 w-5" />
-                  <span className="font-medium">Your database is fully in sync with PubMed!</span>
+                  <span className="font-medium">Your database is fully in sync with PMC!</span>
                 </div>
               )}
             </div>

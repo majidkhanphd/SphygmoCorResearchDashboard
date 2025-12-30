@@ -1259,7 +1259,10 @@ export class PubMedService {
     const missingMetadataOnlyPmids: string[] = [];
     let matchCount = 0;
     
-    for (const [pmcid, pmid] of pmcidToPmid) {
+    const entries = Array.from(pmcidToPmid.entries());
+    for (const entry of entries) {
+      const pmcid = entry[0];
+      const pmid = entry[1];
       if (databasePmids.has(pmid)) {
         matchCount++;
       } else {
