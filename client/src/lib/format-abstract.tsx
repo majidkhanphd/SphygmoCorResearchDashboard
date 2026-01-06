@@ -136,7 +136,7 @@ export const formatAbstract = (abstract: string): JSX.Element[] => {
   }
   
   detectedSections.forEach((section, index) => {
-    if (section.content.length > 5) {
+    if (section.content.length > 0) {
       elements.push(
         <span key={`section-${index}`} className="block mt-3 first:mt-0">
           <span style={{ fontWeight: '600', color: '#1D1D1F' }}>{section.displayLabel}:</span>{' '}
