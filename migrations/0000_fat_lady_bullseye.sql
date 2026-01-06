@@ -6,9 +6,18 @@ CREATE TABLE "categories" (
 	CONSTRAINT "categories_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
+CREATE TABLE "database_backups" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"description" text,
+	"record_count" integer NOT NULL,
+	"data" jsonb NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "publications" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"pmid" varchar,
+	"pmc_id" varchar,
 	"title" text NOT NULL,
 	"authors" text NOT NULL,
 	"journal" text NOT NULL,
@@ -16,7 +25,8 @@ CREATE TABLE "publications" (
 	"abstract" text,
 	"doi" varchar,
 	"keywords" json DEFAULT '[]'::json,
-	"categories" json DEFAULT '[]'::json,
+	"research_area" text,
+	"categories" jsonb DEFAULT '[]'::jsonb,
 	"citation_count" integer DEFAULT 0,
 	"is_featured" integer DEFAULT 0,
 	"pubmed_url" text,
@@ -27,6 +37,8 @@ CREATE TABLE "publications" (
 	"category_reviewed_by" varchar,
 	"category_reviewed_at" timestamp,
 	"categories_last_updated_by" varchar,
+	"sync_source" text DEFAULT 'unknown',
+	"keyword_evidence" jsonb,
 	"created_at" timestamp DEFAULT now(),
 	CONSTRAINT "publications_pmid_unique" UNIQUE("pmid")
 );

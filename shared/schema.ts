@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, json, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -12,6 +12,7 @@ export type SuggestedCategory = {
 export const publications = pgTable("publications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   pmid: varchar("pmid").unique(), // PubMed ID
+  pmcId: varchar("pmc_id"), // PubMed Central ID
   title: text("title").notNull(),
   authors: text("authors").notNull(),
   journal: text("journal").notNull(),
@@ -19,7 +20,8 @@ export const publications = pgTable("publications", {
   abstract: text("abstract"),
   doi: varchar("doi"),
   keywords: json("keywords").$type<string[]>().default([]),
-  categories: json("categories").$type<string[]>().default([]), // Multiple selections from 11 fixed research areas
+  researchArea: text("research_area"), // Legacy single research area field
+  categories: jsonb("categories").$type<string[]>().default([]), // Multiple selections from 11 fixed research areas
   citationCount: integer("citation_count").default(0),
   isFeatured: integer("is_featured").default(0), // 0 or 1 for boolean
   pubmedUrl: text("pubmed_url"),
@@ -30,7 +32,18 @@ export const publications = pgTable("publications", {
   categoryReviewedBy: varchar("category_reviewed_by"),
   categoryReviewedAt: timestamp("category_reviewed_at"),
   categoriesLastUpdatedBy: varchar("categories_last_updated_by"),
+  syncSource: text("sync_source").default("unknown"), // Source of the sync (pubmed, pmc, manual)
+  keywordEvidence: jsonb("keyword_evidence"), // JSON evidence for keyword-based categorization
   createdAt: timestamp("created_at").defaultNow()
+});
+
+// Database backups table for storing backup data
+export const databaseBackups = pgTable("database_backups", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  description: text("description"),
+  recordCount: integer("record_count").notNull(),
+  data: jsonb("data").notNull(),
 });
 
 export const categories = pgTable("categories", {

@@ -1,5 +1,5 @@
 {
-  "id": "c7c93c05-53c6-4dae-a185-b76579e88832",
+  "id": "fe0fd54b-76d5-4b49-a55e-a14e8cb1b3c9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -50,6 +50,51 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.database_backups": {
+      "name": "database_backups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "record_count": {
+          "name": "record_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.publications": {
       "name": "publications",
       "schema": "",
@@ -63,6 +108,12 @@
         },
         "pmid": {
           "name": "pmid",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pmc_id": {
+          "name": "pmc_id",
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
@@ -110,12 +161,18 @@
           "notNull": false,
           "default": "'[]'::json"
         },
+        "research_area": {
+          "name": "research_area",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "categories": {
           "name": "categories",
-          "type": "json",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false,
-          "default": "'[]'::json"
+          "default": "'[]'::jsonb"
         },
         "citation_count": {
           "name": "citation_count",
@@ -177,6 +234,19 @@
         "categories_last_updated_by": {
           "name": "categories_last_updated_by",
           "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sync_source": {
+          "name": "sync_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'unknown'"
+        },
+        "keyword_evidence": {
+          "name": "keyword_evidence",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
