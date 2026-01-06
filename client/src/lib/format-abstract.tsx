@@ -1,45 +1,61 @@
 import { sanitizeText } from "@shared/sanitize";
 
-export const ABSTRACT_SECTION_HEADERS = [
-  'Background',
-  'Introduction',
-  'Purpose',
-  'Objective',
-  'Objectives',
-  'Aim',
-  'Aims',
-  'Rationale',
-  'Context',
-  'Methods',
-  'Method',
-  'Methodology',
-  'Design',
-  'Study Design',
-  'Materials',
-  'Patients',
-  'Participants',
-  'Subjects',
-  'Setting',
-  'Measurements',
-  'Interventions',
-  'Results',
-  'Findings',
-  'Outcomes',
-  'Main Results',
-  'Key Results',
-  'Conclusions',
-  'Conclusion',
-  'Discussion',
-  'Interpretation',
-  'Clinical Implications',
-  'Significance',
-  'Trial Registration',
-];
-
-interface ParsedSection {
-  header: string;
+interface DetectedSection {
+  label: string;
+  displayLabel: string;
+  headerStart: number;
+  contentStart: number;
   content: string;
-  position: number;
+}
+
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+function normalizeLabel(label: string): string {
+  const cleaned = label.replace(/[:\s]+$/, '').trim();
+  if (cleaned === cleaned.toUpperCase() && cleaned.length > 1) {
+    return toTitleCase(cleaned);
+  }
+  return cleaned;
+}
+
+function stripLeadingDuplicateHeader(content: string, expectedLabel: string): string {
+  const normalizedExpected = expectedLabel.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+  
+  const headerPattern = /^([A-Z][A-Za-z\s&-]*(?:\s+AND\s+[A-Z][A-Za-z\s&-]*)?)\s*[:.\-–]\s*/i;
+  const match = content.match(headerPattern);
+  
+  if (match) {
+    const foundLabel = match[1].toLowerCase().replace(/[^a-z0-9\s]/g, '');
+    if (foundLabel === normalizedExpected || 
+        foundLabel.includes(normalizedExpected) || 
+        normalizedExpected.includes(foundLabel) ||
+        foundLabel.split(/\s+/).some(word => normalizedExpected.includes(word))) {
+      return content.substring(match[0].length).trim();
+    }
+  }
+  
+  return content;
+}
+
+function cleanSectionContent(content: string): string {
+  let cleaned = content
+    .replace(/^[:.\-–\s]+/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  cleaned = cleaned.replace(/[.!?,:;\-–]+$/, '').trim();
+  
+  if (cleaned.length > 0 && !/[.!?]$/.test(cleaned)) {
+    cleaned += '.';
+  }
+  
+  return cleaned;
 }
 
 export const formatAbstract = (abstract: string): JSX.Element[] => {
@@ -49,59 +65,65 @@ export const formatAbstract = (abstract: string): JSX.Element[] => {
     return [<span key="empty">No abstract available.</span>];
   }
   
-  const foundSections: ParsedSection[] = [];
+  const sectionPattern = /(?:^|[.!?]\s+|\n\s*)([A-Z][A-Za-z\s&-]{2,40}(?:\s+AND\s+[A-Z][A-Za-z\s&-]+)?)\s*[:]\s*/g;
   
-  for (const header of ABSTRACT_SECTION_HEADERS) {
-    const escapedHeader = header.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const boundaryPattern = new RegExp(
-      `(?:^|[.!?]\\s+|\\n\\s*)${escapedHeader}\\s*[:–\\-]\\s*`,
-      'gi'
+  const detectedSections: DetectedSection[] = [];
+  let match;
+  
+  while ((match = sectionPattern.exec(sanitized)) !== null) {
+    const fullMatch = match[0];
+    const label = match[1].trim();
+    const headerStart = match.index;
+    const contentStart = headerStart + fullMatch.length;
+    
+    const words = label.split(/\s+/);
+    const looksLikeHeader = 
+      words.length <= 6 &&
+      label.length <= 50 &&
+      !/^\d/.test(label) &&
+      !label.includes('=') &&
+      !label.includes('%') &&
+      !/\d{4}/.test(label);
+    
+    if (!looksLikeHeader) continue;
+    
+    const tooClose = detectedSections.some(
+      s => Math.abs(s.headerStart - headerStart) < 10
     );
     
-    let match;
-    while ((match = boundaryPattern.exec(sanitized)) !== null) {
-      const headerStart = match.index;
-      const headerMatch = match[0];
-      const contentStart = headerStart + headerMatch.length;
-      
-      const existsAtPosition = foundSections.some(
-        s => Math.abs(s.position - headerStart) < 5
-      );
-      
-      if (!existsAtPosition) {
-        foundSections.push({
-          header: header,
-          content: '',
-          position: contentStart,
-        });
-      }
+    if (!tooClose) {
+      detectedSections.push({
+        label: label,
+        displayLabel: normalizeLabel(label),
+        headerStart: headerStart,
+        contentStart: contentStart,
+        content: '',
+      });
     }
   }
   
-  if (foundSections.length < 2) {
+  if (detectedSections.length < 2) {
     return [<span key="unstructured">{sanitized}</span>];
   }
   
-  foundSections.sort((a, b) => a.position - b.position);
+  detectedSections.sort((a, b) => a.headerStart - b.headerStart);
   
-  for (let i = 0; i < foundSections.length; i++) {
-    const startPos = foundSections[i].position;
-    const endPos = i < foundSections.length - 1 
-      ? sanitized.lastIndexOf(foundSections[i + 1].header, foundSections[i + 1].position)
+  for (let i = 0; i < detectedSections.length; i++) {
+    const startPos = detectedSections[i].contentStart;
+    const endPos = i < detectedSections.length - 1 
+      ? detectedSections[i + 1].headerStart
       : sanitized.length;
     
-    let content = sanitized.substring(startPos, endPos).trim();
+    let rawContent = sanitized.substring(startPos, endPos).trim();
     
-    content = content.replace(/[.!?]\s*$/, '').trim();
-    if (content) content += '.';
+    rawContent = stripLeadingDuplicateHeader(rawContent, detectedSections[i].displayLabel);
     
-    foundSections[i].content = content;
+    detectedSections[i].content = cleanSectionContent(rawContent);
   }
   
-  const firstSectionStart = foundSections.length > 0 
-    ? sanitized.indexOf(foundSections[0].header)
-    : sanitized.length;
-  const preamble = sanitized.substring(0, firstSectionStart).trim();
+  const firstSectionStart = detectedSections[0].headerStart;
+  const preamble = sanitized.substring(0, firstSectionStart).trim()
+    .replace(/[.!?,:;\s]+$/, '').trim();
   
   const elements: JSX.Element[] = [];
   
@@ -113,11 +135,11 @@ export const formatAbstract = (abstract: string): JSX.Element[] => {
     );
   }
   
-  foundSections.forEach((section, index) => {
-    if (section.content.length > 0) {
+  detectedSections.forEach((section, index) => {
+    if (section.content.length > 5) {
       elements.push(
         <span key={`section-${index}`} className="block mt-3 first:mt-0">
-          <span style={{ fontWeight: '600', color: '#1D1D1F' }}>{section.header}:</span>{' '}
+          <span style={{ fontWeight: '600', color: '#1D1D1F' }}>{section.displayLabel}:</span>{' '}
           <span>{section.content}</span>
         </span>
       );
