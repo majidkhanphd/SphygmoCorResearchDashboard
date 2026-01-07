@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getFeaturedPublications } from "@/services/pubmed";
 import type { Publication } from "@shared/schema";
-import { getResearchAreaDisplayName } from "@shared/schema";
+import { getResearchAreaDisplayName, normalizeCategoryToSlug } from "@shared/schema";
 import { sanitizeText } from "@shared/sanitize";
 import { formatAbstract } from "@/lib/format-abstract";
 
@@ -190,8 +190,9 @@ const FeaturedCarousel = forwardRef<HTMLElement>(function FeaturedCarousel(_, re
                   >
                     <div className="flex flex-wrap items-center gap-1 mb-3">
                       {publication.categories?.map((category: string, catIndex: number) => {
-                        const colors = CATEGORY_COLORS[category] || { text: '#6E6E73' };
-                        const displayName = getBadgeDisplayName(category);
+                        const slug = normalizeCategoryToSlug(category) || category.toLowerCase();
+                        const colors = CATEGORY_COLORS[slug] || { text: '#6E6E73' };
+                        const displayName = getBadgeDisplayName(slug);
                         return (
                           <span key={catIndex} className="inline-flex items-center">
                             <span
