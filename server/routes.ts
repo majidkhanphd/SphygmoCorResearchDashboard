@@ -9,6 +9,7 @@ import { syncTracker } from "./sync-tracker";
 import { startBatchCategorization } from "./services/batchCategorization";
 import { batchCategorizationTracker } from "./batch-categorization-tracker";
 import { citationService } from "./services/citations";
+import { citationTracker } from "./citation-tracker";
 
 // Helper to escape SQL LIKE special characters
 function escapeLikePattern(str: string): string {
@@ -1319,8 +1320,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin endpoint to update citation counts from OpenAlex
+  // Get citation update status
+  app.get("/api/admin/citation-status", async (req, res) => {
+    res.json(citationTracker.getStatus());
+  });
+
+  // Admin endpoint to update citation counts from OpenAlex (async background job)
   app.post("/api/admin/update-citations", async (req, res) => {
+    if (citationTracker.isRunning()) {
+      return res.status(409).json({
+        success: false,
+        message: "Citation update is already in progress",
+        status: citationTracker.getStatus()
+      });
+    }
+
     try {
       const { db } = await import("./db");
       const { publications } = await import("@shared/schema");
@@ -1339,35 +1353,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const dois = allPubs.map(p => p.doi!);
-      console.log(`Fetching citation counts for ${dois.length} publications...`);
-
-      const citationCounts = await citationService.getCitationCountBatch(dois);
+      citationTracker.start(allPubs.length);
       
-      let updated = 0;
-      for (const pub of allPubs) {
-        const normalizedDoi = pub.doi!.replace(/^https?:\/\/doi\.org\//i, "").toLowerCase();
-        const count = citationCounts.get(normalizedDoi);
-        
-        if (count !== undefined) {
-          await storage.updatePublication(pub.id, { citationCount: count });
-          updated++;
-        }
-      }
-
-      console.log(`Updated citation counts for ${updated} publications`);
-
       res.json({
         success: true,
-        message: `Updated citation counts for ${updated} of ${allPubs.length} publications`,
-        updated,
-        total: allPubs.length
+        message: `Started updating citation counts for ${allPubs.length} publications`,
+        status: citationTracker.getStatus()
       });
+
+      (async () => {
+        try {
+          const dois = allPubs.map(p => p.doi!);
+          console.log(`Fetching citation counts for ${dois.length} publications...`);
+
+          citationTracker.updatePhase("Fetching citation counts from OpenAlex...");
+          const citationCounts = await citationService.getCitationCountBatch(dois);
+          
+          citationTracker.updatePhase("Updating database...");
+          let updated = 0;
+          let processed = 0;
+          
+          for (const pub of allPubs) {
+            const normalizedDoi = pub.doi!.replace(/^https?:\/\/doi\.org\//i, "").toLowerCase();
+            const count = citationCounts.get(normalizedDoi);
+            
+            if (count !== undefined) {
+              await storage.updatePublication(pub.id, { citationCount: count });
+              updated++;
+            }
+            processed++;
+            
+            if (processed % 100 === 0) {
+              citationTracker.updateProgress(processed, updated);
+            }
+          }
+
+          citationTracker.updateProgress(processed, updated);
+          console.log(`Updated citation counts for ${updated} publications`);
+          citationTracker.complete();
+        } catch (error: any) {
+          console.error("Error updating citation counts:", error);
+          citationTracker.error(error.message);
+        }
+      })();
+
     } catch (error: any) {
-      console.error("Error updating citation counts:", error);
+      console.error("Error starting citation update:", error);
+      citationTracker.error(error.message);
       res.status(500).json({
         success: false,
-        message: "Failed to update citation counts",
+        message: "Failed to start citation update",
         error: error.message
       });
     }

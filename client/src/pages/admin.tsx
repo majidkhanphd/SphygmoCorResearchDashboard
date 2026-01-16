@@ -58,6 +58,18 @@ interface BatchCategorizationStatus {
   etaSeconds: number | null;
 }
 
+interface CitationUpdateStatus {
+  status: "idle" | "running" | "completed" | "error";
+  phase: string;
+  processed: number;
+  total: number;
+  updated: number;
+  startTime: number | null;
+  endTime: number | null;
+  error: string | null;
+  lastSuccessTime: number | null;
+}
+
 export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected" | "featured" | "category-review">("pending");
@@ -591,25 +603,88 @@ export default function Admin() {
     }
   };
 
-  const [isUpdatingCitations, setIsUpdatingCitations] = useState(false);
+  const [citationStatus, setCitationStatus] = useState<CitationUpdateStatus | null>(null);
+  const citationPollingInterval = useRef<NodeJS.Timeout | null>(null);
+  const citationCompletionTimeout = useRef<NodeJS.Timeout | null>(null);
+  
+  const fetchCitationStatus = async () => {
+    try {
+      const response = await apiRequest("GET", "/api/admin/citation-status");
+      const data = await response.json();
+      setCitationStatus(data);
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch citation status:", error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    if (citationStatus?.status === "running") {
+      if (citationCompletionTimeout.current) {
+        clearTimeout(citationCompletionTimeout.current);
+        citationCompletionTimeout.current = null;
+      }
+      citationPollingInterval.current = setInterval(fetchCitationStatus, 1000);
+    } else {
+      if (citationPollingInterval.current) {
+        clearInterval(citationPollingInterval.current);
+        citationPollingInterval.current = null;
+      }
+      if (citationStatus?.status === "completed") {
+        citationCompletionTimeout.current = setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
+          toast({
+            title: "Citation Update Complete",
+            description: `Updated ${citationStatus.updated} of ${citationStatus.total} publications`,
+          });
+        }, 1000);
+      }
+      if (citationStatus?.status === "error") {
+        toast({
+          title: "Citation Update Failed",
+          description: citationStatus.error || "Unknown error occurred",
+          variant: "destructive",
+        });
+      }
+    }
+    return () => {
+      if (citationPollingInterval.current) {
+        clearInterval(citationPollingInterval.current);
+      }
+      if (citationCompletionTimeout.current) {
+        clearTimeout(citationCompletionTimeout.current);
+      }
+    };
+  }, [citationStatus?.status]);
+
+  useEffect(() => {
+    fetchCitationStatus();
+  }, []);
   
   const handleUpdateCitations = async () => {
     try {
-      setIsUpdatingCitations(true);
       const response = await apiRequest("POST", "/api/admin/update-citations");
       const data = await response.json();
-      toast({
-        title: "Citations Updated",
-        description: data.message || `Updated ${data.updated} citation counts`,
-      });
+      if (data.success) {
+        toast({
+          title: "Citation Update Started",
+          description: data.message,
+        });
+        fetchCitationStatus();
+      } else {
+        toast({
+          title: "Update Failed",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Update Failed",
-        description: error.message || "Failed to update citation counts",
+        description: error.message || "Failed to start citation update",
         variant: "destructive",
       });
-    } finally {
-      setIsUpdatingCitations(false);
     }
   };
 
@@ -1433,12 +1508,12 @@ export default function Admin() {
                 </p>
                 <Button 
                   onClick={handleUpdateCitations} 
-                  disabled={isUpdatingCitations || syncStatus?.status === "running"}
+                  disabled={citationStatus?.status === "running" || syncStatus?.status === "running"}
                   variant="outline"
                   className="w-full sm:w-auto"
                   data-testid="button-update-citations"
                 >
-                  {isUpdatingCitations ? (
+                  {citationStatus?.status === "running" ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Updating...
@@ -1447,6 +1522,20 @@ export default function Admin() {
                     "Update Citation Counts"
                   )}
                 </Button>
+                {citationStatus?.status === "running" && (
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-blue-900 dark:text-blue-100">{citationStatus.phase}</span>
+                      <span className="text-sm text-blue-700 dark:text-blue-300">
+                        {citationStatus.processed}/{citationStatus.total}
+                      </span>
+                    </div>
+                    <Progress 
+                      value={citationStatus.total > 0 ? (citationStatus.processed / citationStatus.total) * 100 : 0} 
+                      className="h-2"
+                    />
+                  </div>
+                )}
               </div>
             </div>
             
