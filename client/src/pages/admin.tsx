@@ -591,6 +591,28 @@ export default function Admin() {
     }
   };
 
+  const [isUpdatingCitations, setIsUpdatingCitations] = useState(false);
+  
+  const handleUpdateCitations = async () => {
+    try {
+      setIsUpdatingCitations(true);
+      const response = await apiRequest("POST", "/api/admin/update-citations");
+      const data = await response.json();
+      toast({
+        title: "Citations Updated",
+        description: data.message || `Updated ${data.updated} citation counts`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update citation counts",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingCitations(false);
+    }
+  };
+
   // Poll batch categorization status
   const fetchBatchCategorizationStatus = async () => {
     try {
@@ -1401,6 +1423,28 @@ export default function Admin() {
                     </>
                   ) : (
                     "Refetch Missing Abstracts"
+                  )}
+                </Button>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium mb-2 text-sm text-[#1d1d1f] dark:text-white">Update Citations</h3>
+                <p className="text-sm text-[#6e6e73] dark:text-gray-400 mb-3">
+                  Fetch citation counts from OpenAlex for all publications with DOIs.
+                </p>
+                <Button 
+                  onClick={handleUpdateCitations} 
+                  disabled={isUpdatingCitations || syncStatus?.status === "running"}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  data-testid="button-update-citations"
+                >
+                  {isUpdatingCitations ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Citation Counts"
                   )}
                 </Button>
               </div>

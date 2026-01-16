@@ -8,6 +8,7 @@ import { pubmedService } from "./services/pubmed";
 import { syncTracker } from "./sync-tracker";
 import { startBatchCategorization } from "./services/batchCategorization";
 import { batchCategorizationTracker } from "./batch-categorization-tracker";
+import { citationService } from "./services/citations";
 
 // Helper to escape SQL LIKE special characters
 function escapeLikePattern(str: string): string {
@@ -1314,6 +1315,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to fetch batch categorization status"
+      });
+    }
+  });
+
+  // Admin endpoint to update citation counts from OpenAlex
+  app.post("/api/admin/update-citations", async (req, res) => {
+    try {
+      const { db } = await import("./db");
+      const { publications } = await import("@shared/schema");
+      const { sql } = await import("drizzle-orm");
+      
+      const allPubs = await db
+        .select({ id: publications.id, doi: publications.doi })
+        .from(publications)
+        .where(sql`${publications.doi} IS NOT NULL AND ${publications.doi} != ''`);
+
+      if (allPubs.length === 0) {
+        return res.json({
+          success: true,
+          message: "No publications with DOIs found",
+          updated: 0
+        });
+      }
+
+      const dois = allPubs.map(p => p.doi!);
+      console.log(`Fetching citation counts for ${dois.length} publications...`);
+
+      const citationCounts = await citationService.getCitationCountBatch(dois);
+      
+      let updated = 0;
+      for (const pub of allPubs) {
+        const normalizedDoi = pub.doi!.replace(/^https?:\/\/doi\.org\//i, "").toLowerCase();
+        const count = citationCounts.get(normalizedDoi);
+        
+        if (count !== undefined) {
+          await storage.updatePublication(pub.id, { citationCount: count });
+          updated++;
+        }
+      }
+
+      console.log(`Updated citation counts for ${updated} publications`);
+
+      res.json({
+        success: true,
+        message: `Updated citation counts for ${updated} of ${allPubs.length} publications`,
+        updated,
+        total: allPubs.length
+      });
+    } catch (error: any) {
+      console.error("Error updating citation counts:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to update citation counts",
+        error: error.message
       });
     }
   });
