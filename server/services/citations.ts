@@ -45,7 +45,7 @@ export class CitationService {
       if (cleanDois.length === 0) continue;
 
       try {
-        const filter = cleanDois.map(doi => `doi:${doi}`).join("|");
+        const filter = `doi:${cleanDois.join("|")}`;
         const url = `${this.baseUrl}/works?filter=${encodeURIComponent(filter)}&per-page=50&select=doi,cited_by_count`;
 
         const response = await fetch(url, {
