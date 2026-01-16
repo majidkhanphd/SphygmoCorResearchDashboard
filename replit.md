@@ -44,6 +44,13 @@ The system prioritizes type safety, developer experience, and scalable data mana
 ## AI/ML Integration
 - **OpenAI GPT-5 nano**: Cost-effective model optimized for classification tasks in the category suggestion system ($0.05/1M input tokens, $0.40/1M output tokens).
 
+## Citation Count Integration
+- **OpenAlex API**: Free, open API for fetching citation counts by DOI. No API key required.
+- Citation counts are displayed next to DOI badges on publication cards
+- Publications can be sorted by "Most Cited" in addition to "Newest" and "Oldest"
+- Admin panel includes a button to bulk update citation counts for all publications with DOIs
+- Citation service (`server/services/citations.ts`) handles batch fetching with rate limiting
+
 ## PubMed API Integration
 - **NCBI PubMed eUtils API**: For retrieving publication data.
 - **fast-xml-parser**: For parsing PubMed XML responses.
