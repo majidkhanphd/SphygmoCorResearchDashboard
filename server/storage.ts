@@ -172,6 +172,9 @@ export class DatabaseStorage implements IStorage {
       case "oldest":
         orderBy = asc(publications.publicationDate);
         break;
+      case "most-cited":
+        orderBy = desc(publications.citationCount);
+        break;
       case "newest":
       default:
         orderBy = desc(publications.publicationDate);

@@ -44,7 +44,7 @@ const getBadgeDisplayName = (category: string): string => {
 export default function Home() {
   const [inputValue, setInputValue] = useState("");
   const debouncedSearchQuery = useDebounce(inputValue, 400);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "relevance">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "most-cited">("newest");
   const [selectedResearchArea, setSelectedResearchArea] = useState<string | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -545,7 +545,7 @@ export default function Home() {
             
             {/* Sort Dropdown */}
             <div className="w-full sm:w-48 flex-shrink-0">
-              <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "relevance") => setSortBy(value)}>
+              <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "most-cited") => setSortBy(value)}>
                 <SelectTrigger 
                   className="w-full rounded-[5px] transition-all duration-200 ease-in-out py-2 sm:py-3 text-sm sm:text-base research-sort-dropdown"
                   data-testid="sort-dropdown"
@@ -555,7 +555,7 @@ export default function Home() {
                 <SelectContent>
                   <SelectItem value="newest" data-testid="sort-newest">Newest</SelectItem>
                   <SelectItem value="oldest" data-testid="sort-oldest">Oldest</SelectItem>
-                  <SelectItem value="relevance" data-testid="sort-relevance">Relevance</SelectItem>
+                  <SelectItem value="most-cited" data-testid="sort-most-cited">Most Cited</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1228,6 +1228,17 @@ export default function Home() {
                                 DOI
                                 <ExternalLink className="h-3 w-3" />
                               </a>
+                            )}
+                            
+                            {/* Citation Count */}
+                            {publication.citationCount !== null && publication.citationCount > 0 && (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium"
+                                style={{ backgroundColor: '#F5F5F7', color: '#1D1D1F' }}
+                                data-testid="citation-count"
+                              >
+                                Citations: {publication.citationCount.toLocaleString()}
+                              </span>
                             )}
                             
                             {/* Featured Badge */}

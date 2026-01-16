@@ -74,7 +74,7 @@ export const searchPublicationsSchema = z.object({
   categories: z.array(z.string()).optional(), // Filter by one or more of the 11 fixed research areas
   venue: z.string().optional(), // Filter by journal/venue
   year: z.number().optional(),
-  sortBy: z.enum(["newest", "oldest", "relevance"]).default("newest"),
+  sortBy: z.enum(["newest", "oldest", "most-cited"]).default("newest"),
   limit: z.number().default(20),
   offset: z.number().default(0),
   featured: z.boolean().optional(), // Filter for featured publications
