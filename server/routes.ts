@@ -10,6 +10,7 @@ import { startBatchCategorization } from "./services/batchCategorization";
 import { batchCategorizationTracker } from "./batch-categorization-tracker";
 import { citationService } from "./services/citations";
 import { citationTracker } from "./citation-tracker";
+import { abstractRefreshTracker } from "./abstract-refresh-tracker";
 
 // Helper to escape SQL LIKE special characters
 function escapeLikePattern(str: string): string {
@@ -102,12 +103,30 @@ async function fetchFromPubMed(endpoint: string, params: Record<string, string>)
   return response.text();
 }
 
+// Pre-process XML to strip inline formatting tags while preserving text content
+// This handles <i>, <b>, <sup>, <sub>, <u>, <em>, <strong> etc. that break text extraction
+function stripInlineFormattingTags(xmlString: string): string {
+  // Remove inline formatting tags but keep their text content
+  // Matches tags like <i>, </i>, <b>, </b>, <sup>, </sup>, <sub>, </sub>, etc.
+  return xmlString
+    .replace(/<\/?(?:i|b|u|em|strong|sup|sub|span|font|mark|s|strike|del|ins)(?:\s[^>]*)?>/gi, '')
+    // Also handle self-closing tags
+    .replace(/<(?:i|b|u|em|strong|sup|sub|span|font|mark|s|strike|del|ins)[^>]*\/>/gi, '');
+}
+
 function parseXmlToJson(xmlString: string) {
+  // Pre-process to strip inline formatting tags that break text extraction
+  // This converts <i>text</i> to just "text", preserving the content
+  const cleanedXml = stripInlineFormattingTags(xmlString);
+  
   const parser = new XMLParser({
     ignoreAttributes: false,
-    attributeNamePrefix: "@_"
+    attributeNamePrefix: "@_",
+    textNodeName: "#text",
+    trimValues: true,
+    parseTagValue: false
   });
-  return parser.parse(xmlString);
+  return parser.parse(cleanedXml);
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1410,6 +1429,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to start citation update",
+        error: error.message
+      });
+    }
+  });
+
+  // Admin endpoint to get abstract refresh status
+  app.get("/api/admin/abstract-refresh-status", async (req, res) => {
+    res.json(abstractRefreshTracker.getStatus());
+  });
+
+  // Admin endpoint to bulk refresh abstracts from PubMed (async background job)
+  app.post("/api/admin/refresh-abstracts", async (req, res) => {
+    try {
+      if (abstractRefreshTracker.isRunning()) {
+        return res.status(409).json({
+          success: false,
+          message: "Abstract refresh is already running. Please wait for it to complete.",
+          status: abstractRefreshTracker.getStatus()
+        });
+      }
+
+      const allPubs = await storage.getAllPublications();
+      const pubsWithPmid = allPubs.filter(p => p.pmid);
+      
+      if (pubsWithPmid.length === 0) {
+        return res.json({
+          success: true,
+          message: "No publications with PMIDs to refresh",
+          processed: 0
+        });
+      }
+
+      abstractRefreshTracker.start(pubsWithPmid.length);
+      
+      res.json({
+        success: true,
+        message: `Started refreshing abstracts for ${pubsWithPmid.length} publications`,
+        total: pubsWithPmid.length
+      });
+
+      (async () => {
+        try {
+          const batchSize = 50;
+          let processed = 0;
+          let updated = 0;
+          let failed = 0;
+
+          for (let i = 0; i < pubsWithPmid.length; i += batchSize) {
+            const batch = pubsWithPmid.slice(i, i + batchSize);
+            const pmids = batch.map(p => p.pmid!);
+            
+            abstractRefreshTracker.updatePhase(`Fetching batch ${Math.floor(i / batchSize) + 1}...`);
+            
+            try {
+              const pmidStr = pmids.join(",");
+              const url = new URL("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi");
+              url.searchParams.set("db", "pubmed");
+              url.searchParams.set("id", pmidStr);
+              url.searchParams.set("retmode", "xml");
+              
+              const response = await fetch(url.toString());
+              if (!response.ok) {
+                throw new Error(`PubMed API error: ${response.status}`);
+              }
+              
+              const xmlText = await response.text();
+              const result = parseXmlToJson(xmlText);
+              
+              const articles = Array.isArray(result?.PubmedArticleSet?.PubmedArticle)
+                ? result.PubmedArticleSet.PubmedArticle
+                : result?.PubmedArticleSet?.PubmedArticle
+                  ? [result.PubmedArticleSet.PubmedArticle]
+                  : [];
+              
+              for (const article of articles) {
+                try {
+                  const medlineCitation = article?.MedlineCitation;
+                  const pmid = normalizeXmlText(medlineCitation?.PMID);
+                  const abstractSection = medlineCitation?.Article?.Abstract;
+                  
+                  if (!pmid || !abstractSection) {
+                    continue;
+                  }
+                  
+                  const pub = batch.find(p => p.pmid === pmid);
+                  if (!pub) continue;
+                  
+                  const newAbstract = formatAbstract(abstractSection);
+                  if (newAbstract && newAbstract !== pub.abstract) {
+                    await storage.updatePublication(pub.id, { abstract: newAbstract });
+                    updated++;
+                  }
+                  
+                  processed++;
+                } catch (err) {
+                  failed++;
+                  processed++;
+                }
+              }
+              
+              // Handle publications not found in response
+              const returnedPmids = articles.map((a: any) => normalizeXmlText(a?.MedlineCitation?.PMID));
+              for (const pub of batch) {
+                if (!returnedPmids.includes(pub.pmid)) {
+                  processed++;
+                }
+              }
+              
+            } catch (batchError) {
+              console.error(`Error fetching batch starting at ${i}:`, batchError);
+              failed += batch.length;
+              processed += batch.length;
+            }
+            
+            abstractRefreshTracker.updateProgress(processed, updated, failed);
+            
+            // Rate limit
+            if (i + batchSize < pubsWithPmid.length) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+          
+          console.log(`Abstract refresh complete: ${updated} updated, ${failed} failed out of ${processed} processed`);
+          abstractRefreshTracker.complete();
+        } catch (error: any) {
+          console.error("Error refreshing abstracts:", error);
+          abstractRefreshTracker.error(error.message);
+        }
+      })();
+
+    } catch (error: any) {
+      console.error("Error starting abstract refresh:", error);
+      abstractRefreshTracker.error(error.message);
+      res.status(500).json({
+        success: false,
+        message: "Failed to start abstract refresh",
         error: error.message
       });
     }
