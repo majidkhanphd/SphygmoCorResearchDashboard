@@ -621,18 +621,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log("Starting incremental PubMed sync...");
+      console.log("Starting incremental PubMed sync (past year)...");
       
-      // Get the most recent publication date from database
-      const mostRecentDate = await storage.getMostRecentPublicationDate();
-      // Default to 30 days ago if no publications exist
-      const defaultDate = new Date();
-      defaultDate.setDate(defaultDate.getDate() - 30);
-      const syncFromDate = mostRecentDate || defaultDate;
+      // Sync from 1 year ago to catch any missed publications
+      // Duplicate detection (by pmid, pmc_id, and title) handles any overlap
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      const syncFromDate = oneYearAgo;
       
       // Start tracking
       syncTracker.start("incremental");
-      syncTracker.updatePhase(`Syncing publications since ${syncFromDate.toLocaleDateString()}...`);
+      syncTracker.updatePhase(`Syncing publications from past year (since ${syncFromDate.toLocaleDateString()})...`);
       
       console.log(`Syncing from date: ${syncFromDate.toLocaleDateString()}`);
       
