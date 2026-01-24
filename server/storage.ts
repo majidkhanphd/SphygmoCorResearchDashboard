@@ -77,6 +77,9 @@ export interface IStorage {
   approveCategories(id: string, selectedCategories: string[], reviewerName: string): Promise<Publication | undefined>;
   rejectSuggestions(id: string, reviewerName: string): Promise<Publication | undefined>;
   getPublicationsNeedingReview(limit: number, offset: number): Promise<{publications: Publication[], total: number}>;
+  
+  // Maintenance methods
+  cleanupDuplicatesByTitle(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -545,6 +548,40 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(publications.publicationDate));
+  }
+
+  // Remove duplicates by title, keeping the entry with a valid numeric PubMed ID
+  async cleanupDuplicatesByTitle(): Promise<number> {
+    // Find all duplicate titles
+    const duplicates = await db.execute(sql`
+      WITH duplicates AS (
+        SELECT title, array_agg(id ORDER BY 
+          CASE WHEN pmid ~ '^[0-9]+$' THEN 0 ELSE 1 END,
+          created_at DESC
+        ) as ids
+        FROM publications
+        GROUP BY title
+        HAVING COUNT(*) > 1
+      )
+      SELECT unnest(ids[2:]) as id_to_delete
+      FROM duplicates
+    `);
+
+    let deleted = 0;
+    for (const row of duplicates.rows as { id_to_delete: string }[]) {
+      try {
+        await db.delete(publications).where(eq(publications.id, row.id_to_delete));
+        deleted++;
+      } catch (error) {
+        console.error(`Failed to delete duplicate ${row.id_to_delete}:`, error);
+      }
+    }
+
+    if (deleted > 0) {
+      console.log(`Cleaned up ${deleted} duplicate publications by title`);
+    }
+
+    return deleted;
   }
 }
 

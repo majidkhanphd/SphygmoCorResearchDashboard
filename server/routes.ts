@@ -581,6 +581,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`\nSync complete: ${imported} imported (${approved} approved, ${pending} pending for review), ${skipped} skipped out of ${result.totalUnique} unique fetched`);
           
+          // Clean up any duplicates that slipped through
+          const duplicatesRemoved = await storage.cleanupDuplicatesByTitle();
+          if (duplicatesRemoved > 0) {
+            console.log(`Post-sync cleanup: removed ${duplicatesRemoved} duplicates`);
+          }
+          
           // Mark as complete
           syncTracker.complete();
         } catch (error: any) {
@@ -698,6 +704,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           console.log(`Incremental sync complete: ${imported} imported (${approved} approved, ${pending} pending), ${skipped} skipped out of ${publications.length} total`);
+          
+          // Clean up any duplicates that slipped through
+          const duplicatesRemoved = await storage.cleanupDuplicatesByTitle();
+          if (duplicatesRemoved > 0) {
+            console.log(`Post-sync cleanup: removed ${duplicatesRemoved} duplicates`);
+          }
           
           // Mark as complete
           syncTracker.complete();

@@ -485,10 +485,19 @@ export class PubMedService {
   }
 
   private parsePmcId(articleIds: any, attributeId?: string): string | null {
+    // Helper to validate PMC ID is numeric (valid PMC IDs are purely numeric)
+    const isValidPmcId = (id: string): boolean => {
+      const cleaned = id.replace(/^PMC/i, "");
+      return /^\d+$/.test(cleaned);
+    };
+
     // First try to get from article attribute
     if (attributeId) {
-      // Remove "PMC" prefix if present
-      return attributeId.replace(/^PMC/i, "");
+      const cleaned = attributeId.replace(/^PMC/i, "");
+      // Only accept numeric PMC IDs, skip publisher-specific IDs like "phy270717"
+      if (isValidPmcId(cleaned)) {
+        return cleaned;
+      }
     }
 
     // Then try to get from article-id elements
@@ -504,8 +513,11 @@ export class PubMedService {
 
     if (pmcIdObj) {
       const idText = pmcIdObj["#text"] || pmcIdObj;
-      // Remove "PMC" prefix if present
-      return String(idText).replace(/^PMC/i, "");
+      const cleaned = String(idText).replace(/^PMC/i, "");
+      // Only accept numeric PMC IDs
+      if (isValidPmcId(cleaned)) {
+        return cleaned;
+      }
     }
 
     return null;
