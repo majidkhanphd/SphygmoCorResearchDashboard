@@ -70,19 +70,6 @@ interface CitationUpdateStatus {
   lastSuccessTime: number | null;
 }
 
-interface AbstractRefreshStatus {
-  status: "idle" | "running" | "completed" | "error";
-  phase: string;
-  processed: number;
-  total: number;
-  updated: number;
-  failed: number;
-  startTime: number | null;
-  endTime: number | null;
-  error: string | null;
-  lastSuccessTime: number | null;
-}
-
 export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected" | "featured" | "category-review">("pending");
@@ -696,92 +683,6 @@ export default function Admin() {
       toast({
         title: "Update Failed",
         description: error.message || "Failed to start citation update",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Abstract refresh status tracking
-  const [abstractRefreshStatus, setAbstractRefreshStatus] = useState<AbstractRefreshStatus | null>(null);
-  const abstractRefreshPollingInterval = useRef<NodeJS.Timeout | null>(null);
-  const abstractRefreshCompletionTimeout = useRef<NodeJS.Timeout | null>(null);
-
-  const fetchAbstractRefreshStatus = async () => {
-    try {
-      const response = await apiRequest("GET", "/api/admin/abstract-refresh-status");
-      const data = await response.json();
-      setAbstractRefreshStatus(data);
-      return data;
-    } catch (error) {
-      console.error("Failed to fetch abstract refresh status:", error);
-      return null;
-    }
-  };
-
-  useEffect(() => {
-    if (abstractRefreshStatus?.status === "running") {
-      if (abstractRefreshCompletionTimeout.current) {
-        clearTimeout(abstractRefreshCompletionTimeout.current);
-        abstractRefreshCompletionTimeout.current = null;
-      }
-      abstractRefreshPollingInterval.current = setInterval(fetchAbstractRefreshStatus, 1000);
-    } else {
-      if (abstractRefreshPollingInterval.current) {
-        clearInterval(abstractRefreshPollingInterval.current);
-        abstractRefreshPollingInterval.current = null;
-      }
-      if (abstractRefreshStatus?.status === "completed") {
-        abstractRefreshCompletionTimeout.current = setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ["/api/publications/search"] });
-          toast({
-            title: "Abstract Refresh Complete",
-            description: `Updated ${abstractRefreshStatus.updated} abstracts (${abstractRefreshStatus.failed} failed)`,
-          });
-        }, 1000);
-      }
-      if (abstractRefreshStatus?.status === "error") {
-        toast({
-          title: "Abstract Refresh Failed",
-          description: abstractRefreshStatus.error || "Unknown error occurred",
-          variant: "destructive",
-        });
-      }
-    }
-    return () => {
-      if (abstractRefreshPollingInterval.current) {
-        clearInterval(abstractRefreshPollingInterval.current);
-      }
-      if (abstractRefreshCompletionTimeout.current) {
-        clearTimeout(abstractRefreshCompletionTimeout.current);
-      }
-    };
-  }, [abstractRefreshStatus?.status]);
-
-  useEffect(() => {
-    fetchAbstractRefreshStatus();
-  }, []);
-
-  const handleRefreshAbstracts = async () => {
-    try {
-      const response = await apiRequest("POST", "/api/admin/refresh-abstracts");
-      const data = await response.json();
-      if (data.success) {
-        toast({
-          title: "Abstract Refresh Started",
-          description: data.message,
-        });
-        fetchAbstractRefreshStatus();
-      } else {
-        toast({
-          title: "Refresh Failed",
-          description: data.message,
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Refresh Failed",
-        description: error.message || "Failed to start abstract refresh",
         variant: "destructive",
       });
     }
@@ -1633,49 +1534,6 @@ export default function Admin() {
                       value={citationStatus.total > 0 ? (citationStatus.processed / citationStatus.total) * 100 : 0} 
                       className="h-2"
                     />
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Abstract Refresh Section */}
-            <div className="flex flex-col sm:flex-row gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex-1">
-                <h3 className="font-medium mb-2 text-sm text-[#1d1d1f] dark:text-white">Refresh All Abstracts</h3>
-                <p className="text-sm text-[#6e6e73] dark:text-gray-400 mb-3">
-                  Re-fetch all abstracts from PubMed to fix any corrupted or missing text. Use this if abstracts appear incomplete.
-                </p>
-                <Button 
-                  onClick={handleRefreshAbstracts} 
-                  disabled={abstractRefreshStatus?.status === "running" || syncStatus?.status === "running"}
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                >
-                  {abstractRefreshStatus?.status === "running" ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Refreshing...
-                    </>
-                  ) : (
-                    "Refresh All Abstracts"
-                  )}
-                </Button>
-                {abstractRefreshStatus?.status === "running" && (
-                  <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-purple-900 dark:text-purple-100">{abstractRefreshStatus.phase}</span>
-                      <span className="text-sm text-purple-700 dark:text-purple-300">
-                        {abstractRefreshStatus.processed}/{abstractRefreshStatus.total}
-                      </span>
-                    </div>
-                    <Progress 
-                      value={abstractRefreshStatus.total > 0 ? (abstractRefreshStatus.processed / abstractRefreshStatus.total) * 100 : 0} 
-                      className="h-2"
-                    />
-                    <div className="flex gap-4 mt-2 text-xs text-purple-700 dark:text-purple-300">
-                      <span>Updated: {abstractRefreshStatus.updated}</span>
-                      <span>Failed: {abstractRefreshStatus.failed}</span>
-                    </div>
                   </div>
                 )}
               </div>
