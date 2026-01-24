@@ -27,15 +27,17 @@ function normalizeLabel(label: string): string {
 function stripLeadingDuplicateHeader(content: string, expectedLabel: string): string {
   const normalizedExpected = expectedLabel.toLowerCase().replace(/[^a-z0-9\s]/g, '');
   
-  const headerPattern = /^([A-Z][A-Za-z\s&-]*(?:\s+AND\s+[A-Z][A-Za-z\s&-]*)?)\s*[:.\-–]\s*/i;
+  // Much stricter pattern - only match short headers (1-4 words, max 30 chars) at the start
+  // Avoid matching long sentences that happen to end with a colon/period
+  const headerPattern = /^([A-Z][A-Za-z]{0,20}(?:\s+[A-Za-z]{1,15}){0,3})\s*[:]\s*/;
   const match = content.match(headerPattern);
   
-  if (match) {
+  if (match && match[1].length <= 30) {
     const foundLabel = match[1].toLowerCase().replace(/[^a-z0-9\s]/g, '');
+    // Only strip if it's a close match to the expected label
     if (foundLabel === normalizedExpected || 
         foundLabel.includes(normalizedExpected) || 
-        normalizedExpected.includes(foundLabel) ||
-        foundLabel.split(/\s+/).some(word => normalizedExpected.includes(word))) {
+        normalizedExpected.includes(foundLabel)) {
       return content.substring(match[0].length).trim();
     }
   }
@@ -58,6 +60,29 @@ function cleanSectionContent(content: string): string {
   return cleaned;
 }
 
+// Known abstract section headers - only these should be detected as sections
+const KNOWN_SECTION_HEADERS = new Set([
+  'background', 'introduction', 'objective', 'objectives', 'aim', 'aims',
+  'purpose', 'rationale', 'context', 'significance',
+  'methods', 'methodology', 'materials', 'materials and methods', 'design',
+  'study design', 'patients', 'participants', 'subjects', 'setting', 'procedures',
+  'results', 'findings', 'outcomes', 'main results', 'key results',
+  'conclusion', 'conclusions', 'discussion', 'summary', 'implications',
+  'clinical implications', 'interpretation', 'limitations',
+  'trial registration', 'registration', 'funding', 'acknowledgments',
+  'what is known', 'what is new', 'what this adds', 'key points',
+  'importance', 'observations', 'meaning', 'main outcome measures',
+  'exposures', 'interventions', 'main outcomes', 'measurements'
+]);
+
+function isKnownSectionHeader(label: string): boolean {
+  const normalized = label.toLowerCase().trim();
+  if (KNOWN_SECTION_HEADERS.has(normalized)) return true;
+  // Check for variations like "Background and Aims" or "Methods and Results"
+  const parts = normalized.split(/\s+and\s+/);
+  return parts.every(part => KNOWN_SECTION_HEADERS.has(part.trim()));
+}
+
 export const formatAbstract = (abstract: string): JSX.Element[] => {
   const sanitized = sanitizeText(abstract);
   
@@ -65,7 +90,8 @@ export const formatAbstract = (abstract: string): JSX.Element[] => {
     return [<span key="empty">No abstract available.</span>];
   }
   
-  const sectionPattern = /(?:^|[.!?]\s+|\n\s*)([A-Z][A-Za-z\s&-]{2,40}(?:\s+AND\s+[A-Z][A-Za-z\s&-]+)?)\s*[:]\s*/g;
+  // Stricter pattern - only match 1-3 word headers followed by colon
+  const sectionPattern = /(?:^|[.!?]\s+|\n\s*)([A-Z][A-Za-z]{2,20}(?:\s+(?:and\s+)?[A-Za-z]{2,20}){0,3})\s*[:]\s*/gi;
   
   const detectedSections: DetectedSection[] = [];
   let match;
@@ -76,16 +102,8 @@ export const formatAbstract = (abstract: string): JSX.Element[] => {
     const headerStart = match.index;
     const contentStart = headerStart + fullMatch.length;
     
-    const words = label.split(/\s+/);
-    const looksLikeHeader = 
-      words.length <= 6 &&
-      label.length <= 50 &&
-      !/^\d/.test(label) &&
-      !label.includes('=') &&
-      !label.includes('%') &&
-      !/\d{4}/.test(label);
-    
-    if (!looksLikeHeader) continue;
+    // Only accept known section headers
+    if (!isKnownSectionHeader(label)) continue;
     
     const tooClose = detectedSections.some(
       s => Math.abs(s.headerStart - headerStart) < 10

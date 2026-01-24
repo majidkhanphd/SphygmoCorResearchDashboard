@@ -597,7 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin endpoint to incrementally sync new publications from PubMed (since last sync)
+  // Admin endpoint to incrementally sync publications from the past year
   app.post("/api/admin/sync-pubmed-incremental", async (req, res) => {
     try {
       const { maxPerTerm = 50 } = req.body;
@@ -610,29 +610,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log("Starting incremental PubMed sync...");
+      console.log("Starting incremental PubMed sync (past year)...");
       
-      // Get the most recent publication date from the database
-      const mostRecentDate = await storage.getMostRecentPublicationDate();
-      
-      if (!mostRecentDate) {
-        return res.status(400).json({
-          success: false,
-          message: "No existing publications found. Please run a full sync first."
-        });
-      }
+      // Sync from 1 year ago instead of most recent publication date
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      const syncFromDate = oneYearAgo;
       
       // Start tracking
       syncTracker.start("incremental");
-      syncTracker.updatePhase(`Syncing from ${mostRecentDate.toLocaleDateString()}...`);
+      syncTracker.updatePhase(`Syncing publications from past year (since ${syncFromDate.toLocaleDateString()})...`);
       
-      console.log(`Most recent publication date: ${mostRecentDate.toLocaleDateString()}`);
+      console.log(`Syncing from date: ${syncFromDate.toLocaleDateString()}`);
       
       // Respond immediately
       res.json({
         success: true,
-        message: `Incremental sync started. Poll /api/admin/sync-status for progress.`,
-        fromDate: mostRecentDate.toISOString()
+        message: `Incremental sync started (past year). Poll /api/admin/sync-status for progress.`,
+        fromDate: syncFromDate.toISOString()
       });
       
       // Run sync in background
@@ -643,9 +638,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let pending = 0;
         
         try {
-          const publications = await pubmedService.syncIncrementalResearch(mostRecentDate, maxPerTerm);
+          const publications = await pubmedService.syncIncrementalResearch(syncFromDate, maxPerTerm);
           
-          console.log(`Fetched ${publications.length} publications since ${mostRecentDate.toLocaleDateString()}, starting import...`);
+          console.log(`Fetched ${publications.length} publications since ${syncFromDate.toLocaleDateString()}, starting import...`);
           syncTracker.updatePhase("Importing publications...");
           syncTracker.updateProgress(0, publications.length);
           
@@ -921,7 +916,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               const abstractMap = await pubmedService.fetchPubMedAbstracts(batch);
               
-              for (const [pmid, abstract] of abstractMap) {
+              for (const [pmid, abstract] of Array.from(abstractMap.entries())) {
                 const pub = pubmedPubs.find(p => p.pmid === pmid);
                 if (pub && abstract) {
                   await storage.updatePublication(pub.id, { abstract: abstract });
@@ -961,6 +956,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/test-fetch/:pmcid", async (req, res) => {
     try {
       const { pmcid } = req.params;
+      const { update } = req.query; // Add ?update=true to update the database
       console.log(`Testing fetch for PMC${pmcid}...`);
       
       const articles = await pubmedService.fetchArticleDetails([pmcid]);
@@ -974,15 +970,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const article = articles[0];
+      
+      // Optionally update the publication in database
+      let updated = false;
+      if (update === 'true' && article.abstract) {
+        const existing = await storage.getPublicationByPmid(pmcid);
+        if (existing) {
+          await storage.updatePublication(existing.id, { abstract: article.abstract });
+          updated = true;
+          console.log(`Updated publication ${pmcid} with new abstract`);
+        }
+      }
+      
       res.json({
         success: true,
         pmcid,
         title: article.title,
         hasAbstract: !!article.abstract,
         abstractLength: article.abstract?.length || 0,
-        abstractPreview: article.abstract?.substring(0, 500) || null,
+        abstract: article.abstract,
         authors: article.authors,
-        journal: article.journal
+        journal: article.journal,
+        databaseUpdated: updated
       });
     } catch (error: any) {
       console.error("Test fetch error:", error);
