@@ -117,6 +117,48 @@ function parseXmlToJson(xmlString: string) {
 }
 
 // Extract abstract text directly from raw XML to preserve order of mixed content
+// Strip XML/HTML tags while preserving text content order
+// This function handles special cases like ext-link elements that contain URLs
+function stripXmlTagsRoutes(text: string): string {
+  let result = text;
+  
+  // Extract content from ext-link elements (preserve URL if text is missing)
+  result = result.replace(/<ext-link[^>]*xlink:href="([^"]*)"[^>]*>([^<]*)<\/ext-link>/gi, (match, url, innerText) => {
+    const trimmedText = innerText.trim();
+    return trimmedText || url || '';
+  });
+  
+  // Handle self-closing ext-link tags
+  result = result.replace(/<ext-link[^>]*xlink:href="([^"]*)"[^>]*\/>/gi, '$1');
+  
+  // Handle uri, xref, email elements
+  result = result.replace(/<uri[^>]*>([\s\S]*?)<\/uri>/gi, '$1');
+  result = result.replace(/<xref[^>]*>([\s\S]*?)<\/xref>/gi, '$1');
+  result = result.replace(/<email[^>]*>([\s\S]*?)<\/email>/gi, '$1');
+  
+  // Handle inline formatting (preserve content)
+  result = result.replace(/<(italic|bold|sup|sub|i|b|u|em|strong)[^>]*>([\s\S]*?)<\/\1>/gi, '$2');
+  
+  // Strip remaining tags
+  result = result.replace(/<[^>]+>/g, ' ');
+  
+  // Decode common HTML entities
+  result = result
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#160;/g, ' ')
+    .replace(/&#8201;/g, ' ')
+    .replace(/&nbsp;/g, ' ');
+  
+  // Normalize whitespace
+  result = result.replace(/\s+/g, ' ').trim();
+  
+  return result;
+}
+
+// Extract abstract text directly from raw XML to preserve order of mixed content
 function extractAbstractFromXml(xmlString: string): string {
   const abstractMatch = xmlString.match(/<Abstract>([\s\S]*?)<\/Abstract>/i);
   if (!abstractMatch) return '';
@@ -136,14 +178,20 @@ function extractAbstractFromXml(xmlString: string): string {
     const labelMatch = attrs.match(/Label="([^"]+)"/i) || attrs.match(/NlmCategory="([^"]+)"/i);
     const label = labelMatch ? labelMatch[1] : '';
     
-    // Strip all XML/HTML tags but preserve text content and order
-    const text = content
-      .replace(/<[^>]+>/g, ' ')  // Replace tags with spaces
-      .replace(/\s+/g, ' ')       // Normalize whitespace
-      .trim();
+    // Use improved tag stripping that preserves URLs and inline content
+    const text = stripXmlTagsRoutes(content);
     
     if (text) {
       sections.push(label ? `${label}: ${text}` : text);
+    }
+  }
+  
+  // Also check for trial registration info that might be outside AbstractText elements
+  const trialRegMatch = abstractXml.match(/Trial\s+registration[:\s]+([\s\S]*?)(?=<\/|$)/i);
+  if (trialRegMatch) {
+    const trialText = stripXmlTagsRoutes(trialRegMatch[0]);
+    if (trialText && !sections.some(s => s.includes('Trial registration'))) {
+      sections.push(trialText);
     }
   }
   
@@ -779,6 +827,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false,
         message: "Failed to start abstract re-fetch", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Admin endpoint to re-process all abstracts with improved parsing
+  // Handles both PMC articles (via PMC API) and PubMed articles (via PubMed API)
+  app.post("/api/admin/reprocess-all-abstracts", async (req, res) => {
+    try {
+      // Check if sync is already running
+      if (syncTracker.getStatus().status !== "idle" && syncTracker.getStatus().status !== "completed") {
+        return res.status(409).json({ 
+          success: false, 
+          message: "Another operation is in progress" 
+        });
+      }
+      
+      // Get all publications - paginate to get all
+      const PAGE_SIZE = 1000;
+      let allPubs: any[] = [];
+      let offset = 0;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const page = await storage.searchPublications({ sortBy: "newest", limit: PAGE_SIZE, offset });
+        allPubs.push(...page.publications);
+        offset += PAGE_SIZE;
+        hasMore = page.publications.length === PAGE_SIZE;
+      }
+      
+      // Separate PMC and PubMed articles based on URL
+      const pmcPubs = allPubs.filter(p => p.pmid && p.pubmedUrl && p.pubmedUrl.includes('/pmc/'));
+      const pubmedPubs = allPubs.filter(p => p.pmid && p.pubmedUrl && !p.pubmedUrl.includes('/pmc/') && /^\d+$/.test(p.pmid));
+      
+      const totalCount = pmcPubs.length + pubmedPubs.length;
+      
+      res.json({
+        success: true,
+        message: `Started re-processing abstracts for ${totalCount} publications (${pmcPubs.length} PMC, ${pubmedPubs.length} PubMed)...`,
+        total: totalCount,
+        pmcCount: pmcPubs.length,
+        pubmedCount: pubmedPubs.length
+      });
+      
+      // Run async re-processing
+      (async () => {
+        syncTracker.start("full");
+        syncTracker.updatePhase("Starting abstract reprocessing...");
+        
+        let updated = 0;
+        let failed = 0;
+        const BATCH_SIZE = 50;
+        
+        try {
+          // Process PMC articles first
+          const pmcIds = pmcPubs.map(p => p.pmid).filter(Boolean) as string[];
+          
+          for (let i = 0; i < pmcIds.length; i += BATCH_SIZE) {
+            const batch = pmcIds.slice(i, i + BATCH_SIZE);
+            syncTracker.updateProgress(i, totalCount);
+            syncTracker.updatePhase(`Re-fetching PMC batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(pmcIds.length / BATCH_SIZE)}...`);
+            
+            try {
+              const fetchedArticles = await pubmedService.fetchArticleDetails(batch);
+              
+              for (const article of fetchedArticles) {
+                const pub = pmcPubs.find(p => p.pmid === article.pmid);
+                if (pub && article.abstract) {
+                  await storage.updatePublication(pub.id, { abstract: article.abstract });
+                  updated++;
+                }
+              }
+            } catch (batchError: any) {
+              console.error(`Error processing PMC batch ${i}-${i + BATCH_SIZE}:`, batchError.message);
+              failed += batch.length;
+            }
+            
+            if (i + BATCH_SIZE < pmcIds.length) {
+              await new Promise(resolve => setTimeout(resolve, 400));
+            }
+          }
+          
+          // Process PubMed articles
+          const pubmedIds = pubmedPubs.map(p => p.pmid).filter(Boolean) as string[];
+          
+          for (let i = 0; i < pubmedIds.length; i += BATCH_SIZE) {
+            const batch = pubmedIds.slice(i, i + BATCH_SIZE);
+            const progressOffset = pmcIds.length + i;
+            syncTracker.updateProgress(progressOffset, totalCount);
+            syncTracker.updatePhase(`Re-fetching PubMed batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(pubmedIds.length / BATCH_SIZE)}...`);
+            
+            try {
+              const abstractMap = await pubmedService.fetchPubMedAbstracts(batch);
+              
+              for (const [pmid, abstract] of abstractMap) {
+                const pub = pubmedPubs.find(p => p.pmid === pmid);
+                if (pub && abstract) {
+                  await storage.updatePublication(pub.id, { abstract: abstract });
+                  updated++;
+                }
+              }
+            } catch (batchError: any) {
+              console.error(`Error processing PubMed batch ${i}-${i + BATCH_SIZE}:`, batchError.message);
+              failed += batch.length;
+            }
+            
+            if (i + BATCH_SIZE < pubmedIds.length) {
+              await new Promise(resolve => setTimeout(resolve, 400));
+            }
+          }
+          
+          console.log(`Abstract reprocessing complete. Updated: ${updated}, Failed: ${failed}`);
+          syncTracker.updateStats(updated, failed, 0, 0);
+          syncTracker.complete();
+        } catch (error: any) {
+          console.error("Abstract reprocessing error:", error);
+          syncTracker.error(error.message || "Unknown error");
+        }
+      })();
+      
+    } catch (error: any) {
+      console.error("Error starting abstract reprocessing:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to start abstract reprocessing", 
         error: error.message 
       });
     }

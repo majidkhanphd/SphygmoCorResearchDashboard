@@ -6,11 +6,37 @@ import { sanitizeText } from "@shared/sanitize";
 // Extract abstract text directly from raw XML to preserve order of mixed content
 // This bypasses JSON parsing issues where Object.keys doesn't preserve element order
 function extractAbstractFromRawXml(xmlString: string): string | null {
-  // Find the abstract element (handle both <abstract> and </abstract> cases)
-  const abstractMatch = xmlString.match(/<abstract(?:\s[^>]*)?>([\s\S]*?)<\/abstract>/i);
-  if (!abstractMatch) return null;
+  // Find all abstract elements (there may be multiple - regular, graphical, etc.)
+  // Prefer non-graphical abstract
+  const abstractRegex = /<abstract(?:\s[^>]*)?>[\s\S]*?<\/abstract>/gi;
+  const allAbstractMatches: string[] = [];
+  let abstractMatch;
+  while ((abstractMatch = abstractRegex.exec(xmlString)) !== null) {
+    allAbstractMatches.push(abstractMatch[0]);
+  }
   
-  const abstractXml = abstractMatch[1];
+  if (allAbstractMatches.length === 0) return null;
+  
+  // Find the best abstract (skip graphical abstracts)
+  let abstractXml = '';
+  for (const fullMatch of allAbstractMatches) {
+    if (!fullMatch.includes('abstract-type="graphical"') && !fullMatch.includes('abstract-type="toc"')) {
+      // Extract content between tags
+      const contentMatch = fullMatch.match(/<abstract(?:\s[^>]*)?>([\s\S]*?)<\/abstract>/i);
+      if (contentMatch) {
+        abstractXml = contentMatch[1];
+        break;
+      }
+    }
+  }
+  
+  if (!abstractXml && allAbstractMatches.length > 0) {
+    // Fallback to first abstract if none found
+    const contentMatch = allAbstractMatches[0].match(/<abstract(?:\s[^>]*)?>([\s\S]*?)<\/abstract>/i);
+    if (contentMatch) abstractXml = contentMatch[1];
+  }
+  
+  if (!abstractXml) return null;
   
   // Check for structured abstract with sections
   const sections: string[] = [];
@@ -28,9 +54,13 @@ function extractAbstractFromRawXml(xmlString: string): string | null {
     const titleMatch = secContent.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
     const title = titleMatch ? stripXmlTags(titleMatch[1]).trim() : '';
     
-    // Extract paragraph content
-    const paragraphs = extractParagraphsFromXml(secContent);
-    const text = paragraphs.join(' ').trim();
+    // Extract paragraph content - get all text including outside <p> tags
+    let content = secContent;
+    // Remove title tag to get remaining content
+    if (titleMatch) {
+      content = content.replace(titleMatch[0], '');
+    }
+    const text = stripXmlTags(content).trim();
     
     if (text) {
       sections.push(title ? `${title}: ${text}` : text);
@@ -38,32 +68,71 @@ function extractAbstractFromRawXml(xmlString: string): string | null {
   }
   
   if (hasStructuredSections && sections.length > 0) {
-    return sections.join(' ');
+    // Also check for trial registration info outside sections
+    const trialReg = extractTrialRegistration(abstractXml);
+    const mainText = sections.join(' ');
+    return trialReg ? `${mainText} ${trialReg}` : mainText;
   }
   
   // Handle simple abstracts with <p> elements
   const paragraphs = extractParagraphsFromXml(abstractXml);
   if (paragraphs.length > 0) {
-    return paragraphs.join(' ');
+    const mainText = paragraphs.join(' ');
+    const trialReg = extractTrialRegistration(abstractXml);
+    return trialReg ? `${mainText} ${trialReg}` : mainText;
   }
   
-  // Handle PubMed-style AbstractText elements
-  const abstractTextRegex = /<AbstractText(?:\s[^>]*)?\s*(?:Label="([^"]+)")?[^>]*>([\s\S]*?)<\/AbstractText>/gi;
+  // Handle PubMed-style AbstractText elements (from PubMed, not PMC)
+  // More robust regex that captures Label from any position in attributes
+  const abstractTextRegex = /<AbstractText([^>]*)>([\s\S]*?)<\/AbstractText>/gi;
   while ((match = abstractTextRegex.exec(abstractXml)) !== null) {
-    const label = match[1] || '';
-    const content = stripXmlTags(match[2]).trim();
+    const attrs = match[1];
+    const contentXml = match[2];
+    
+    // Extract label from attributes
+    const labelMatch = attrs.match(/Label="([^"]+)"/i) || attrs.match(/NlmCategory="([^"]+)"/i);
+    const label = labelMatch ? labelMatch[1] : '';
+    
+    const content = stripXmlTags(contentXml).trim();
     if (content) {
       sections.push(label ? `${label}: ${content}` : content);
     }
   }
   
   if (sections.length > 0) {
-    return sections.join('\n\n');
+    const mainText = sections.join('\n\n');
+    const trialReg = extractTrialRegistration(abstractXml);
+    return trialReg ? `${mainText}\n\n${trialReg}` : mainText;
   }
   
   // Fallback: strip all tags and return content
   const plainText = stripXmlTags(abstractXml).trim();
   return plainText || null;
+}
+
+// Extract trial registration information from abstract XML
+function extractTrialRegistration(xml: string): string | null {
+  // Look for trial registration patterns that might be outside structured sections
+  const patterns = [
+    // "Trial registration: ClinicalTrials.gov NCT12345678"
+    /Trial\s+registration[:\s]+([\s\S]*?)(?=<\/|$)/i,
+    // "Registered at ClinicalTrials.gov (NCT12345678)"
+    /Registered\s+(?:at|with|on)\s+([\s\S]*?)(?=<\/|$)/i,
+    // "ClinicalTrials.gov identifier: NCT12345678"
+    /ClinicalTrials\.gov\s+identifier[:\s]+([\s\S]*?)(?=<\/|$)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = xml.match(pattern);
+    if (match) {
+      const text = stripXmlTags(match[0]).trim();
+      if (text && text.length > 10) {
+        return text;
+      }
+    }
+  }
+  
+  return null;
 }
 
 // Extract paragraphs from XML content
@@ -83,11 +152,56 @@ function extractParagraphsFromXml(xml: string): string[] {
 }
 
 // Strip XML/HTML tags while preserving text content order
+// This function handles special cases like ext-link elements that contain URLs
 function stripXmlTags(text: string): string {
-  return text
-    .replace(/<[^>]+>/g, ' ')  // Replace tags with spaces
-    .replace(/\s+/g, ' ')       // Normalize whitespace
-    .trim();
+  let result = text;
+  
+  // Extract content from ext-link elements (preserve URL if text is missing)
+  // Pattern: <ext-link xlink:href="URL">text</ext-link> or <ext-link ext-link-type="uri" xlink:href="URL"/>
+  result = result.replace(/<ext-link[^>]*xlink:href="([^"]*)"[^>]*>([^<]*)<\/ext-link>/gi, (match, url, innerText) => {
+    // If there's inner text, use it; otherwise use the URL
+    const text = innerText.trim();
+    return text || url || '';
+  });
+  
+  // Handle self-closing ext-link tags - extract URL from href
+  result = result.replace(/<ext-link[^>]*xlink:href="([^"]*)"[^>]*\/>/gi, '$1');
+  
+  // Handle uri elements (sometimes used for URLs)
+  result = result.replace(/<uri[^>]*>([\s\S]*?)<\/uri>/gi, '$1');
+  
+  // Handle xref elements - extract text content
+  result = result.replace(/<xref[^>]*>([\s\S]*?)<\/xref>/gi, '$1');
+  
+  // Handle email elements
+  result = result.replace(/<email[^>]*>([\s\S]*?)<\/email>/gi, '$1');
+  
+  // Handle styled-content/named-content elements
+  result = result.replace(/<styled-content[^>]*>([\s\S]*?)<\/styled-content>/gi, '$1');
+  result = result.replace(/<named-content[^>]*>([\s\S]*?)<\/named-content>/gi, '$1');
+  
+  // Handle common inline formatting (preserve content)
+  result = result.replace(/<(italic|bold|sup|sub|underline|sc|monospace|roman|sans-serif|i|b|u|em|strong)[^>]*>([\s\S]*?)<\/\1>/gi, '$2');
+  
+  // Now strip remaining tags
+  result = result.replace(/<[^>]+>/g, ' ');
+  
+  // Decode common HTML entities
+  result = result
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#160;/g, ' ')
+    .replace(/&#8201;/g, ' ')
+    .replace(/&#177;/g, '±')
+    .replace(/&#956;/g, 'μ')
+    .replace(/&nbsp;/g, ' ');
+  
+  // Normalize whitespace
+  result = result.replace(/\s+/g, ' ').trim();
+  
+  return result;
 }
 
 // PMC Article structure (PubMed Central XML format)
@@ -969,6 +1083,83 @@ export class PubMedService {
     }
 
     return unique;
+  }
+
+  // Fetch abstracts from PubMed (not PMC) - for articles that only have PubMed IDs
+  async fetchPubMedAbstracts(pmids: string[]): Promise<Map<string, string>> {
+    const abstractMap = new Map<string, string>();
+    if (pmids.length === 0) return abstractMap;
+
+    const BATCH_SIZE = 100;
+
+    for (let i = 0; i < pmids.length; i += BATCH_SIZE) {
+      const batch = pmids.slice(i, i + BATCH_SIZE);
+      const ids = batch.join(",");
+      const url = `${this.baseUrl}/efetch.fcgi?db=pubmed&id=${ids}&retmode=xml`;
+
+      try {
+        const response = await fetch(url);
+        const xmlText = await response.text();
+
+        // Extract abstracts from PubMed XML
+        const articleRegex = /<PubmedArticle>([\s\S]*?)<\/PubmedArticle>/gi;
+        let match;
+
+        while ((match = articleRegex.exec(xmlText)) !== null) {
+          const articleXml = match[1];
+          
+          // Extract PMID
+          const pmidMatch = articleXml.match(/<PMID[^>]*>(\d+)<\/PMID>/);
+          if (!pmidMatch) continue;
+          const pmid = pmidMatch[1];
+
+          // Extract abstract
+          const abstractMatch = articleXml.match(/<Abstract>([\s\S]*?)<\/Abstract>/);
+          if (abstractMatch) {
+            const abstractXml = abstractMatch[1];
+            
+            // Handle structured abstracts with AbstractText elements
+            const sections: string[] = [];
+            const abstractTextRegex = /<AbstractText([^>]*)>([\s\S]*?)<\/AbstractText>/gi;
+            let atMatch;
+
+            while ((atMatch = abstractTextRegex.exec(abstractXml)) !== null) {
+              const attrs = atMatch[1];
+              const content = atMatch[2];
+              
+              // Extract label
+              const labelMatch = attrs.match(/Label="([^"]+)"/i);
+              const label = labelMatch ? labelMatch[1] : '';
+              
+              // Strip XML tags but preserve text
+              const text = stripXmlTags(content).trim();
+              if (text) {
+                sections.push(label ? `${label}: ${text}` : text);
+              }
+            }
+
+            if (sections.length > 0) {
+              abstractMap.set(pmid, sections.join(' '));
+            } else {
+              // Simple abstract without structure
+              const plainText = stripXmlTags(abstractXml).trim();
+              if (plainText) {
+                abstractMap.set(pmid, plainText);
+              }
+            }
+          }
+        }
+
+        // Rate limit
+        if (i + BATCH_SIZE < pmids.length) {
+          await new Promise(resolve => setTimeout(resolve, 350));
+        }
+      } catch (error) {
+        console.error(`Error fetching PubMed batch ${i}-${i + batch.length}:`, error);
+      }
+    }
+
+    return abstractMap;
   }
 }
 
