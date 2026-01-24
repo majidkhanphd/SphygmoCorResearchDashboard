@@ -121,7 +121,12 @@ export const formatAbstract = (abstract: string): JSX.Element[] => {
   }
   
   if (detectedSections.length < 2) {
-    return [<span key="unstructured">{sanitized}</span>];
+    return [
+      <span key="unstructured" className="block">
+        <span style={{ fontWeight: '600', color: '#1D1D1F' }}>Abstract:</span>{' '}
+        <span>{sanitized}</span>
+      </span>
+    ];
   }
   
   detectedSections.sort((a, b) => a.headerStart - b.headerStart);
