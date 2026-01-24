@@ -3,6 +3,93 @@ import type { InsertPublication } from "@shared/schema";
 import { PUBMED_SEARCH_TERMS, MAX_RESULTS_PER_TERM } from "../config/search-terms";
 import { sanitizeText } from "@shared/sanitize";
 
+// Extract abstract text directly from raw XML to preserve order of mixed content
+// This bypasses JSON parsing issues where Object.keys doesn't preserve element order
+function extractAbstractFromRawXml(xmlString: string): string | null {
+  // Find the abstract element (handle both <abstract> and </abstract> cases)
+  const abstractMatch = xmlString.match(/<abstract(?:\s[^>]*)?>([\s\S]*?)<\/abstract>/i);
+  if (!abstractMatch) return null;
+  
+  const abstractXml = abstractMatch[1];
+  
+  // Check for structured abstract with sections
+  const sections: string[] = [];
+  
+  // Handle structured abstracts with <sec> elements (common in PMC)
+  const secRegex = /<sec[^>]*>([\s\S]*?)<\/sec>/gi;
+  let hasStructuredSections = false;
+  let match;
+  
+  while ((match = secRegex.exec(abstractXml)) !== null) {
+    hasStructuredSections = true;
+    const secContent = match[1];
+    
+    // Extract section title if present
+    const titleMatch = secContent.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const title = titleMatch ? stripXmlTags(titleMatch[1]).trim() : '';
+    
+    // Extract paragraph content
+    const paragraphs = extractParagraphsFromXml(secContent);
+    const text = paragraphs.join(' ').trim();
+    
+    if (text) {
+      sections.push(title ? `${title}: ${text}` : text);
+    }
+  }
+  
+  if (hasStructuredSections && sections.length > 0) {
+    return sections.join(' ');
+  }
+  
+  // Handle simple abstracts with <p> elements
+  const paragraphs = extractParagraphsFromXml(abstractXml);
+  if (paragraphs.length > 0) {
+    return paragraphs.join(' ');
+  }
+  
+  // Handle PubMed-style AbstractText elements
+  const abstractTextRegex = /<AbstractText(?:\s[^>]*)?\s*(?:Label="([^"]+)")?[^>]*>([\s\S]*?)<\/AbstractText>/gi;
+  while ((match = abstractTextRegex.exec(abstractXml)) !== null) {
+    const label = match[1] || '';
+    const content = stripXmlTags(match[2]).trim();
+    if (content) {
+      sections.push(label ? `${label}: ${content}` : content);
+    }
+  }
+  
+  if (sections.length > 0) {
+    return sections.join('\n\n');
+  }
+  
+  // Fallback: strip all tags and return content
+  const plainText = stripXmlTags(abstractXml).trim();
+  return plainText || null;
+}
+
+// Extract paragraphs from XML content
+function extractParagraphsFromXml(xml: string): string[] {
+  const paragraphs: string[] = [];
+  const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+  let match;
+  
+  while ((match = pRegex.exec(xml)) !== null) {
+    const text = stripXmlTags(match[1]).trim();
+    if (text) {
+      paragraphs.push(text);
+    }
+  }
+  
+  return paragraphs;
+}
+
+// Strip XML/HTML tags while preserving text content order
+function stripXmlTags(text: string): string {
+  return text
+    .replace(/<[^>]+>/g, ' ')  // Replace tags with spaces
+    .replace(/\s+/g, ' ')       // Normalize whitespace
+    .trim();
+}
+
 // PMC Article structure (PubMed Central XML format)
 interface PMCArticle {
   front: {
@@ -84,7 +171,11 @@ export class PubMedService {
     attributeNamePrefix: "@_",
     textNodeName: "#text",
     parseAttributeValue: false,
+    parseTagValue: false,
     trimValues: true,
+    isArray: (name) => {
+      return name === "AbstractText" || name === "Author" || name === "Keyword" || name === "sec" || name === "p";
+    }
   });
 
   // Use configurable search terms from config file
@@ -143,6 +234,10 @@ export class PubMedService {
       try {
         const response = await fetch(url);
         const xmlText = await response.text();
+        
+        // Extract raw article XML segments for proper abstract parsing
+        const articleXmlSegments = this.extractArticleXmlSegments(xmlText);
+        
         const result = this.parser.parse(xmlText);
 
         // PMC returns articles in a <pmc-articleset> root element
@@ -150,7 +245,11 @@ export class PubMedService {
         if (articles) {
           const articleArray = Array.isArray(articles) ? articles : [articles];
           const publications = articleArray
-            .map((article: PMCArticle) => this.parseArticle(article))
+            .map((article: PMCArticle, index: number) => {
+              // Get corresponding raw XML for this article
+              const rawXml = articleXmlSegments[index] || '';
+              return this.parseArticle(article, rawXml);
+            })
             .filter(Boolean) as InsertPublication[];
           allPublications.push(...publications);
         }
@@ -167,7 +266,20 @@ export class PubMedService {
     return allPublications;
   }
 
-  private parseArticle(article: PMCArticle): InsertPublication | null {
+  // Extract individual article XML segments from the response
+  private extractArticleXmlSegments(xmlText: string): string[] {
+    const segments: string[] = [];
+    const articleRegex = /<article[^>]*>([\s\S]*?)<\/article>/gi;
+    let match;
+    
+    while ((match = articleRegex.exec(xmlText)) !== null) {
+      segments.push(match[0]);
+    }
+    
+    return segments;
+  }
+
+  private parseArticle(article: PMCArticle, rawXml: string = ''): InsertPublication | null {
     try {
       // Check if article has the expected structure
       if (!article.front?.["article-meta"]) {
@@ -202,8 +314,15 @@ export class PubMedService {
       const rawJournal = this.parseJournal(journalMeta);
       const journal = sanitizeText(rawJournal);
 
-      // Parse abstract (can be null)
-      const rawAbstract = this.parseAbstract(articleMeta.abstract);
+      // Parse abstract - prefer raw XML extraction to preserve text order in mixed content
+      let rawAbstract: string | null = null;
+      if (rawXml) {
+        rawAbstract = extractAbstractFromRawXml(rawXml);
+      }
+      // Fallback to JSON-based parsing if raw XML extraction failed
+      if (!rawAbstract) {
+        rawAbstract = this.parseAbstract(articleMeta.abstract);
+      }
       const abstract = rawAbstract ? sanitizeText(rawAbstract) : null;
 
       // Parse publication date

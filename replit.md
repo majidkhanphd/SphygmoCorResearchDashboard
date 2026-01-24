@@ -54,6 +54,8 @@ The system prioritizes type safety, developer experience, and scalable data mana
 ## PubMed API Integration
 - **NCBI PubMed eUtils API**: For retrieving publication data.
 - **fast-xml-parser**: For parsing PubMed XML responses.
+- **Raw XML Abstract Extraction**: Custom regex-based extraction functions (`extractAbstractFromRawXml`, `extractAbstractFromXml`) preserve text order in mixed-content abstracts (with inline tags like `<i>`, `<sup>`, `<xref>`). Falls back to JSON-based parsing when raw XML extraction fails.
+- **Abstract Update on Sync**: Full and incremental syncs now update abstracts for existing publications, allowing parsing improvements to be applied retroactively.
 
 ## UI Component Libraries
 - **Radix UI**: Accessible UI primitives.

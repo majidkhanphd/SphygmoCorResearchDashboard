@@ -105,9 +105,49 @@ async function fetchFromPubMed(endpoint: string, params: Record<string, string>)
 function parseXmlToJson(xmlString: string) {
   const parser = new XMLParser({
     ignoreAttributes: false,
-    attributeNamePrefix: "@_"
+    attributeNamePrefix: "@_",
+    textNodeName: "#text",
+    trimValues: true,
+    parseTagValue: false,
+    isArray: (name) => {
+      return name === "AbstractText" || name === "Author" || name === "Keyword";
+    }
   });
   return parser.parse(xmlString);
+}
+
+// Extract abstract text directly from raw XML to preserve order of mixed content
+function extractAbstractFromXml(xmlString: string): string {
+  const abstractMatch = xmlString.match(/<Abstract>([\s\S]*?)<\/Abstract>/i);
+  if (!abstractMatch) return '';
+  
+  const abstractXml = abstractMatch[1];
+  
+  // Find all AbstractText elements
+  const sections: string[] = [];
+  const sectionRegex = /<AbstractText([^>]*)>([\s\S]*?)<\/AbstractText>/gi;
+  let match;
+  
+  while ((match = sectionRegex.exec(abstractXml)) !== null) {
+    const attrs = match[1];
+    const content = match[2];
+    
+    // Extract label from attributes if present
+    const labelMatch = attrs.match(/Label="([^"]+)"/i) || attrs.match(/NlmCategory="([^"]+)"/i);
+    const label = labelMatch ? labelMatch[1] : '';
+    
+    // Strip all XML/HTML tags but preserve text content and order
+    const text = content
+      .replace(/<[^>]+>/g, ' ')  // Replace tags with spaces
+      .replace(/\s+/g, ' ')       // Normalize whitespace
+      .trim();
+    
+    if (text) {
+      sections.push(label ? `${label}: ${text}` : text);
+    }
+  }
+  
+  return sections.join('\n\n');
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -239,13 +279,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         retmode: "xml"
       });
 
+      // Extract individual article XML segments for proper abstract parsing
+      const articleXmlSegments: string[] = [];
+      const articleRegex = /<PubmedArticle[^>]*>([\s\S]*?)<\/PubmedArticle>/gi;
+      let xmlMatch;
+      while ((xmlMatch = articleRegex.exec(detailsResponse)) !== null) {
+        articleXmlSegments.push(xmlMatch[0]);
+      }
+
       // Step 3: Parse XML and extract publication data
       const publications = [];
       const doc = parseXmlToJson(detailsResponse);
       const articleSet = doc?.PubmedArticleSet?.PubmedArticle || [];
       const articles = Array.isArray(articleSet) ? articleSet : [articleSet];
 
-      for (const article of articles) {
+      for (let i = 0; i < articles.length; i++) {
+        const article = articles[i];
+        const rawArticleXml = articleXmlSegments[i] || '';
+        
         try {
           const pmid = article?.MedlineCitation?.PMID?.['#text'] || article?.MedlineCitation?.PMID || "";
           
@@ -254,7 +305,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (existing) continue;
 
           const title = normalizeXmlText(article?.MedlineCitation?.Article?.ArticleTitle) || "";
-          const abstract = formatAbstract(article?.MedlineCitation?.Article?.Abstract?.AbstractText) || "";
+          
+          // Prefer raw XML extraction for abstracts to preserve text order in mixed content
+          let abstract = extractAbstractFromXml(rawArticleXml);
+          if (!abstract) {
+            abstract = formatAbstract(article?.MedlineCitation?.Article?.Abstract?.AbstractText) || "";
+          }
+          
           const journal = normalizeXmlText(article?.MedlineCitation?.Article?.Journal?.Title) || "";
           
           // Extract authors
@@ -436,7 +493,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Check if publication already exists
                   const existing = await storage.getPublicationByPmid(pub.pmid || "");
                   if (existing) {
-                    skipped++;
+                    // Update abstract and other key fields for existing publications
+                    // This ensures parsing improvements get applied
+                    await storage.updatePublication(existing.id, {
+                      abstract: pub.abstract,
+                      title: pub.title,
+                      authors: pub.authors,
+                      doi: pub.doi,
+                    });
+                    skipped++; // Still counted as "skipped" (not new) but abstract is updated
                     continue;
                   }
                   
@@ -543,7 +608,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Check if publication already exists
               const existing = await storage.getPublicationByPmid(pub.pmid || "");
               if (existing) {
-                skipped++;
+                // Update abstract and other key fields for existing publications
+                // This ensures parsing improvements get applied
+                await storage.updatePublication(existing.id, {
+                  abstract: pub.abstract,
+                  title: pub.title,
+                  authors: pub.authors,
+                  doi: pub.doi,
+                });
+                skipped++; // Still counted as "skipped" (not new) but abstract is updated
               } else {
                 await storage.createPublication(pub);
                 imported++;
@@ -562,7 +635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Log progress every 50 articles
               if ((i + 1) % 50 === 0) {
-                console.log(`Import progress: ${i + 1}/${publications.length} processed (${imported} imported, ${skipped} skipped)...`);
+                console.log(`Import progress: ${i + 1}/${publications.length} processed (${imported} imported, ${skipped} updated)...`);
               }
             } catch (error) {
               console.error(`Error importing publication ${pub.pmid}:`, error);
