@@ -3,7 +3,7 @@
  * Singleton pattern to track ongoing sync operations
  */
 
-export type SyncStatus = "idle" | "running" | "completed" | "error";
+export type SyncStatus = "idle" | "running" | "completed" | "error" | "cancelled";
 
 export interface SyncState {
   status: SyncStatus;
@@ -18,6 +18,22 @@ export interface SyncState {
   startTime: number | null;
   endTime: number | null;
   error: string | null;
+  cancelRequested: boolean;
+  dryRun?: boolean;
+}
+
+export interface SyncHistoryEntry {
+  id: string;
+  type: "full" | "incremental";
+  status: SyncStatus;
+  startTime: number;
+  endTime: number | null;
+  imported: number;
+  skipped: number;
+  approved: number;
+  pending: number;
+  error: string | null;
+  dryRun: boolean;
 }
 
 class SyncTracker {
@@ -34,15 +50,42 @@ class SyncTracker {
     startTime: null,
     endTime: null,
     error: null,
+    cancelRequested: false,
+    dryRun: false,
   };
 
   private lastSuccessTime: number | null = null;
+  private history: SyncHistoryEntry[] = [];
+  private maxHistorySize: number = 50;
 
   isRunning(): boolean {
     return this.state.status === "running";
   }
 
-  start(type: "full" | "incremental") {
+  isCancelRequested(): boolean {
+    return this.state.cancelRequested;
+  }
+
+  requestCancel(): boolean {
+    if (!this.isRunning()) {
+      return false;
+    }
+    this.state.cancelRequested = true;
+    this.state.phase = "Cancelling...";
+    console.log("[SYNC] Cancel requested by user");
+    return true;
+  }
+
+  cancelled() {
+    this.state.status = "cancelled";
+    this.state.phase = "Sync cancelled by user";
+    this.state.endTime = Date.now();
+    this.state.cancelRequested = false;
+    console.log("[SYNC] Sync cancelled successfully");
+    this.addToHistory();
+  }
+
+  start(type: "full" | "incremental", dryRun: boolean = false) {
     if (this.isRunning()) {
       throw new Error("Sync is already running. Please wait for it to complete.");
     }
@@ -60,7 +103,36 @@ class SyncTracker {
       startTime: Date.now(),
       endTime: null,
       error: null,
+      cancelRequested: false,
+      dryRun,
     };
+  }
+
+  private addToHistory() {
+    if (!this.state.type || !this.state.startTime) return;
+
+    const entry: SyncHistoryEntry = {
+      id: `${this.state.type}-${this.state.startTime}`,
+      type: this.state.type,
+      status: this.state.status,
+      startTime: this.state.startTime,
+      endTime: this.state.endTime,
+      imported: this.state.imported,
+      skipped: this.state.skipped,
+      approved: this.state.approved,
+      pending: this.state.pending,
+      error: this.state.error,
+      dryRun: this.state.dryRun || false,
+    };
+
+    this.history.unshift(entry);
+    
+    // Keep only the most recent entries
+    if (this.history.length > this.maxHistorySize) {
+      this.history = this.history.slice(0, this.maxHistorySize);
+    }
+    
+    console.log(`[SYNC] Added to history: ${entry.id} (${entry.status})`);
   }
 
   updatePhase(phase: string) {
@@ -88,9 +160,12 @@ class SyncTracker {
   complete() {
     if (this.state.status === "running") {
       this.state.status = "completed";
-      this.state.phase = "Sync complete";
+      this.state.phase = this.state.dryRun ? "Dry run complete" : "Sync complete";
       this.state.endTime = Date.now();
-      this.lastSuccessTime = Date.now();
+      if (!this.state.dryRun) {
+        this.lastSuccessTime = Date.now();
+      }
+      this.addToHistory();
     }
   }
 
@@ -99,6 +174,7 @@ class SyncTracker {
     this.state.phase = "Sync failed";
     this.state.endTime = Date.now();
     this.state.error = errorMessage;
+    this.addToHistory();
   }
 
   reset() {
@@ -115,6 +191,7 @@ class SyncTracker {
       startTime: null,
       endTime: null,
       error: null,
+      cancelRequested: false,
     };
   }
 
@@ -123,6 +200,14 @@ class SyncTracker {
       ...this.state,
       lastSuccessTime: this.lastSuccessTime,
     };
+  }
+
+  getHistory(limit: number = 20): SyncHistoryEntry[] {
+    return this.history.slice(0, limit);
+  }
+
+  clearHistory() {
+    this.history = [];
   }
 }
 

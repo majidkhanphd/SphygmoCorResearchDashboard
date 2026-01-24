@@ -88,18 +88,64 @@ function parsePubMedDate(pubDate: any): Date {
 // PubMed API configuration
 const PUBMED_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 
+// Retry configuration for PubMed API calls
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  initialDelayMs: 1000,
+  maxDelayMs: 10000,
+  backoffMultiplier: 2,
+};
+
 async function fetchFromPubMed(endpoint: string, params: Record<string, string>) {
   const url = new URL(`${PUBMED_BASE_URL}/${endpoint}`);
   Object.entries(params).forEach(([key, value]) => {
     url.searchParams.append(key, value);
   });
 
-  const response = await fetch(url.toString());
-  if (!response.ok) {
-    throw new Error(`PubMed API error: ${response.status}`);
-  }
+  const context = `PubMed ${endpoint}`;
+  let lastError: Error | null = null;
+  let delay = RETRY_CONFIG.initialDelayMs;
 
-  return response.text();
+  for (let attempt = 1; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+    try {
+      const response = await fetch(url.toString());
+      
+      // Check for rate limiting (429 Too Many Requests)
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : delay;
+        console.warn(`[${context}] Rate limited (429). Waiting ${waitTime}ms before retry ${attempt}/${RETRY_CONFIG.maxRetries}`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
+        continue;
+      }
+      
+      // Check for server errors (5xx) - these are transient
+      if (response.status >= 500 && response.status < 600) {
+        console.warn(`[${context}] Server error (${response.status}). Waiting ${delay}ms before retry ${attempt}/${RETRY_CONFIG.maxRetries}`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
+        continue;
+      }
+      
+      if (!response.ok) {
+        throw new Error(`PubMed API error: ${response.status}`);
+      }
+
+      return response.text();
+    } catch (error) {
+      lastError = error as Error;
+      console.warn(`[${context}] Error on attempt ${attempt}/${RETRY_CONFIG.maxRetries}: ${lastError.message}`);
+      
+      if (attempt < RETRY_CONFIG.maxRetries) {
+        console.log(`[${context}] Waiting ${delay}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
+      }
+    }
+  }
+  
+  throw lastError || new Error(`Failed to fetch from ${context} after ${RETRY_CONFIG.maxRetries} retries`);
 }
 
 function parseXmlToJson(xmlString: string) {
@@ -497,7 +543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin endpoint to sync publications from PubMed automatically
   app.post("/api/admin/sync-pubmed", async (req, res) => {
     try {
-      const { maxPerTerm = 50 } = req.body;
+      const { maxPerTerm = 50, dryRun = false } = req.body;
       
       // Check if sync is already running
       if (syncTracker.isRunning()) {
@@ -508,13 +554,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Start tracking
-      syncTracker.start("full");
-      console.log("Starting PubMed full sync (progressive mode - saves in batches)...");
+      syncTracker.start("full", dryRun);
+      const modeLabel = dryRun ? "(DRY RUN - no changes will be saved)" : "(progressive mode - saves in batches)";
+      console.log(`Starting PubMed full sync ${modeLabel}...`);
       
       // Respond immediately
       res.json({
         success: true,
-        message: "Full sync started. Poll /api/admin/sync-status for progress.",
+        message: dryRun 
+          ? "Dry run started. Poll /api/admin/sync-status for progress. No changes will be saved."
+          : "Full sync started. Poll /api/admin/sync-status for progress.",
+        dryRun,
       });
       
       // Run sync in background
@@ -544,6 +594,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`    Pre-flight: ~${batchEstimate.byPmid} by PMID, ~${batchEstimate.byPmcId} by PMC, ~${batchEstimate.byDoi} by DOI already exist`);
               
               for (const pub of batch) {
+                // Check for cancellation request
+                if (syncTracker.isCancelRequested()) {
+                  console.log(`[SYNC] Cancellation detected during batch processing`);
+                  syncTracker.cancelled();
+                  return;
+                }
+                
                 try {
                   // Check if publication already exists by pmid, pmc_id, OR DOI (triple check)
                   let existing = await storage.getPublicationByPmid(pub.pmid || "");
@@ -563,21 +620,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     // Log which check caught this duplicate
                     console.log(`    [DUPLICATE] Matched by ${matchedBy}: "${pub.title?.substring(0, 50)}..." (pmid=${pub.pmid}, pmc=${pub.pmcId}, doi=${pub.doi})`);
                     
-                    // Update abstract and other key fields for existing publications
-                    // This ensures parsing improvements get applied
-                    await storage.updatePublication(existing.id, {
-                      abstract: pub.abstract,
-                      title: pub.title,
-                      authors: pub.authors,
-                      doi: pub.doi,
-                      pmcId: pub.pmcId, // Ensure pmc_id is updated
-                    });
+                    if (!dryRun) {
+                      // Update abstract and other key fields for existing publications
+                      // This ensures parsing improvements get applied
+                      await storage.updatePublication(existing.id, {
+                        abstract: pub.abstract,
+                        title: pub.title,
+                        authors: pub.authors,
+                        doi: pub.doi,
+                        pmcId: pub.pmcId, // Ensure pmc_id is updated
+                      });
+                    }
                     skipped++; // Still counted as "skipped" (not new) but abstract is updated
                     continue;
                   }
                   
-                  await storage.createPublication(pub);
-                  console.log(`    [NEW] Imported: "${pub.title?.substring(0, 50)}..." (pmid=${pub.pmid}, pmc=${pub.pmcId})`);
+                  if (!dryRun) {
+                    await storage.createPublication(pub);
+                  }
+                  console.log(`    [${dryRun ? 'WOULD IMPORT' : 'NEW'}] Imported: "${pub.title?.substring(0, 50)}..." (pmid=${pub.pmid}, pmc=${pub.pmcId})`);
                   imported++;
                   
                   // Track status breakdown
@@ -598,12 +659,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           );
           
-          console.log(`\nSync complete: ${imported} imported (${approved} approved, ${pending} pending for review), ${skipped} skipped out of ${result.totalUnique} unique fetched`);
+          // Check if sync was cancelled during progressive import
+          if (syncTracker.getStatus().status === "cancelled") {
+            console.log(`\nSync cancelled: ${imported} imported before cancellation, ${skipped} skipped`);
+            return;
+          }
           
-          // Clean up any duplicates that slipped through
-          const duplicatesRemoved = await storage.cleanupDuplicatesByTitle();
-          if (duplicatesRemoved > 0) {
-            console.log(`Post-sync cleanup: removed ${duplicatesRemoved} duplicates`);
+          if (dryRun) {
+            console.log(`\n=== DRY RUN COMPLETE ===`);
+            console.log(`Would import: ${imported} new publications`);
+            console.log(`Would skip/update: ${skipped} existing publications`);
+            console.log(`Total fetched: ${result.totalUnique}`);
+            console.log(`No changes were made to the database.`);
+            console.log(`========================\n`);
+          } else {
+            console.log(`\nSync complete: ${imported} imported (${approved} approved, ${pending} pending for review), ${skipped} skipped out of ${result.totalUnique} unique fetched`);
+            
+            // Clean up any duplicates that slipped through
+            const duplicatesRemoved = await storage.cleanupDuplicatesByTitle();
+            if (duplicatesRemoved > 0) {
+              console.log(`Post-sync cleanup: removed ${duplicatesRemoved} duplicates`);
+            }
           }
           
           // Mark as complete
@@ -630,7 +706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin endpoint to incrementally sync publications from the past year
   app.post("/api/admin/sync-pubmed-incremental", async (req, res) => {
     try {
-      const { maxPerTerm = 50 } = req.body;
+      const { maxPerTerm = 50, dryRun = false } = req.body;
       
       // Check if sync is already running
       if (syncTracker.isRunning()) {
@@ -640,7 +716,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log("Starting incremental PubMed sync (past year)...");
+      const modeLabel = dryRun ? "(DRY RUN - no changes will be saved)" : "(past year)";
+      console.log(`Starting incremental PubMed sync ${modeLabel}...`);
       
       // Sync from 1 year ago to catch any missed publications
       // Duplicate detection (by pmid, pmc_id, and title) handles any overlap
@@ -649,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const syncFromDate = oneYearAgo;
       
       // Start tracking
-      syncTracker.start("incremental");
+      syncTracker.start("incremental", dryRun);
       syncTracker.updatePhase(`Syncing publications from past year (since ${syncFromDate.toLocaleDateString()})...`);
       
       console.log(`Syncing from date: ${syncFromDate.toLocaleDateString()}`);
@@ -657,8 +734,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Respond immediately
       res.json({
         success: true,
-        message: `Incremental sync started (past year). Poll /api/admin/sync-status for progress.`,
-        fromDate: syncFromDate.toISOString()
+        message: dryRun 
+          ? `Dry run started (past year). Poll /api/admin/sync-status for progress. No changes will be saved.`
+          : `Incremental sync started (past year). Poll /api/admin/sync-status for progress.`,
+        fromDate: syncFromDate.toISOString(),
+        dryRun,
       });
       
       // Run sync in background
@@ -693,6 +773,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           for (let i = 0; i < publications.length; i++) {
             const pub = publications[i];
             
+            // Check for cancellation request
+            if (syncTracker.isCancelRequested()) {
+              console.log(`[SYNC] Cancellation detected at publication ${i + 1}/${publications.length}`);
+              syncTracker.cancelled();
+              console.log(`Incremental sync cancelled: ${imported} imported, ${skipped} updated before cancellation`);
+              return;
+            }
+            
             try {
               // Check if publication already exists by pmid, pmc_id, OR DOI (triple check)
               let existing = await storage.getPublicationByPmid(pub.pmid || "");
@@ -712,19 +800,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Log which check caught this duplicate
                 console.log(`  [DUPLICATE] Matched by ${matchedBy}: "${pub.title?.substring(0, 50)}..." (pmid=${pub.pmid}, pmc=${pub.pmcId}, doi=${pub.doi})`);
                 
-                // Update abstract and other key fields for existing publications
-                // This ensures parsing improvements get applied
-                await storage.updatePublication(existing.id, {
-                  abstract: pub.abstract,
-                  title: pub.title,
-                  authors: pub.authors,
-                  doi: pub.doi,
-                  pmcId: pub.pmcId, // Ensure pmc_id is updated
-                });
+                if (!dryRun) {
+                  // Update abstract and other key fields for existing publications
+                  // This ensures parsing improvements get applied
+                  await storage.updatePublication(existing.id, {
+                    abstract: pub.abstract,
+                    title: pub.title,
+                    authors: pub.authors,
+                    doi: pub.doi,
+                    pmcId: pub.pmcId, // Ensure pmc_id is updated
+                  });
+                }
                 skipped++; // Still counted as "skipped" (not new) but abstract is updated
               } else {
-                await storage.createPublication(pub);
-                console.log(`  [NEW] Imported: "${pub.title?.substring(0, 50)}..." (pmid=${pub.pmid}, pmc=${pub.pmcId})`);
+                if (!dryRun) {
+                  await storage.createPublication(pub);
+                }
+                console.log(`  [${dryRun ? 'WOULD IMPORT' : 'NEW'}] Imported: "${pub.title?.substring(0, 50)}..." (pmid=${pub.pmid}, pmc=${pub.pmcId})`);
                 imported++;
                 
                 // Track status breakdown
@@ -741,19 +833,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Log progress every 50 articles
               if ((i + 1) % 50 === 0) {
-                console.log(`Import progress: ${i + 1}/${publications.length} processed (${imported} imported, ${skipped} updated)...`);
+                console.log(`Import progress: ${i + 1}/${publications.length} processed (${imported} ${dryRun ? 'would be imported' : 'imported'}, ${skipped} ${dryRun ? 'duplicates' : 'updated'})...`);
               }
             } catch (error) {
               console.error(`Error importing publication ${pub.pmid}:`, error);
             }
           }
           
-          console.log(`Incremental sync complete: ${imported} imported (${approved} approved, ${pending} pending), ${skipped} skipped out of ${publications.length} total`);
-          
-          // Clean up any duplicates that slipped through
-          const duplicatesRemoved = await storage.cleanupDuplicatesByTitle();
-          if (duplicatesRemoved > 0) {
-            console.log(`Post-sync cleanup: removed ${duplicatesRemoved} duplicates`);
+          if (dryRun) {
+            console.log(`\n=== DRY RUN COMPLETE ===`);
+            console.log(`Would import: ${imported} new publications`);
+            console.log(`Would skip/update: ${skipped} existing publications`);
+            console.log(`Total fetched: ${publications.length}`);
+            console.log(`No changes were made to the database.`);
+            console.log(`========================\n`);
+          } else {
+            console.log(`Incremental sync complete: ${imported} imported (${approved} approved, ${pending} pending), ${skipped} skipped out of ${publications.length} total`);
+            
+            // Clean up any duplicates that slipped through
+            const duplicatesRemoved = await storage.cleanupDuplicatesByTitle();
+            if (duplicatesRemoved > 0) {
+              console.log(`Post-sync cleanup: removed ${duplicatesRemoved} duplicates`);
+            }
           }
           
           // Mark as complete
@@ -790,6 +891,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false,
         message: "Failed to get sync status", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Admin endpoint to get sync history
+  app.get("/api/admin/sync-history", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 20;
+      const history = syncTracker.getHistory(limit);
+      res.json({
+        success: true,
+        history,
+        count: history.length,
+      });
+    } catch (error: any) {
+      console.error("Error getting sync history:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to get sync history", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Admin endpoint to cancel/stop a running sync
+  app.post("/api/admin/sync-cancel", async (req, res) => {
+    try {
+      if (!syncTracker.isRunning()) {
+        return res.status(400).json({
+          success: false,
+          message: "No sync is currently running.",
+        });
+      }
+
+      const cancelled = syncTracker.requestCancel();
+      if (cancelled) {
+        res.json({
+          success: true,
+          message: "Cancel request sent. Sync will stop after current operation completes.",
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: "Could not cancel sync.",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error cancelling sync:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to cancel sync", 
         error: error.message 
       });
     }

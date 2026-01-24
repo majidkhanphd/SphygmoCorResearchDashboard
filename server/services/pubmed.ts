@@ -3,6 +3,62 @@ import type { InsertPublication } from "@shared/schema";
 import { PUBMED_SEARCH_TERMS, MAX_RESULTS_PER_TERM } from "../config/search-terms";
 import { sanitizeText } from "@shared/sanitize";
 
+// Retry configuration for PubMed API calls
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  initialDelayMs: 1000,
+  maxDelayMs: 10000,
+  backoffMultiplier: 2,
+};
+
+// Rate limit aware fetch with exponential backoff
+async function fetchWithRetry(
+  url: string, 
+  options: { retries?: number; context?: string } = {}
+): Promise<Response> {
+  const { retries = RETRY_CONFIG.maxRetries, context = "PubMed API" } = options;
+  let lastError: Error | null = null;
+  let delay = RETRY_CONFIG.initialDelayMs;
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url);
+      
+      // Check for rate limiting (429 Too Many Requests)
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : delay;
+        console.warn(`[${context}] Rate limited (429). Waiting ${waitTime}ms before retry ${attempt}/${retries}`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
+        continue;
+      }
+      
+      // Check for server errors (5xx) - these are transient
+      if (response.status >= 500 && response.status < 600) {
+        console.warn(`[${context}] Server error (${response.status}). Waiting ${delay}ms before retry ${attempt}/${retries}`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
+        continue;
+      }
+      
+      // Success or client error (4xx except 429) - don't retry
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+      console.warn(`[${context}] Network error on attempt ${attempt}/${retries}: ${lastError.message}`);
+      
+      if (attempt < retries) {
+        console.log(`[${context}] Waiting ${delay}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
+      }
+    }
+  }
+  
+  throw lastError || new Error(`Failed to fetch from ${context} after ${retries} retries`);
+}
+
 // Extract abstract text directly from raw XML to preserve order of mixed content
 // This bypasses JSON parsing issues where Object.keys doesn't preserve element order
 function extractAbstractFromRawXml(xmlString: string): string | null {
@@ -312,7 +368,7 @@ export class PubMedService {
     }
 
     try {
-      const response = await fetch(url);
+      const response = await fetchWithRetry(url, { context: `PMC search: ${searchTerm}` });
       const xmlText = await response.text();
       const result = this.parser.parse(xmlText) as PubMedSearchResult;
 
@@ -346,7 +402,7 @@ export class PubMedService {
       const url = `${this.baseUrl}/efetch.fcgi?db=pmc&id=${ids}&retmode=xml`;
 
       try {
-        const response = await fetch(url);
+        const response = await fetchWithRetry(url, { context: `PMC fetch batch ${i}-${i + batch.length}` });
         const xmlText = await response.text();
         
         // Extract raw article XML segments for proper abstract parsing
@@ -1128,7 +1184,7 @@ export class PubMedService {
       const url = `${this.baseUrl}/efetch.fcgi?db=pubmed&id=${ids}&retmode=xml`;
 
       try {
-        const response = await fetch(url);
+        const response = await fetchWithRetry(url, { context: `PubMed abstract batch ${i}-${i + batch.length}` });
         const xmlText = await response.text();
 
         // Extract abstracts from PubMed XML
