@@ -572,7 +572,7 @@ export default function Admin() {
       });
       toast({
         title: "Incremental Sync Started",
-        description: "Fetching new publications since last sync. Progress will update automatically.",
+        description: "Fetching publications from the past 12 months. Progress will update automatically.",
       });
       // Start polling immediately
       fetchSyncStatus();
@@ -580,6 +580,22 @@ export default function Admin() {
       toast({
         title: "Sync Failed",
         description: error.message || "Failed to start incremental sync",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelSync = async () => {
+    try {
+      await apiRequest("POST", "/api/admin/sync-cancel");
+      toast({
+        title: "Cancellation Requested",
+        description: "The sync will stop after the current batch completes.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Cancel Failed",
+        description: error.message || "Failed to cancel sync",
         variant: "destructive",
       });
     }
@@ -1460,7 +1476,7 @@ export default function Admin() {
               <div className="flex-1">
                 <h3 className="font-medium mb-2 text-sm text-[#1d1d1f] dark:text-white">Incremental Sync</h3>
                 <p className="text-sm text-[#6e6e73] dark:text-gray-400 mb-3">
-                  Sync only new publications since the most recent one in your database. Faster and more efficient.
+                  Sync publications from the past 12 months. Faster and checks for duplicates.
                 </p>
                 <Button 
                   onClick={handleIncrementalSync} 
@@ -1475,7 +1491,7 @@ export default function Admin() {
                       Syncing...
                     </>
                   ) : (
-                    "Sync New Publications"
+                    "Sync Past 12 Months"
                   )}
                 </Button>
               </div>
@@ -1555,11 +1571,23 @@ export default function Admin() {
                   value={syncStatus.total > 0 ? (syncStatus.processed / syncStatus.total) * 100 : 0} 
                   className="h-2 mb-2"
                 />
-                <div className="flex gap-4 text-xs text-blue-700 dark:text-blue-300">
-                  <span>Imported: {syncStatus.imported}</span>
-                  <span>Skipped: {syncStatus.skipped}</span>
-                  <span>Approved: {syncStatus.approved}</span>
-                  <span>Pending: {syncStatus.pending}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-4 text-xs text-blue-700 dark:text-blue-300">
+                    <span>Imported: {syncStatus.imported}</span>
+                    <span>Skipped: {syncStatus.skipped}</span>
+                    <span>Approved: {syncStatus.approved}</span>
+                    <span>Pending: {syncStatus.pending}</span>
+                  </div>
+                  <Button 
+                    onClick={handleCancelSync}
+                    variant="destructive"
+                    size="sm"
+                    className="ml-4"
+                    data-testid="button-cancel-sync"
+                  >
+                    <X className="mr-1 h-3 w-3" />
+                    Cancel Sync
+                  </Button>
                 </div>
               </div>
             )}
