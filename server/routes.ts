@@ -17,6 +17,7 @@ function escapeLikePattern(str: string): string {
 }
 
 // Helper to normalize XML text from fast-xml-parser
+// Handles mixed content (text + inline elements like <i>, <b>, <sup>, etc.)
 function normalizeXmlText(value: any): string {
   if (typeof value === 'string') {
     return value;
@@ -28,15 +29,21 @@ function normalizeXmlText(value: any): string {
     return value.map(normalizeXmlText).join(' ');
   }
   if (typeof value === 'object' && value !== null) {
-    if (value['#text']) {
-      return normalizeXmlText(value['#text']);
+    // Collect ALL text content including #text AND child elements
+    // This handles mixed content like: "Some text <b>bold</b> more text"
+    const textParts: string[] = [];
+    
+    for (const key of Object.keys(value)) {
+      // Skip XML attributes (start with @_)
+      if (key.startsWith('@_')) continue;
+      
+      const childText = normalizeXmlText(value[key]);
+      if (childText.trim().length > 0) {
+        textParts.push(childText);
+      }
     }
-    // Ignore attributes starting with @_ and collect other values
-    const textValues = Object.keys(value)
-      .filter(key => !key.startsWith('@_'))
-      .map(key => normalizeXmlText(value[key]))
-      .filter(text => text.trim().length > 0);
-    return textValues.join(' ');
+    
+    return textParts.join(' ');
   }
   return '';
 }
