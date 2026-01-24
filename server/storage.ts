@@ -56,6 +56,7 @@ export interface IStorage {
   // Publication methods
   getPublication(id: string): Promise<Publication | undefined>;
   getPublicationByPmid(pmid: string): Promise<Publication | undefined>;
+  getPublicationByPmcId(pmcId: string): Promise<Publication | undefined>;
   createPublication(publication: InsertPublication): Promise<Publication>;
   updatePublication(id: string, publication: Partial<InsertPublication>): Promise<Publication | undefined>;
   deletePublication(id: string): Promise<boolean>;
@@ -87,6 +88,11 @@ export class DatabaseStorage implements IStorage {
 
   async getPublicationByPmid(pmid: string): Promise<Publication | undefined> {
     const [publication] = await db.select().from(publications).where(eq(publications.pmid, pmid));
+    return publication || undefined;
+  }
+
+  async getPublicationByPmcId(pmcId: string): Promise<Publication | undefined> {
+    const [publication] = await db.select().from(publications).where(eq(publications.pmcId, pmcId));
     return publication || undefined;
   }
 

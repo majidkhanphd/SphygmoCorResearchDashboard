@@ -538,8 +538,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               for (const pub of batch) {
                 try {
-                  // Check if publication already exists
-                  const existing = await storage.getPublicationByPmid(pub.pmid || "");
+                  // Check if publication already exists by pmid OR pmc_id
+                  let existing = await storage.getPublicationByPmid(pub.pmid || "");
+                  if (!existing && pub.pmcId) {
+                    existing = await storage.getPublicationByPmcId(pub.pmcId);
+                  }
+                  
                   if (existing) {
                     // Update abstract and other key fields for existing publications
                     // This ensures parsing improvements get applied
@@ -548,6 +552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       title: pub.title,
                       authors: pub.authors,
                       doi: pub.doi,
+                      pmcId: pub.pmcId, // Ensure pmc_id is updated
                     });
                     skipped++; // Still counted as "skipped" (not new) but abstract is updated
                     continue;
@@ -610,16 +615,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log("Starting incremental PubMed sync (past year)...");
+      console.log("Starting incremental PubMed sync...");
       
-      // Sync from 1 year ago instead of most recent publication date
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-      const syncFromDate = oneYearAgo;
+      // Get the most recent publication date from database
+      const mostRecentDate = await storage.getMostRecentPublicationDate();
+      // Default to 30 days ago if no publications exist
+      const defaultDate = new Date();
+      defaultDate.setDate(defaultDate.getDate() - 30);
+      const syncFromDate = mostRecentDate || defaultDate;
       
       // Start tracking
       syncTracker.start("incremental");
-      syncTracker.updatePhase(`Syncing publications from past year (since ${syncFromDate.toLocaleDateString()})...`);
+      syncTracker.updatePhase(`Syncing publications since ${syncFromDate.toLocaleDateString()}...`);
       
       console.log(`Syncing from date: ${syncFromDate.toLocaleDateString()}`);
       
@@ -648,8 +655,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const pub = publications[i];
             
             try {
-              // Check if publication already exists
-              const existing = await storage.getPublicationByPmid(pub.pmid || "");
+              // Check if publication already exists by pmid OR pmc_id
+              let existing = await storage.getPublicationByPmid(pub.pmid || "");
+              if (!existing && pub.pmcId) {
+                existing = await storage.getPublicationByPmcId(pub.pmcId);
+              }
+              
               if (existing) {
                 // Update abstract and other key fields for existing publications
                 // This ensures parsing improvements get applied
@@ -658,6 +669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   title: pub.title,
                   authors: pub.authors,
                   doi: pub.doi,
+                  pmcId: pub.pmcId, // Ensure pmc_id is updated
                 });
                 skipped++; // Still counted as "skipped" (not new) but abstract is updated
               } else {

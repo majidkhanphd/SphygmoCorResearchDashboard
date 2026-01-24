@@ -407,10 +407,13 @@ export class PubMedService {
       // Parse PMC ID
       const pmcId = this.parsePmcId(articleMeta["article-id"], article["@_id"]);
       
+      // Parse actual PubMed ID (different from PMC ID)
+      const pubmedId = this.parsePubmedId(articleMeta["article-id"]);
+      
       // Parse DOI
       const doi = this.parseDoi(articleMeta["article-id"]);
       
-      // Require at least PMID or DOI
+      // Require at least PMC ID or DOI
       if (!pmcId && !doi) {
         console.error("Article has neither PMC ID nor DOI - skipping");
         return null;
@@ -458,7 +461,8 @@ export class PubMedService {
       }
 
       return {
-        pmid: pmcId || doi!, // Store PMC ID or DOI in the pmid field
+        // Use actual PubMed ID if available, otherwise use PMC-prefixed ID to avoid collision
+        pmid: pubmedId || (pmcId ? `PMC${pmcId}` : doi!),
         title,
         authors,
         journal,
@@ -472,6 +476,7 @@ export class PubMedService {
         pubmedUrl: pmcId ? `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${pmcId}/` : `https://doi.org/${doi}`,
         journalImpactFactor: null,
         status,
+        pmcId: pmcId ? `PMC${pmcId}` : null,
       };
     } catch (error) {
       console.error("Error parsing PMC article:", error);
@@ -503,11 +508,24 @@ export class PubMedService {
       return String(idText).replace(/^PMC/i, "");
     }
 
-    // Fallback: use any available ID
-    const firstId = idArray[0];
-    if (firstId) {
-      const idText = firstId["#text"] || firstId;
-      return String(idText).replace(/^PMC/i, "");
+    return null;
+  }
+
+  // Extract actual PubMed ID from PMC article metadata
+  private parsePubmedId(articleIds: any): string | null {
+    if (!articleIds) return null;
+
+    const idArray = Array.isArray(articleIds) ? articleIds : [articleIds];
+    
+    // Look for PubMed ID specifically
+    const pmidObj = idArray.find((id: any) => 
+      id["@_pub-id-type"] === "pmid" || 
+      id["@_pub-id-type"] === "pubmed"
+    );
+
+    if (pmidObj) {
+      const idText = pmidObj["#text"] || pmidObj;
+      return String(idText);
     }
 
     return null;
