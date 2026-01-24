@@ -536,15 +536,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // This callback is called after each batch (year range) is fetched
               console.log(`  Processing batch ${batchIndex}/${totalBatches}: ${batch.length} articles...`);
               
+              // Batch-level pre-flight estimate
+              const batchPmids = batch.map(p => p.pmid).filter(Boolean) as string[];
+              const batchPmcIds = batch.map(p => p.pmcId).filter(Boolean) as string[];
+              const batchDois = batch.map(p => p.doi).filter(Boolean) as string[];
+              const batchEstimate = await storage.countExistingByIdentifiers(batchPmids, batchPmcIds, batchDois);
+              console.log(`    Pre-flight: ~${batchEstimate.byPmid} by PMID, ~${batchEstimate.byPmcId} by PMC, ~${batchEstimate.byDoi} by DOI already exist`);
+              
               for (const pub of batch) {
                 try {
-                  // Check if publication already exists by pmid OR pmc_id
+                  // Check if publication already exists by pmid, pmc_id, OR DOI (triple check)
                   let existing = await storage.getPublicationByPmid(pub.pmid || "");
+                  let matchedBy = existing ? "pmid" : null;
+                  
                   if (!existing && pub.pmcId) {
                     existing = await storage.getPublicationByPmcId(pub.pmcId);
+                    if (existing) matchedBy = "pmc_id";
+                  }
+                  
+                  if (!existing && pub.doi) {
+                    existing = await storage.getPublicationByDoi(pub.doi);
+                    if (existing) matchedBy = "doi";
                   }
                   
                   if (existing) {
+                    // Log which check caught this duplicate
+                    console.log(`    [DUPLICATE] Matched by ${matchedBy}: "${pub.title?.substring(0, 50)}..." (pmid=${pub.pmid}, pmc=${pub.pmcId}, doi=${pub.doi})`);
+                    
                     // Update abstract and other key fields for existing publications
                     // This ensures parsing improvements get applied
                     await storage.updatePublication(existing.id, {
@@ -559,6 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                   
                   await storage.createPublication(pub);
+                  console.log(`    [NEW] Imported: "${pub.title?.substring(0, 50)}..." (pmid=${pub.pmid}, pmc=${pub.pmcId})`);
                   imported++;
                   
                   // Track status breakdown
@@ -652,7 +671,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const publications = await pubmedService.syncIncrementalResearch(syncFromDate, maxPerTerm);
           
-          console.log(`Fetched ${publications.length} publications since ${syncFromDate.toLocaleDateString()}, starting import...`);
+          console.log(`Fetched ${publications.length} publications since ${syncFromDate.toLocaleDateString()}`);
+          
+          // Pre-flight duplicate estimate
+          const pmids = publications.map(p => p.pmid).filter(Boolean) as string[];
+          const pmcIds = publications.map(p => p.pmcId).filter(Boolean) as string[];
+          const dois = publications.map(p => p.doi).filter(Boolean) as string[];
+          
+          const estimate = await storage.countExistingByIdentifiers(pmids, pmcIds, dois);
+          console.log(`\n=== PRE-FLIGHT DUPLICATE ESTIMATE ===`);
+          console.log(`  Fetched ${publications.length} publications`);
+          console.log(`  Estimated duplicates by PMID: ${estimate.byPmid}`);
+          console.log(`  Estimated duplicates by PMC ID: ${estimate.byPmcId}`);
+          console.log(`  Estimated duplicates by DOI: ${estimate.byDoi}`);
+          console.log(`  Expected new imports: ~${Math.max(0, publications.length - Math.max(estimate.byPmid, estimate.byPmcId, estimate.byDoi))}`);
+          console.log(`=====================================\n`);
+          
           syncTracker.updatePhase("Importing publications...");
           syncTracker.updateProgress(0, publications.length);
           
@@ -660,13 +694,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const pub = publications[i];
             
             try {
-              // Check if publication already exists by pmid OR pmc_id
+              // Check if publication already exists by pmid, pmc_id, OR DOI (triple check)
               let existing = await storage.getPublicationByPmid(pub.pmid || "");
+              let matchedBy = existing ? "pmid" : null;
+              
               if (!existing && pub.pmcId) {
                 existing = await storage.getPublicationByPmcId(pub.pmcId);
+                if (existing) matchedBy = "pmc_id";
+              }
+              
+              if (!existing && pub.doi) {
+                existing = await storage.getPublicationByDoi(pub.doi);
+                if (existing) matchedBy = "doi";
               }
               
               if (existing) {
+                // Log which check caught this duplicate
+                console.log(`  [DUPLICATE] Matched by ${matchedBy}: "${pub.title?.substring(0, 50)}..." (pmid=${pub.pmid}, pmc=${pub.pmcId}, doi=${pub.doi})`);
+                
                 // Update abstract and other key fields for existing publications
                 // This ensures parsing improvements get applied
                 await storage.updatePublication(existing.id, {
@@ -679,6 +724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 skipped++; // Still counted as "skipped" (not new) but abstract is updated
               } else {
                 await storage.createPublication(pub);
+                console.log(`  [NEW] Imported: "${pub.title?.substring(0, 50)}..." (pmid=${pub.pmid}, pmc=${pub.pmcId})`);
                 imported++;
                 
                 // Track status breakdown

@@ -1,7 +1,7 @@
 import { type Publication, type InsertPublication, type Category, type InsertCategory, type SearchPublicationsParams, type FilterCounts, type SearchPublicationsResponse, type SuggestedCategory } from "@shared/schema";
 import { publications, categories } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, like, sql, desc, asc } from "drizzle-orm";
+import { eq, and, or, like, sql, desc, asc, inArray } from "drizzle-orm";
 import { normalizeJournalName, findParentGroup, getChildJournals, JOURNAL_GROUPS } from "@shared/journal-mappings";
 
 // Helper to escape SQL LIKE special characters
@@ -57,6 +57,8 @@ export interface IStorage {
   getPublication(id: string): Promise<Publication | undefined>;
   getPublicationByPmid(pmid: string): Promise<Publication | undefined>;
   getPublicationByPmcId(pmcId: string): Promise<Publication | undefined>;
+  getPublicationByDoi(doi: string): Promise<Publication | undefined>;
+  countExistingByIdentifiers(pmids: string[], pmcIds: string[], dois: string[]): Promise<{byPmid: number, byPmcId: number, byDoi: number}>;
   createPublication(publication: InsertPublication): Promise<Publication>;
   updatePublication(id: string, publication: Partial<InsertPublication>): Promise<Publication | undefined>;
   deletePublication(id: string): Promise<boolean>;
@@ -97,6 +99,39 @@ export class DatabaseStorage implements IStorage {
   async getPublicationByPmcId(pmcId: string): Promise<Publication | undefined> {
     const [publication] = await db.select().from(publications).where(eq(publications.pmcId, pmcId));
     return publication || undefined;
+  }
+
+  async getPublicationByDoi(doi: string): Promise<Publication | undefined> {
+    if (!doi) return undefined;
+    const [publication] = await db.select().from(publications).where(eq(publications.doi, doi));
+    return publication || undefined;
+  }
+
+  async countExistingByIdentifiers(pmids: string[], pmcIds: string[], dois: string[]): Promise<{byPmid: number, byPmcId: number, byDoi: number}> {
+    let byPmid = 0, byPmcId = 0, byDoi = 0;
+    
+    if (pmids.length > 0) {
+      const pmidResult = await db.select({ count: sql<number>`count(*)` })
+        .from(publications)
+        .where(inArray(publications.pmid, pmids));
+      byPmid = Number(pmidResult[0]?.count || 0);
+    }
+    
+    if (pmcIds.length > 0) {
+      const pmcResult = await db.select({ count: sql<number>`count(*)` })
+        .from(publications)
+        .where(inArray(publications.pmcId, pmcIds));
+      byPmcId = Number(pmcResult[0]?.count || 0);
+    }
+    
+    if (dois.length > 0) {
+      const doiResult = await db.select({ count: sql<number>`count(*)` })
+        .from(publications)
+        .where(inArray(publications.doi, dois));
+      byDoi = Number(doiResult[0]?.count || 0);
+    }
+    
+    return { byPmid, byPmcId, byDoi };
   }
 
   async createPublication(insertPublication: InsertPublication): Promise<Publication> {
