@@ -986,11 +986,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Optionally update the publication in database
       let updated = false;
       if (update === 'true' && article.abstract) {
-        const existing = await storage.getPublicationByPmid(pmcid);
+        // Check by pmc_id first, then by pmid (for legacy entries)
+        let existing = await storage.getPublicationByPmcId(`PMC${pmcid}`);
+        if (!existing) {
+          existing = await storage.getPublicationByPmid(pmcid);
+        }
+        if (!existing && article.pmid) {
+          existing = await storage.getPublicationByPmid(article.pmid);
+        }
         if (existing) {
-          await storage.updatePublication(existing.id, { abstract: article.abstract });
+          await storage.updatePublication(existing.id, { 
+            abstract: article.abstract,
+            pmcId: `PMC${pmcid}`,
+          });
           updated = true;
-          console.log(`Updated publication ${pmcid} with new abstract`);
+          console.log(`Updated publication PMC${pmcid} with new abstract`);
         }
       }
       
