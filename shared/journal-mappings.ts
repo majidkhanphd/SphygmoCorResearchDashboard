@@ -167,6 +167,22 @@ export const JOURNAL_NORMALIZATIONS: Record<string, string> = {
   // ============================================================
   "alzheimer's & dementia : diagnosis, assessment & disease monitoring": "Alzheimer's & Dementia: Diagnosis, Assessment & Disease Monitoring",
   "alzheimer's & dementia : translational research & clinical interventions": "Alzheimer's & Dementia: Translational Research & Clinical Interventions",
+  
+  // ============================================================
+  // NATURE FAMILY - Case normalization
+  // ============================================================
+  "nature medicine": "Nature Medicine",
+  "nature biomedical engineering": "Nature Biomedical Engineering",
+  "nature communications": "Nature Communications",
+  "nature cardiovascular research": "Nature Cardiovascular Research",
+  "nature and science of sleep": "Nature and Science of Sleep",
+  
+  // ============================================================
+  // KIDNEY INTERNATIONAL FAMILY - Case normalization
+  // ============================================================
+  "kidney international": "Kidney International",
+  "kidney international reports": "Kidney International Reports",
+  "kidney international supplements": "Kidney International Supplements",
 };
 
 /**
@@ -294,6 +310,32 @@ export const JOURNAL_GROUPS: JournalGroup[] = [
       "PLOS ONE",
       "PLOS Computational Biology",
       "PLOS Medicine",
+    ],
+  },
+  {
+    parent: "Nature",
+    children: [
+      "Nature Communications",
+      "Nature Medicine",
+      "Nature Cardiovascular Research",
+      "Nature Biomedical Engineering",
+      "Nature and Science of Sleep",
+    ],
+  },
+  {
+    parent: "JAMA",
+    children: [
+      "JAMA Network Open",
+      "JAMA Cardiology",
+      "JAMA Internal Medicine",
+      "JAMA Pediatrics",
+    ],
+  },
+  {
+    parent: "Kidney International",
+    children: [
+      "Kidney International Reports",
+      "Kidney International Supplements",
     ],
   },
 ];
