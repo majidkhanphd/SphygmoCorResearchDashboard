@@ -389,10 +389,28 @@ export default function Home() {
   const totalResults = data?.total || 0;
   const totalPages = Math.ceil(totalResults / perPage);
 
+  // Helper to get sorted child journals with their counts
+  const getSortedChildJournals = (parentJournal: string) => {
+    const children = getChildJournals(parentJournal);
+    return children
+      .map(child => ({ name: child, count: backendFilterCounts.venues[child] || 0 }))
+      .sort((a, b) => b.count - a.count);
+  };
+
+  // Helper to get total count for a parent journal (sum of children's counts)
+  const getParentTotalCount = (parentJournal: string) => {
+    if (!isParentJournal(parentJournal)) {
+      return backendFilterCounts.venues[parentJournal] || 0;
+    }
+    const children = getChildJournals(parentJournal);
+    return children.reduce((sum, child) => sum + (backendFilterCounts.venues[child] || 0), 0);
+  };
+
   // Get venues from backend filter counts for authoritative list - sorted by count (descending)
+  // Parent journals are sorted by their total children counts
   const venues = Object.keys(backendFilterCounts.venues).sort((a, b) => {
-    const countA = backendFilterCounts.venues[a] || 0;
-    const countB = backendFilterCounts.venues[b] || 0;
+    const countA = getParentTotalCount(a);
+    const countB = getParentTotalCount(b);
     return countB - countA; // Sort descending by count
   });
   const initialVenues = venues.slice(0, 10);
@@ -938,7 +956,8 @@ export default function Home() {
                   const count = filterCounts.venues[venue] || 0;
                   const hasChildren = isParentJournal(venue);
                   const isExpanded = expandedParentJournals.has(venue);
-                  const childJournals = hasChildren ? getChildJournals(venue) : [];
+                  const sortedChildren = hasChildren ? getSortedChildJournals(venue) : [];
+                  const parentTotal = hasChildren ? getParentTotalCount(venue) : count;
                   
                   return (
                     <div key={venue}>
@@ -967,16 +986,16 @@ export default function Home() {
                           } ${!hasChildren ? 'ml-4' : ''}`}
                           data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
                           aria-pressed={selectedVenue === venue}
-                          aria-label={`Filter by ${venue}${count > 0 ? ` (${count} publications)` : ''}`}
+                          aria-label={`Filter by ${venue}${parentTotal > 0 ? ` (${parentTotal} publications)` : ''}`}
                         >
-                          {venue} {count > 0 && `(${count})`}
+                          {venue} {parentTotal > 0 && `(${parentTotal})`}
                         </button>
                       </div>
                       
                       {hasChildren && (
                         <CollapsibleSection isExpanded={isExpanded}>
                           <div className="space-y-1">
-                            {childJournals.map((childJournal) => (
+                            {sortedChildren.map(({ name: childJournal, count: childCount }) => (
                               <button
                                 key={childJournal}
                                 onClick={() => handleVenueChange(childJournal)}
@@ -987,8 +1006,9 @@ export default function Home() {
                                 }`}
                                 data-testid={`venue-child-${childJournal.replace(/\s+/g, '-').toLowerCase()}`}
                                 aria-pressed={selectedVenue === childJournal}
+                                aria-label={`Filter by ${childJournal}${childCount > 0 ? ` (${childCount} publications)` : ''}`}
                               >
-                                {childJournal}
+                                {childJournal} {childCount > 0 && <span className="text-[#6e6e73] dark:text-gray-400">({childCount})</span>}
                               </button>
                             ))}
                           </div>
@@ -1005,7 +1025,8 @@ export default function Home() {
                           const count = filterCounts.venues[venue] || 0;
                           const hasChildren = isParentJournal(venue);
                           const isExpanded = expandedParentJournals.has(venue);
-                          const childJournals = hasChildren ? getChildJournals(venue) : [];
+                          const sortedChildren = hasChildren ? getSortedChildJournals(venue) : [];
+                          const parentTotal = hasChildren ? getParentTotalCount(venue) : count;
                           
                           return (
                             <div key={venue}>
@@ -1034,16 +1055,16 @@ export default function Home() {
                                   } ${!hasChildren ? 'ml-4' : ''}`}
                                   data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
                                   aria-pressed={selectedVenue === venue}
-                                  aria-label={`Filter by ${venue}${count > 0 ? ` (${count} publications)` : ''}`}
+                                  aria-label={`Filter by ${venue}${parentTotal > 0 ? ` (${parentTotal} publications)` : ''}`}
                                 >
-                                  {venue} {count > 0 && `(${count})`}
+                                  {venue} {parentTotal > 0 && `(${parentTotal})`}
                                 </button>
                               </div>
                               
                               {hasChildren && (
                                 <CollapsibleSection isExpanded={isExpanded}>
                                   <div className="space-y-1">
-                                    {childJournals.map((childJournal) => (
+                                    {sortedChildren.map(({ name: childJournal, count: childCount }) => (
                                       <button
                                         key={childJournal}
                                         onClick={() => handleVenueChange(childJournal)}
@@ -1054,8 +1075,9 @@ export default function Home() {
                                         }`}
                                         data-testid={`venue-child-${childJournal.replace(/\s+/g, '-').toLowerCase()}`}
                                         aria-pressed={selectedVenue === childJournal}
+                                        aria-label={`Filter by ${childJournal}${childCount > 0 ? ` (${childCount} publications)` : ''}`}
                                       >
-                                        {childJournal}
+                                        {childJournal} {childCount > 0 && <span className="text-[#6e6e73] dark:text-gray-400">({childCount})</span>}
                                       </button>
                                     ))}
                                   </div>
