@@ -86,6 +86,7 @@ export type SearchPublicationsParams = z.infer<typeof searchPublicationsSchema>;
 export interface FilterCounts {
   categories: Record<string, number>; // Counts for each of the 11 research areas
   venues: Record<string, number>;
+  childJournalCounts: Record<string, Record<string, number>>; // Parent -> {child: count}
   years: Record<number, number>;
 }
 

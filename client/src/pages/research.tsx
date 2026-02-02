@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, Suspense, lazy } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, Suspense, lazy } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import FeaturedCarousel from "@/components/featured-carousel";
@@ -16,7 +16,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { PaginationControls } from "@/components/pagination-controls";
 import { sanitizeText } from "@shared/sanitize";
-import { findParentGroup, type JournalGroup, JOURNAL_GROUPS } from "@shared/journal-mappings";
+import { getChildJournals, isParentJournal, type JournalGroup, JOURNAL_GROUPS } from "@shared/journal-mappings";
 import { formatAbstract } from "@/lib/format-abstract";
 import { PublicationsListSkeleton, SidebarFiltersSkeleton } from "@/components/research-skeletons";
 
@@ -375,6 +375,7 @@ export default function Home() {
   const backendFilterCounts = data?.filterCounts || {
     categories: {},
     venues: {},
+    childJournalCounts: {},
     years: {}
   };
   
@@ -389,85 +390,29 @@ export default function Home() {
   const totalResults = data?.total || 0;
   const totalPages = Math.ceil(totalResults / perPage);
 
-  // Process venues into grouped structure (parents with children) and standalone journals
-  // This properly groups child journals under their parent groups
-  const processedVenues = useMemo(() => {
-    const allVenues = Object.keys(backendFilterCounts.venues);
-    const parentGroups: Map<string, { parentCount: number; children: Array<{ name: string; count: number }> }> = new Map();
-    const standaloneJournals: Array<{ name: string; count: number }> = [];
-    
-    // Process each venue to group children under parents
-    for (const venue of allVenues) {
-      const count = backendFilterCounts.venues[venue] || 0;
-      const parentGroup = findParentGroup(venue);
-      
-      if (parentGroup) {
-        // This venue belongs to a parent group
-        const parentName = parentGroup.parent;
-        if (!parentGroups.has(parentName)) {
-          parentGroups.set(parentName, { parentCount: 0, children: [] });
-        }
-        const group = parentGroups.get(parentName)!;
-        // Check if this is the parent itself (include its count in total)
-        if (venue === parentName) {
-          group.parentCount = count;
-        } else {
-          // It's a child journal
-          group.children.push({ name: venue, count });
-        }
-      } else {
-        // Standalone journal, not part of any group
-        standaloneJournals.push({ name: venue, count });
-      }
-    }
-    
-    // Sort children within each parent by count (descending)
-    for (const group of parentGroups.values()) {
-      group.children.sort((a, b) => b.count - a.count);
-    }
-    
-    // Build final list with parents (sorted by total children count) and standalone journals
-    type VenueItem = 
-      | { type: 'parent'; name: string; totalCount: number; children: Array<{ name: string; count: number }> }
-      | { type: 'standalone'; name: string; count: number };
-    
-    const result: VenueItem[] = [];
-    
-    // Add parent groups (only those with children or parent publications)
-    for (const [parentName, group] of parentGroups.entries()) {
-      if (group.children.length > 0 || group.parentCount > 0) {
-        // Total includes parent's own count + all children's counts
-        const totalCount = group.parentCount + group.children.reduce((sum, child) => sum + child.count, 0);
-        result.push({
-          type: 'parent',
-          name: parentName,
-          totalCount,
-          children: group.children
-        });
-      }
-    }
-    
-    // Add standalone journals
-    for (const journal of standaloneJournals) {
-      result.push({
-        type: 'standalone',
-        name: journal.name,
-        count: journal.count
-      });
-    }
-    
-    // Sort: parents by totalCount, standalone by count
-    result.sort((a, b) => {
-      const countA = a.type === 'parent' ? a.totalCount : a.count;
-      const countB = b.type === 'parent' ? b.totalCount : b.count;
-      return countB - countA;
-    });
-    
-    return result;
-  }, [backendFilterCounts.venues]);
-  
-  const initialVenues = processedVenues.slice(0, 10);
-  const hiddenVenues = processedVenues.slice(10);
+  // Helper to get sorted child journals with their counts from backend childJournalCounts
+  const getSortedChildJournals = (parentJournal: string) => {
+    const childCounts = backendFilterCounts.childJournalCounts[parentJournal] || {};
+    return Object.entries(childCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  };
+
+  // For parent journals, the count is already aggregated in venues
+  // For non-parent journals, just use their direct count
+  const getParentTotalCount = (journal: string) => {
+    return backendFilterCounts.venues[journal] || 0;
+  };
+
+  // Get venues from backend filter counts for authoritative list - sorted by count (descending)
+  // Parent journals are sorted by their total children counts
+  const venues = Object.keys(backendFilterCounts.venues).sort((a, b) => {
+    const countA = getParentTotalCount(a);
+    const countB = getParentTotalCount(b);
+    return countB - countA; // Sort descending by count
+  });
+  const initialVenues = venues.slice(0, 10);
+  const hiddenVenues = venues.slice(10);
 
   // Get research areas from schema - sorted by count (descending)
   const researchAreas = Object.entries(RESEARCH_AREA_DISPLAY_NAMES).sort((a, b) => {
@@ -1005,39 +950,50 @@ export default function Home() {
                 >
                   All Journals
                 </button>
-                {initialVenues.map((item) => {
-                  if (item.type === 'parent') {
-                    const isExpanded = expandedParentJournals.has(item.name);
-                    return (
-                      <div key={item.name}>
-                        <div className="flex items-center">
+                {initialVenues.map((venue) => {
+                  const count = filterCounts.venues[venue] || 0;
+                  const hasChildren = isParentJournal(venue);
+                  const isExpanded = expandedParentJournals.has(venue);
+                  const sortedChildren = hasChildren ? getSortedChildJournals(venue) : [];
+                  const parentTotal = hasChildren ? getParentTotalCount(venue) : count;
+                  
+                  return (
+                    <div key={venue}>
+                      <div className="flex items-center">
+                        {hasChildren && (
                           <motion.button
                             onClick={(e) => {
                               e.stopPropagation();
-                              toggleParentJournal(item.name);
+                              toggleParentJournal(venue);
                             }}
                             className="flex-shrink-0 mr-1 apple-transition apple-focus-ring research-sidebar-item"
-                            aria-label={isExpanded ? `Collapse ${item.name}` : `Expand ${item.name}`}
-                            data-testid={`toggle-journal-${item.name.replace(/\s+/g, '-').toLowerCase()}`}
+                            aria-label={isExpanded ? `Collapse ${venue}` : `Expand ${venue}`}
+                            data-testid={`toggle-journal-${venue.replace(/\s+/g, '-').toLowerCase()}`}
                             animate={{ rotate: isExpanded ? 90 : 0 }}
                             transition={{ type: "spring", damping: 20, stiffness: 300 }}
                           >
                             <ChevronRight className="h-3 w-3" />
                           </motion.button>
-                          <button
-                            onClick={() => toggleParentJournal(item.name)}
-                            className="block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 font-medium apple-transition apple-focus-ring research-sidebar-item hover:opacity-80"
-                            data-testid={`venue-parent-${item.name.replace(/\s+/g, '-').toLowerCase()}`}
-                            aria-expanded={expandedParentJournals.has(item.name)}
-                            aria-label={`${item.name} group with ${item.totalCount} publications. Click to ${expandedParentJournals.has(item.name) ? 'collapse' : 'expand'}`}
-                          >
-                            {item.name} {item.totalCount > 0 && `(${item.totalCount})`}
-                          </button>
-                        </div>
-                        
+                        )}
+                        <button
+                          onClick={() => handleVenueChange(venue)}
+                          className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 apple-transition apple-focus-ring break-words ${
+                            selectedVenue === venue
+                              ? "font-medium research-sidebar-item-selected"
+                              : "hover:opacity-80 research-sidebar-item"
+                          } ${!hasChildren ? 'ml-4' : ''}`}
+                          data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
+                          aria-pressed={selectedVenue === venue}
+                          aria-label={`Filter by ${venue}${parentTotal > 0 ? ` (${parentTotal} publications)` : ''}`}
+                        >
+                          {venue} {parentTotal > 0 && `(${parentTotal})`}
+                        </button>
+                      </div>
+                      
+                      {hasChildren && (
                         <CollapsibleSection isExpanded={isExpanded}>
                           <div className="space-y-1">
-                            {item.children.map(({ name: childJournal, count: childCount }) => (
+                            {sortedChildren.map(({ name: childJournal, count: childCount }) => (
                               <button
                                 key={childJournal}
                                 onClick={() => handleVenueChange(childJournal)}
@@ -1055,66 +1011,58 @@ export default function Home() {
                             ))}
                           </div>
                         </CollapsibleSection>
-                      </div>
-                    );
-                  } else {
-                    // Standalone journal
-                    return (
-                      <div key={item.name}>
-                        <button
-                          onClick={() => handleVenueChange(item.name)}
-                          className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 ml-4 apple-transition apple-focus-ring break-words ${
-                            selectedVenue === item.name
-                              ? "font-medium research-sidebar-item-selected"
-                              : "hover:opacity-80 research-sidebar-item"
-                          }`}
-                          data-testid={`venue-${item.name.replace(/\s+/g, '-').toLowerCase()}`}
-                          aria-pressed={selectedVenue === item.name}
-                          aria-label={`Filter by ${item.name}${item.count > 0 ? ` (${item.count} publications)` : ''}`}
-                        >
-                          {item.name} {item.count > 0 && <span className="text-[#6e6e73] dark:text-gray-400">({item.count})</span>}
-                        </button>
-                      </div>
-                    );
-                  }
+                      )}
+                    </div>
+                  );
                 })}
                 {hiddenVenues.length > 0 && (
                   <>
                     <CollapsibleSection isExpanded={showAllVenues}>
                       <div className="space-y-1">
-                        {hiddenVenues.map((item) => {
-                          if (item.type === 'parent') {
-                            const isExpanded = expandedParentJournals.has(item.name);
-                            return (
-                              <div key={item.name}>
-                                <div className="flex items-center">
+                        {hiddenVenues.map((venue) => {
+                          const count = filterCounts.venues[venue] || 0;
+                          const hasChildren = isParentJournal(venue);
+                          const isExpanded = expandedParentJournals.has(venue);
+                          const sortedChildren = hasChildren ? getSortedChildJournals(venue) : [];
+                          const parentTotal = hasChildren ? getParentTotalCount(venue) : count;
+                          
+                          return (
+                            <div key={venue}>
+                              <div className="flex items-center">
+                                {hasChildren && (
                                   <motion.button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      toggleParentJournal(item.name);
+                                      toggleParentJournal(venue);
                                     }}
                                     className="flex-shrink-0 mr-1 apple-transition apple-focus-ring research-sidebar-item"
-                                    aria-label={isExpanded ? `Collapse ${item.name}` : `Expand ${item.name}`}
-                                    data-testid={`toggle-journal-${item.name.replace(/\s+/g, '-').toLowerCase()}`}
+                                    aria-label={isExpanded ? `Collapse ${venue}` : `Expand ${venue}`}
+                                    data-testid={`toggle-journal-${venue.replace(/\s+/g, '-').toLowerCase()}`}
                                     animate={{ rotate: isExpanded ? 90 : 0 }}
                                     transition={{ type: "spring", damping: 20, stiffness: 300 }}
                                   >
                                     <ChevronRight className="h-3 w-3" />
                                   </motion.button>
-                                  <button
-                                    onClick={() => toggleParentJournal(item.name)}
-                                    className="block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 font-medium apple-transition apple-focus-ring research-sidebar-item hover:opacity-80"
-                                    data-testid={`venue-parent-${item.name.replace(/\s+/g, '-').toLowerCase()}`}
-                                    aria-expanded={expandedParentJournals.has(item.name)}
-                                    aria-label={`${item.name} group with ${item.totalCount} publications. Click to ${expandedParentJournals.has(item.name) ? 'collapse' : 'expand'}`}
-                                  >
-                                    {item.name} {item.totalCount > 0 && `(${item.totalCount})`}
-                                  </button>
-                                </div>
-                                
+                                )}
+                                <button
+                                  onClick={() => handleVenueChange(venue)}
+                                  className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 apple-transition apple-focus-ring break-words ${
+                                    selectedVenue === venue
+                                      ? "font-medium research-sidebar-item-selected"
+                                      : "hover:opacity-80 research-sidebar-item"
+                                  } ${!hasChildren ? 'ml-4' : ''}`}
+                                  data-testid={`venue-${venue.replace(/\s+/g, '-').toLowerCase()}`}
+                                  aria-pressed={selectedVenue === venue}
+                                  aria-label={`Filter by ${venue}${parentTotal > 0 ? ` (${parentTotal} publications)` : ''}`}
+                                >
+                                  {venue} {parentTotal > 0 && `(${parentTotal})`}
+                                </button>
+                              </div>
+                              
+                              {hasChildren && (
                                 <CollapsibleSection isExpanded={isExpanded}>
                                   <div className="space-y-1">
-                                    {item.children.map(({ name: childJournal, count: childCount }) => (
+                                    {sortedChildren.map(({ name: childJournal, count: childCount }) => (
                                       <button
                                         key={childJournal}
                                         onClick={() => handleVenueChange(childJournal)}
@@ -1132,28 +1080,9 @@ export default function Home() {
                                     ))}
                                   </div>
                                 </CollapsibleSection>
-                              </div>
-                            );
-                          } else {
-                            // Standalone journal
-                            return (
-                              <div key={item.name}>
-                                <button
-                                  onClick={() => handleVenueChange(item.name)}
-                                  className={`block text-sm w-full text-left py-2 sm:py-1 px-1 sm:px-0 ml-4 apple-transition apple-focus-ring break-words ${
-                                    selectedVenue === item.name
-                                      ? "font-medium research-sidebar-item-selected"
-                                      : "hover:opacity-80 research-sidebar-item"
-                                  }`}
-                                  data-testid={`venue-${item.name.replace(/\s+/g, '-').toLowerCase()}`}
-                                  aria-pressed={selectedVenue === item.name}
-                                  aria-label={`Filter by ${item.name}${item.count > 0 ? ` (${item.count} publications)` : ''}`}
-                                >
-                                  {item.name} {item.count > 0 && <span className="text-[#6e6e73] dark:text-gray-400">({item.count})</span>}
-                                </button>
-                              </div>
-                            );
-                          }
+                              )}
+                            </div>
+                          );
                         })}
                       </div>
                     </CollapsibleSection>

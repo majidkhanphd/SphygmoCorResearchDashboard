@@ -385,6 +385,7 @@ export class DatabaseStorage implements IStorage {
     return {
       categories: categoryCounts,
       venues,
+      childJournalCounts,
       years
     };
   }
