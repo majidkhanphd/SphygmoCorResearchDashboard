@@ -32,7 +32,7 @@ console.log(`\n${passed} passed, ${failed} failed\n`);
 
 console.log("=== Testing Parent Groups ===\n");
 
-const parents = ["Frontiers", "Circulation", "JACC", "PLOS", "JASN (Nephrology)", "European Heart Journal"];
+const parents = ["Frontiers", "Circulation", "JACC", "PLOS", "ASN Journals", "European Heart Journal"];
 for (const p of parents) {
   const children = getChildJournals(p);
   const isParent = isParentJournal(p);

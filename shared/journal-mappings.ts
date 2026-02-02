@@ -21,10 +21,11 @@ export interface JournalGroup {
  */
 export const JOURNAL_NORMALIZATIONS: Record<string, string> = {
   // ============================================================
-  // PLOS VARIATIONS (3 variations found)
+  // PLOS VARIATIONS (standardize to PLOS capitalization)
   // ============================================================
   "plos one": "PLOS ONE",
   "plos computational biology": "PLOS Computational Biology",
+  "plos medicine": "PLOS Medicine",
   
   // ============================================================
   // HYPERTENSION FAMILY
@@ -281,7 +282,7 @@ export const JOURNAL_GROUPS: JournalGroup[] = [
     ],
   },
   {
-    parent: "JASN (Nephrology)",
+    parent: "ASN Journals",
     children: [
       "Journal of the American Society of Nephrology",
       "Clinical Journal of the American Society of Nephrology",
@@ -292,7 +293,7 @@ export const JOURNAL_GROUPS: JournalGroup[] = [
     children: [
       "PLOS ONE",
       "PLOS Computational Biology",
-      "PLoS Medicine",
+      "PLOS Medicine",
     ],
   },
 ];
