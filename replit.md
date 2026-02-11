@@ -11,6 +11,15 @@ Preferred communication style: Simple, everyday language.
 ## Frontend Architecture
 The frontend is built with React 18, TypeScript, and Vite, utilizing a component-based architecture. It uses Wouter for routing, TanStack React Query for server state management, and shadcn/ui components (based on Radix UI primitives) with Tailwind CSS for styling. The design emphasizes a fluid, responsive CSS Grid layout, consistent with Apple's aesthetic, featuring horizontal navigation and refined typography. Key features include advanced filtering by research areas, journals, and years, a single-column publication list with color-coded categories, and a robust pagination system. Recent enhancements include a dynamic Featured Carousel, a collapsible sidebar with button controls, comprehensive HTML sanitization, and a dramatic animated hero banner featuring prominent EKG-style pulse waveforms with glowing effects, animated grid overlay reminiscent of cardiac monitors, and continuously flowing waves that reflect the cardiovascular/SphygmoCor theme.
 
+### Admin Page Architecture (Rewritten Feb 2026)
+The admin page (`client/src/pages/admin.tsx`) uses a sidebar navigation layout with 4 sections organized as internal components within a single file:
+- **Sidebar** - Fixed 220px sidebar (icon-only on mobile <768px) with navigation to Dashboard, Publications, Data Quality, Operations
+- **DashboardSection** - Overview stat cards (total pubs, pending review, data issues, duplicates) with clickable navigation
+- **PublicationsSection** - Tab-based publication management (Pending/Approved/Rejected/Featured/Category Review) with react-table, search, pagination, and all mutation dialogs
+- **DataQualitySection** - NEW section with duplicates detection and missing data analysis using simple HTML tables
+- **OperationsSection** - PubMed sync, ML categorization, and citation updates with progress polling
+Key improvements: shared `invalidateAdminQueries()` helper, shared `baseColumns` for react-table, fixed status dropdown bug (now uses `row.original.status` instead of `activeTab`)
+
 ## Backend Architecture
 The backend is developed with Express.js and TypeScript on Node.js, providing RESTful API endpoints for publications, categories, and PubMed integration. It features centralized route organization, custom logging, and comprehensive error handling. A core component is the asynchronous PubMed synchronization service, supporting both full and incremental syncs with real-time progress tracking. An intelligent approval workflow automates approval for complete publications and flags incomplete ones for manual review. An ML-powered Category Suggestion Service, integrated with OpenAI GPT-5 nano (optimized for classification tasks), analyzes publication abstracts to suggest relevant research areas, supported by a hybrid keyword-based fallback system. All category suggestions are automatically normalized to lowercase slugs (e.g., "eva", "ckd", "copd") for consistent data storage.
 

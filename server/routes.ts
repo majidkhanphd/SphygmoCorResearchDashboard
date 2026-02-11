@@ -1902,6 +1902,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Data Quality API routes
+  app.get("/api/admin/data-quality/summary", async (req, res) => {
+    try {
+      const summary = await storage.getDataQualitySummary();
+      res.json({ success: true, summary });
+    } catch (error: any) {
+      console.error("Error fetching data quality summary:", error);
+      res.status(500).json({ success: false, message: "Failed to fetch data quality summary" });
+    }
+  });
+
+  app.get("/api/admin/data-quality/duplicates", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(String(req.query.limit)) : 50;
+      const offset = req.query.offset ? parseInt(String(req.query.offset)) : 0;
+      const result = await storage.findDuplicates(limit, offset);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      console.error("Error fetching duplicates:", error);
+      res.status(500).json({ success: false, message: "Failed to fetch duplicates" });
+    }
+  });
+
+  app.get("/api/admin/data-quality/missing", async (req, res) => {
+    try {
+      const filter = (req.query.filter as string) || 'all';
+      const validFilters = ['all', 'no-abstract', 'no-doi', 'no-categories', 'no-authors'];
+      if (!validFilters.includes(filter)) {
+        return res.status(400).json({ success: false, message: "Invalid filter. Must be one of: " + validFilters.join(', ') });
+      }
+      const limit = req.query.limit ? parseInt(String(req.query.limit)) : 20;
+      const offset = req.query.offset ? parseInt(String(req.query.offset)) : 0;
+      const result = await storage.getMissingDataAlerts(filter as any, limit, offset);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      console.error("Error fetching missing data alerts:", error);
+      res.status(500).json({ success: false, message: "Failed to fetch missing data alerts" });
+    }
+  });
+
+  app.post("/api/admin/data-quality/duplicates/:id/dismiss", async (req, res) => {
+    try {
+      const publicationId = req.params.id;
+      const publication = await storage.getPublication(publicationId);
+      if (!publication) {
+        return res.status(404).json({ success: false, message: "Publication not found" });
+      }
+      const deleted = await storage.deletePublication(publicationId);
+      if (deleted) {
+        res.json({ success: true, message: "Duplicate publication dismissed (deleted)" });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to delete publication" });
+      }
+    } catch (error: any) {
+      console.error("Error dismissing duplicate:", error);
+      res.status(500).json({ success: false, message: "Failed to dismiss duplicate" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

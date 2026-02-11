@@ -82,6 +82,11 @@ export interface IStorage {
   
   // Maintenance methods
   cleanupDuplicatesByTitle(): Promise<number>;
+
+  // Data quality methods
+  findDuplicates(limit?: number, offset?: number): Promise<{ groups: Array<{ reason: string, publications: Publication[] }>, totalGroups: number }>;
+  getMissingDataAlerts(filter: 'all' | 'no-abstract' | 'no-doi' | 'no-categories' | 'no-authors', limit: number, offset: number): Promise<{ publications: Publication[], total: number, counts: { noAbstract: number, noDoi: number, noCategories: number, noAuthors: number } }>;
+  getDataQualitySummary(): Promise<{ totalPublications: number, duplicatesCount: number, missingAbstractCount: number, missingDoiCount: number, missingCategoriesCount: number, missingAuthorsCount: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -618,6 +623,148 @@ export class DatabaseStorage implements IStorage {
     }
 
     return deleted;
+  }
+
+  async findDuplicates(limit: number = 50, offset: number = 0): Promise<{ groups: Array<{ reason: string, publications: Publication[] }>, totalGroups: number }> {
+    const groups: Array<{ reason: string, publications: Publication[] }> = [];
+
+    const titleDuplicates = await db.execute(sql`
+      WITH title_groups AS (
+        SELECT LOWER(TRIM(title)) as normalized_title, array_agg(id) as ids
+        FROM publications
+        GROUP BY LOWER(TRIM(title))
+        HAVING COUNT(*) > 1
+      )
+      SELECT normalized_title, ids FROM title_groups
+      ORDER BY normalized_title
+      LIMIT ${limit} OFFSET ${offset}
+    `);
+
+    for (const row of titleDuplicates.rows as { normalized_title: string, ids: string[] }[]) {
+      const pubs = await db.select().from(publications).where(inArray(publications.id, row.ids));
+      if (pubs.length > 1) {
+        groups.push({
+          reason: `Duplicate title: "${row.normalized_title}"`,
+          publications: pubs
+        });
+      }
+    }
+
+    const doiDuplicates = await db.execute(sql`
+      WITH doi_groups AS (
+        SELECT LOWER(TRIM(doi)) as normalized_doi, array_agg(id) as ids
+        FROM publications
+        WHERE doi IS NOT NULL AND doi != ''
+        GROUP BY LOWER(TRIM(doi))
+        HAVING COUNT(*) > 1
+      )
+      SELECT normalized_doi, ids FROM doi_groups
+      ORDER BY normalized_doi
+      LIMIT ${limit} OFFSET ${offset}
+    `);
+
+    for (const row of doiDuplicates.rows as { normalized_doi: string, ids: string[] }[]) {
+      const pubs = await db.select().from(publications).where(inArray(publications.id, row.ids));
+      if (pubs.length > 1) {
+        const alreadyGrouped = groups.some(g =>
+          g.publications.length === pubs.length &&
+          g.publications.every(p => pubs.some(dp => dp.id === p.id))
+        );
+        if (!alreadyGrouped) {
+          groups.push({
+            reason: `Shared DOI: ${row.normalized_doi}`,
+            publications: pubs
+          });
+        }
+      }
+    }
+
+    const titleCountResult = await db.execute(sql`
+      SELECT COUNT(*) as count FROM (
+        SELECT LOWER(TRIM(title)) FROM publications GROUP BY LOWER(TRIM(title)) HAVING COUNT(*) > 1
+      ) t
+    `);
+    const doiCountResult = await db.execute(sql`
+      SELECT COUNT(*) as count FROM (
+        SELECT LOWER(TRIM(doi)) FROM publications WHERE doi IS NOT NULL AND doi != '' GROUP BY LOWER(TRIM(doi)) HAVING COUNT(*) > 1
+      ) t
+    `);
+
+    const totalGroups = Number((titleCountResult.rows as any[])[0]?.count || 0) + Number((doiCountResult.rows as any[])[0]?.count || 0);
+
+    return { groups, totalGroups };
+  }
+
+  async getMissingDataAlerts(filter: 'all' | 'no-abstract' | 'no-doi' | 'no-categories' | 'no-authors', limit: number, offset: number): Promise<{ publications: Publication[], total: number, counts: { noAbstract: number, noDoi: number, noCategories: number, noAuthors: number } }> {
+    let whereCondition;
+    switch (filter) {
+      case 'no-abstract':
+        whereCondition = or(sql`${publications.abstract} IS NULL`, sql`TRIM(${publications.abstract}) = ''`);
+        break;
+      case 'no-doi':
+        whereCondition = or(sql`${publications.doi} IS NULL`, sql`TRIM(${publications.doi}) = ''`);
+        break;
+      case 'no-categories':
+        whereCondition = or(sql`${publications.categories} IS NULL`, sql`jsonb_array_length(${publications.categories}) = 0`);
+        break;
+      case 'no-authors':
+        whereCondition = or(sql`${publications.authors} IS NULL`, sql`TRIM(${publications.authors}) = ''`);
+        break;
+      case 'all':
+      default:
+        whereCondition = or(
+          sql`${publications.abstract} IS NULL`, sql`TRIM(${publications.abstract}) = ''`,
+          sql`${publications.doi} IS NULL`, sql`TRIM(${publications.doi}) = ''`,
+          sql`${publications.categories} IS NULL`, sql`jsonb_array_length(${publications.categories}) = 0`,
+          sql`${publications.authors} IS NULL`, sql`TRIM(${publications.authors}) = ''`
+        );
+        break;
+    }
+
+    const pubs = await db.select().from(publications).where(whereCondition).orderBy(desc(publications.publicationDate)).limit(limit).offset(offset);
+
+    const [totalResult] = await db.select({ count: sql<number>`count(*)::int` }).from(publications).where(whereCondition);
+
+    const [noAbstractResult] = await db.select({ count: sql<number>`count(*)::int` }).from(publications).where(or(sql`${publications.abstract} IS NULL`, sql`TRIM(${publications.abstract}) = ''`));
+    const [noDoiResult] = await db.select({ count: sql<number>`count(*)::int` }).from(publications).where(or(sql`${publications.doi} IS NULL`, sql`TRIM(${publications.doi}) = ''`));
+    const [noCategoriesResult] = await db.select({ count: sql<number>`count(*)::int` }).from(publications).where(or(sql`${publications.categories} IS NULL`, sql`jsonb_array_length(${publications.categories}) = 0`));
+    const [noAuthorsResult] = await db.select({ count: sql<number>`count(*)::int` }).from(publications).where(or(sql`${publications.authors} IS NULL`, sql`TRIM(${publications.authors}) = ''`));
+
+    return {
+      publications: pubs,
+      total: totalResult?.count || 0,
+      counts: {
+        noAbstract: noAbstractResult?.count || 0,
+        noDoi: noDoiResult?.count || 0,
+        noCategories: noCategoriesResult?.count || 0,
+        noAuthors: noAuthorsResult?.count || 0
+      }
+    };
+  }
+
+  async getDataQualitySummary(): Promise<{ totalPublications: number, duplicatesCount: number, missingAbstractCount: number, missingDoiCount: number, missingCategoriesCount: number, missingAuthorsCount: number }> {
+    const [totalResult] = await db.select({ count: sql<number>`count(*)::int` }).from(publications);
+
+    const duplicatesResult = await db.execute(sql`
+      SELECT COUNT(*) as count FROM (
+        SELECT LOWER(TRIM(title)) FROM publications GROUP BY LOWER(TRIM(title)) HAVING COUNT(*) > 1
+      ) t
+    `);
+    const duplicatesCount = Number((duplicatesResult.rows as any[])[0]?.count || 0);
+
+    const [noAbstractResult] = await db.select({ count: sql<number>`count(*)::int` }).from(publications).where(or(sql`${publications.abstract} IS NULL`, sql`TRIM(${publications.abstract}) = ''`));
+    const [noDoiResult] = await db.select({ count: sql<number>`count(*)::int` }).from(publications).where(or(sql`${publications.doi} IS NULL`, sql`TRIM(${publications.doi}) = ''`));
+    const [noCategoriesResult] = await db.select({ count: sql<number>`count(*)::int` }).from(publications).where(or(sql`${publications.categories} IS NULL`, sql`jsonb_array_length(${publications.categories}) = 0`));
+    const [noAuthorsResult] = await db.select({ count: sql<number>`count(*)::int` }).from(publications).where(or(sql`${publications.authors} IS NULL`, sql`TRIM(${publications.authors}) = ''`));
+
+    return {
+      totalPublications: totalResult?.count || 0,
+      duplicatesCount,
+      missingAbstractCount: noAbstractResult?.count || 0,
+      missingDoiCount: noDoiResult?.count || 0,
+      missingCategoriesCount: noCategoriesResult?.count || 0,
+      missingAuthorsCount: noAuthorsResult?.count || 0
+    };
   }
 }
 
