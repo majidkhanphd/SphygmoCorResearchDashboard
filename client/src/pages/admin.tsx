@@ -684,7 +684,7 @@ function PublicationsSection() {
 
   const renderTable = (table: ReturnType<typeof useReactTable<Publication>>) => (
     <div className="overflow-x-auto">
-      <table className="w-full" style={{ tableLayout: 'fixed', width: table.getTotalSize() }}>
+      <table className="w-full" style={{ tableLayout: 'fixed', width: '100%', minWidth: table.getTotalSize() }}>
         <thead className="border-b">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
@@ -728,8 +728,8 @@ function PublicationsSection() {
       </div>
 
       <Card>
-        <CardContent className="pt-6">
-          <div className="relative">
+        <CardContent className="pt-6 flex justify-center">
+          <div className="relative w-full max-w-xl">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6e6e73] h-4 w-4" />
             <Input
               type="text"
@@ -738,12 +738,12 @@ function PublicationsSection() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
+            {debouncedSearch && publicationsData && (
+              <p className="mt-2 text-sm text-[#6e6e73] dark:text-gray-400 text-center">
+                Found {publicationsData.total} publication{publicationsData.total !== 1 ? 's' : ''} matching &ldquo;{debouncedSearch}&rdquo;
+              </p>
+            )}
           </div>
-          {debouncedSearch && publicationsData && (
-            <p className="mt-2 text-sm text-[#6e6e73] dark:text-gray-400">
-              Found {publicationsData.total} publication{publicationsData.total !== 1 ? 's' : ''} matching &ldquo;{debouncedSearch}&rdquo;
-            </p>
-          )}
         </CardContent>
       </Card>
 
