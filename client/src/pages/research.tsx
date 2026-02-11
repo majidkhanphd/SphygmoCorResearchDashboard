@@ -57,17 +57,7 @@ export default function Home() {
     const saved = localStorage.getItem('publicationsPerPage');
     return saved ? parseInt(saved) : 25;
   });
-  // Fetch batch size - starts small for fast initial load, upgrades when user selects more per page
-  const [fetchBatchSize, setFetchBatchSize] = useState<number>(() => {
-    const savedPerPage = localStorage.getItem('publicationsPerPage');
-    // Start with 25 for fast initial load, upgrade to 100 or 200 based on user preference
-    if (savedPerPage) {
-      const saved = parseInt(savedPerPage);
-      if (saved > 100) return 200;
-      if (saved > 25) return 100;
-    }
-    return 25; // Fast initial load
-  });
+  
   const resultsRef = useRef<HTMLDivElement>(null);
   const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
   const [sidebarSize, setSidebarSize] = useState(16);
@@ -233,21 +223,11 @@ export default function Home() {
     setCurrentPage(1);
   }, [debouncedSearchQuery, selectedResearchArea, selectedVenue, selectedYear, sortBy]);
   
-  // Handle perPage changes - upgrade batch size if needed, reset page
   useEffect(() => {
-    // Reset to page 1 when perPage changes
     setCurrentPage(1);
-    // Upgrade batch size based on user selection
-    if (perPage > 100 && fetchBatchSize < 200) {
-      setFetchBatchSize(200);
-    } else if (perPage > 25 && fetchBatchSize < 100) {
-      setFetchBatchSize(100);
-    }
-    // Persist to localStorage
     localStorage.setItem('publicationsPerPage', perPage.toString());
-  }, [perPage, fetchBatchSize]);
+  }, [perPage]);
 
-  // Fetch a batch of publications - client-side pagination will slice this
   const { 
     data, 
     isLoading
@@ -258,7 +238,8 @@ export default function Home() {
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy,
-      limit: fetchBatchSize
+      limit: perPage,
+      offset: (currentPage - 1) * perPage
     }],
     queryFn: () => searchPublications({
       query: debouncedSearchQuery || undefined,
@@ -266,8 +247,8 @@ export default function Home() {
       venue: selectedVenue || undefined,
       year: selectedYear || undefined,
       sortBy,
-      limit: fetchBatchSize,
-      offset: 0
+      limit: perPage,
+      offset: (currentPage - 1) * perPage
     })
   });
 
@@ -363,13 +344,7 @@ export default function Home() {
     setIsSidebarCollapsed(false);
   };
 
-  // Get all fetched publications from the batch
-  const fetchedPublications = data?.publications || [];
-  
-  // Client-side pagination - slice the fetched batch based on perPage and currentPage
-  const startIndex = (currentPage - 1) * perPage;
-  const endIndex = startIndex + perPage;
-  const allPublications = fetchedPublications.slice(startIndex, endIndex);
+  const allPublications = data?.publications || [];
   
   // Get authoritative filter counts from the backend
   const backendFilterCounts = data?.filterCounts || {
