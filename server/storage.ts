@@ -182,7 +182,11 @@ export class DatabaseStorage implements IStorage {
         or(
           sql`LOWER(${publications.title}) LIKE ${searchQuery} ESCAPE '\\'`,
           sql`LOWER(${publications.authors}) LIKE ${searchQuery} ESCAPE '\\'`,
-          sql`LOWER(${publications.abstract}) LIKE ${searchQuery} ESCAPE '\\'`
+          sql`LOWER(${publications.abstract}) LIKE ${searchQuery} ESCAPE '\\'`,
+          sql`LOWER(${publications.journal}) LIKE ${searchQuery} ESCAPE '\\'`,
+          sql`LOWER(${publications.doi}) LIKE ${searchQuery} ESCAPE '\\'`,
+          sql`LOWER(${publications.pmcId}) LIKE ${searchQuery} ESCAPE '\\'`,
+          sql`LOWER(CAST(${publications.pmid} AS TEXT)) LIKE ${searchQuery} ESCAPE '\\'`
         )
       );
     }
@@ -269,12 +273,17 @@ export class DatabaseStorage implements IStorage {
     baseConditions.push(eq(publications.status, "approved"));
     
     if (params.query) {
-      const searchQuery = `%${params.query.toLowerCase()}%`;
+      const escapedQuery = escapeLikePattern(params.query.toLowerCase());
+      const searchQuery = `%${escapedQuery}%`;
       baseConditions.push(
         or(
-          sql`LOWER(${publications.title}) LIKE ${searchQuery}`,
-          sql`LOWER(${publications.authors}) LIKE ${searchQuery}`,
-          sql`LOWER(${publications.abstract}) LIKE ${searchQuery}`
+          sql`LOWER(${publications.title}) LIKE ${searchQuery} ESCAPE '\\'`,
+          sql`LOWER(${publications.authors}) LIKE ${searchQuery} ESCAPE '\\'`,
+          sql`LOWER(${publications.abstract}) LIKE ${searchQuery} ESCAPE '\\'`,
+          sql`LOWER(${publications.journal}) LIKE ${searchQuery} ESCAPE '\\'`,
+          sql`LOWER(${publications.doi}) LIKE ${searchQuery} ESCAPE '\\'`,
+          sql`LOWER(${publications.pmcId}) LIKE ${searchQuery} ESCAPE '\\'`,
+          sql`LOWER(CAST(${publications.pmid} AS TEXT)) LIKE ${searchQuery} ESCAPE '\\'`
         )
       );
     }
