@@ -1011,11 +1011,11 @@ export class PubMedService {
     console.log("Starting PMC sync for SphygmoCor research...");
     const allPublications: InsertPublication[] = [];
 
-    // Search in 5-year chunks from 2000 to present to capture all historical publications
+    // Search in 5-year chunks from 1990 to present to capture all historical publications
     const currentYear = new Date().getFullYear();
     const yearRanges: Array<{ start: number; end: number }> = [];
     
-    for (let year = 2000; year <= currentYear; year += 5) {
+    for (let year = 1990; year <= currentYear; year += 5) {
       yearRanges.push({
         start: year,
         end: Math.min(year + 4, currentYear)
@@ -1042,6 +1042,18 @@ export class PubMedService {
         // Add delay to respect PubMed rate limits (3 requests per second)
         await new Promise((resolve) => setTimeout(resolve, 350));
       }
+
+      // Catch-all: undated search to find any articles missed by date filtering
+      console.log(`  Running catch-all undated search...`);
+      const catchAllIds = await this.searchPubMed(term, maxPerTerm);
+      console.log(`  Found ${catchAllIds.length} articles in catch-all search`);
+
+      if (catchAllIds.length > 0) {
+        const publications = await this.fetchArticleDetails(catchAllIds);
+        allPublications.push(...publications);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 350));
     }
 
     // Remove duplicates based on PMC ID (stored in pmid field)
@@ -1060,18 +1072,19 @@ export class PubMedService {
     const seenIds = new Set<string>();
     let totalFetched = 0;
 
-    // Search in 5-year chunks from 2000 to present to capture all historical publications
+    // Search in 5-year chunks from 1990 to present to capture all historical publications
     const currentYear = new Date().getFullYear();
     const yearRanges: Array<{ start: number; end: number }> = [];
     
-    for (let year = 2000; year <= currentYear; year += 5) {
+    for (let year = 1990; year <= currentYear; year += 5) {
       yearRanges.push({
         start: year,
         end: Math.min(year + 4, currentYear)
       });
     }
 
-    const totalBatches = yearRanges.length * this.cardiovascularTerms.length;
+    // +1 batch per term for the catch-all undated search
+    const totalBatches = (yearRanges.length + 1) * this.cardiovascularTerms.length;
     let batchIndex = 0;
 
     for (const term of this.cardiovascularTerms) {
@@ -1114,6 +1127,32 @@ export class PubMedService {
         // Add delay to respect PubMed rate limits (3 requests per second)
         await new Promise((resolve) => setTimeout(resolve, 350));
       }
+
+      // Catch-all: undated search to find any articles missed by date filtering
+      batchIndex++;
+      const catchAllPhase = `Catch-all undated search`;
+      console.log(`  Running catch-all undated search...`);
+      const catchAllIds = await this.searchPubMed(term, maxPerTerm);
+      console.log(`  Found ${catchAllIds.length} articles in catch-all search`);
+
+      if (catchAllIds.length > 0) {
+        const publications = await this.fetchArticleDetails(catchAllIds);
+        const uniqueBatch: InsertPublication[] = [];
+        for (const pub of publications) {
+          if (pub.pmid && !seenIds.has(pub.pmid)) {
+            seenIds.add(pub.pmid);
+            uniqueBatch.push(pub);
+          }
+        }
+        totalFetched += uniqueBatch.length;
+        if (onBatchFetched) {
+          await onBatchFetched(uniqueBatch, catchAllPhase, batchIndex, totalBatches);
+        }
+      } else if (onBatchFetched) {
+        await onBatchFetched([], catchAllPhase, batchIndex, totalBatches);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 350));
     }
 
     console.log(`\nProgressive sync complete. Fetched ${seenIds.size} unique publications`);
