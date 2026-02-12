@@ -71,7 +71,7 @@ export default function Home() {
   const [isMobileScreen, setIsMobileScreen] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth < 640;
   });
-  const [expandedPublicationId, setExpandedPublicationId] = useState<string | null>(null);
+  const [expandedPublicationIds, setExpandedPublicationIds] = useState<Set<string>>(new Set());
   const [isPublicationsSectionVisible, setIsPublicationsSectionVisible] = useState(false);
   const [publicationsHeight, setPublicationsHeight] = useState<number | null>(null);
   const [sidebarDefaultSize, setSidebarDefaultSize] = useState(() => {
@@ -218,13 +218,15 @@ export default function Home() {
     }
   }, [initialSidebarCollapsed]);
 
-  // Reset to page 1 when filters change (but NOT when perPage changes - that's client-side now)
+  // Reset to page 1 and collapse abstracts when filters change (but NOT when perPage changes - that's client-side now)
   useEffect(() => {
     setCurrentPage(1);
+    setExpandedPublicationIds(new Set());
   }, [debouncedSearchQuery, selectedResearchArea, selectedVenue, selectedYear, sortBy]);
   
   useEffect(() => {
     setCurrentPage(1);
+    setExpandedPublicationIds(new Set());
     localStorage.setItem('publicationsPerPage', perPage.toString());
   }, [perPage]);
 
@@ -303,7 +305,7 @@ export default function Home() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll to top of results
+    setExpandedPublicationIds(new Set());
     resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -1179,22 +1181,24 @@ export default function Home() {
                             <button 
                               onClick={(e) => {
                                 e.preventDefault();
-                                if (expandedPublicationId === publication.id) {
-                                  // Already expanded - go to PubMed
+                                if (expandedPublicationIds.has(publication.id)) {
                                   const url = publication.pubmedUrl || (publication.doi ? `https://doi.org/${publication.doi}` : null);
                                   if (url) {
                                     window.open(url, '_blank', 'noopener,noreferrer');
                                   }
                                 } else {
-                                  // Expand this publication
-                                  setExpandedPublicationId(publication.id);
+                                  setExpandedPublicationIds(prev => {
+                                    const next = new Set(prev);
+                                    next.add(publication.id);
+                                    return next;
+                                  });
                                 }
                               }}
                               className="text-left transition-colors duration-200 research-publication-link cursor-pointer hover:text-[#AF87FF] inline-flex items-start gap-2"
                               data-testid="publication-title-link"
                             >
                               <span className="flex-shrink-0 mt-1">
-                                {expandedPublicationId === publication.id ? (
+                                {expandedPublicationIds.has(publication.id) ? (
                                   <ExternalLink className="h-4 w-4 text-[#AF87FF]" />
                                 ) : (
                                   <ChevronDown className="h-4 w-4 text-[#6E6E73]" />
@@ -1255,7 +1259,7 @@ export default function Home() {
                           
                           {/* Expandable Abstract */}
                           <AnimatePresence>
-                            {expandedPublicationId === publication.id && publication.abstract && (
+                            {expandedPublicationIds.has(publication.id) && publication.abstract && (
                               <motion.div
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: 'auto' }}
@@ -1277,7 +1281,11 @@ export default function Home() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setExpandedPublicationId(null);
+                                    setExpandedPublicationIds(prev => {
+                                      const next = new Set(prev);
+                                      next.delete(publication.id);
+                                      return next;
+                                    });
                                   }}
                                   className="mt-3 text-sm text-[#AF87FF] hover:text-[#9B6FFF] transition-colors flex items-center gap-1"
                                   data-testid={`collapse-abstract-${publication.id}`}
