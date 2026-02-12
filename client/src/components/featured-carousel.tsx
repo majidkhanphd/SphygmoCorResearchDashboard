@@ -247,23 +247,32 @@ const FeaturedCarousel = forwardRef<HTMLElement>(function FeaturedCarousel(_, re
                       data-testid={`card-journal-${index}`}
                     >
                       {sanitizeText(publication.journal)} • {new Date(publication.publicationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
-                      {publication.doi && (
-                        <>
-                          {' • '}
-                          <a 
-                            href={publication.doi} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center hover:underline"
-                            style={{ color: '#AF87FF' }}
-                            data-testid={`card-doi-link-${index}`}
-                          >
-                            DOI
-                            <ExternalLink className="ml-1 h-3 w-3" />
-                          </a>
-                        </>
-                      )}
                     </p>
+
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      {publication.doi && (
+                        <a
+                          href={publication.doi.startsWith('http') ? publication.doi : `https://doi.org/${publication.doi}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded transition-colors duration-200 research-doi-badge"
+                          style={{ fontSize: '11px' }}
+                          data-testid={`card-doi-link-${index}`}
+                        >
+                          DOI
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                      {publication.citationCount !== null && publication.citationCount !== undefined && publication.citationCount > 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded"
+                          style={{ backgroundColor: '#F5F5F7', color: '#1D1D1F', fontSize: '11px', fontWeight: 500 }}
+                          data-testid={`card-citation-count-${index}`}
+                        >
+                          Citations: {publication.citationCount.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
 
                     <AnimatePresence>
                       {areAbstractsExpanded && publication.abstract && (
