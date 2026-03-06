@@ -417,7 +417,7 @@ export class DatabaseStorage implements IStorage {
         eq(publications.isFeatured, 1),
         eq(publications.status, "approved")
       ))
-      .orderBy(desc(publications.publicationDate))
+      .orderBy(desc(publications.citationCount))
       .limit(30);
   }
 
