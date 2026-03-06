@@ -56,7 +56,8 @@ The system prioritizes type safety, developer experience, and scalable data mana
 ## Citation Count Integration
 - **OpenAlex API**: Free, open API for fetching citation counts by DOI. No API key required.
 - Citation counts are displayed next to DOI badges on publication cards
-- Publications can be sorted by "Most Cited" in addition to "Newest" and "Oldest"
+- Publications can be sorted by "Most Cited" and "Trending" in addition to "Newest" and "Oldest"
+- "Trending" sort calculates citations per year (citations ÷ age in years, minimum 1 year) to surface recent papers gaining traction quickly
 - Admin panel includes a button to bulk update citation counts for all publications with DOIs
 - Citation service (`server/services/citations.ts`) handles batch fetching with rate limiting
 

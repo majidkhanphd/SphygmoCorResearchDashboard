@@ -44,7 +44,7 @@ const getBadgeDisplayName = (category: string): string => {
 export default function Home() {
   const [inputValue, setInputValue] = useState("");
   const debouncedSearchQuery = useDebounce(inputValue, 400);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "most-cited">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "most-cited" | "trending">("newest");
   const [selectedResearchArea, setSelectedResearchArea] = useState<string | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -538,7 +538,7 @@ export default function Home() {
             
             {/* Sort Dropdown */}
             <div className="w-full sm:w-48 flex-shrink-0">
-              <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "most-cited") => setSortBy(value)}>
+              <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "most-cited" | "trending") => setSortBy(value)}>
                 <SelectTrigger 
                   className="w-full rounded-[5px] transition-all duration-200 ease-in-out py-2 sm:py-3 text-sm sm:text-base research-sort-dropdown"
                   data-testid="sort-dropdown"
@@ -549,6 +549,7 @@ export default function Home() {
                   <SelectItem value="newest" data-testid="sort-newest">Newest</SelectItem>
                   <SelectItem value="oldest" data-testid="sort-oldest">Oldest</SelectItem>
                   <SelectItem value="most-cited" data-testid="sort-most-cited">Most Cited</SelectItem>
+                  <SelectItem value="trending" data-testid="sort-trending">Trending</SelectItem>
                 </SelectContent>
               </Select>
             </div>

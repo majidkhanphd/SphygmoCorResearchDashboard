@@ -228,6 +228,11 @@ export class DatabaseStorage implements IStorage {
       case "most-cited":
         orderBy = desc(publications.citationCount);
         break;
+      case "trending":
+        orderBy = desc(
+          sql`COALESCE(${publications.citationCount}, 0)::float / GREATEST(EXTRACT(EPOCH FROM (NOW() - COALESCE(${publications.publicationDate}, NOW()))) / 31557600, 1)`
+        );
+        break;
       case "newest":
       default:
         orderBy = desc(publications.publicationDate);
