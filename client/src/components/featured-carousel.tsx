@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
-import { useCallback, useEffect, useState, forwardRef } from "react";
+import { useCallback, useEffect, useState, useRef, forwardRef } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,10 +51,49 @@ const FeaturedCarousel = forwardRef<HTMLElement>(function FeaturedCarousel(_, re
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
   const [areAbstractsExpanded, setAreAbstractsExpanded] = useState(false);
+  const [abstractMaxHeight, setAbstractMaxHeight] = useState<number | null>(null);
+  const abstractRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const toggleExpand = () => {
     setAreAbstractsExpanded(prev => !prev);
   };
+
+  const recalcAbstractHeight = useCallback(() => {
+    const heights: number[] = [];
+    abstractRefs.current.forEach((el) => {
+      if (el) {
+        const prev = el.style.maxHeight;
+        el.style.maxHeight = 'none';
+        heights.push(el.scrollHeight);
+        el.style.maxHeight = prev;
+      }
+    });
+    if (heights.length > 0) {
+      setAbstractMaxHeight(Math.min(...heights));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!areAbstractsExpanded || !featuredPublications) {
+      setAbstractMaxHeight(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      requestAnimationFrame(recalcAbstractHeight);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [areAbstractsExpanded, featuredPublications, recalcAbstractHeight]);
+
+  useEffect(() => {
+    if (!areAbstractsExpanded) return;
+    const observer = new ResizeObserver(() => {
+      requestAnimationFrame(recalcAbstractHeight);
+    });
+    abstractRefs.current.forEach((el) => {
+      if (el?.parentElement) observer.observe(el.parentElement);
+    });
+    return () => observer.disconnect();
+  }, [areAbstractsExpanded, abstractMaxHeight, recalcAbstractHeight]);
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -284,11 +323,19 @@ const FeaturedCarousel = forwardRef<HTMLElement>(function FeaturedCarousel(_, re
                           className="overflow-hidden"
                         >
                           <div
-                            className="mb-3 pt-2"
+                            ref={(el) => {
+                              if (el) abstractRefs.current.set(publication.id, el);
+                              else abstractRefs.current.delete(publication.id);
+                            }}
+                            className="mb-3 pt-2 featured-abstract-scroll"
                             style={{
                               fontSize: '12px',
                               color: '#6E6E73',
                               lineHeight: '1.6',
+                              ...(abstractMaxHeight ? {
+                                maxHeight: `${abstractMaxHeight}px`,
+                                overflowY: 'auto' as const,
+                              } : {}),
                             }}
                             data-testid={`card-abstract-${index}`}
                           >
@@ -297,42 +344,36 @@ const FeaturedCarousel = forwardRef<HTMLElement>(function FeaturedCarousel(_, re
                         </motion.div>
                       )}
                     </AnimatePresence>
-
-                    <button
-                      onClick={toggleExpand}
-                      className="inline-flex items-center justify-center rounded-lg transition-all duration-200 w-full"
-                      style={{
-                        padding: '8px',
-                        color: '#AF87FF',
-                        backgroundColor: 'transparent',
-                        border: '1px solid #E5E5E7',
-                        cursor: 'pointer',
-                        fontSize: '11px',
-                        fontWeight: '500'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#F5F5F7';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
-                      aria-label={areAbstractsExpanded ? "Collapse abstracts" : "Expand abstracts"}
-                      data-testid={`toggle-abstract-button-${index}`}
-                    >
-                      {areAbstractsExpanded ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </button>
                   </motion.div>
                 </motion.div>
               ))}
             </div>
           </div>
 
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={toggleExpand}
+              className="transition-all duration-200 hover:opacity-70"
+              style={{
+                color: '#AF87FF',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+              }}
+              aria-label={areAbstractsExpanded ? "Collapse abstracts" : "Expand abstracts"}
+              data-testid="toggle-abstracts-button"
+            >
+              {areAbstractsExpanded ? (
+                <ChevronUp className="h-5 w-5" />
+              ) : (
+                <ChevronDown className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+
           {featuredPublications.length > 1 && (
-            <div className="flex lg:hidden items-center justify-center gap-2 mt-6">
+            <div className="flex lg:hidden items-center justify-center gap-2 mt-4">
               <button
                 onClick={scrollPrev}
                 disabled={!canScrollPrev}

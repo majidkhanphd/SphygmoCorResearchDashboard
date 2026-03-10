@@ -391,3 +391,21 @@
   color: var(--research-accent-purple);
   stroke-width: 2;
 }
+
+.featured-abstract-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.featured-abstract-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.featured-abstract-scroll::-webkit-scrollbar-thumb {
+  background-color: #D1D1D6;
+  border-radius: 2px;
+}
+
+.featured-abstract-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #D1D1D6 transparent;
+}
