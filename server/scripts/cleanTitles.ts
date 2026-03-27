@@ -123,7 +123,7 @@ async function cleanPublications(options: CleanupOptions): Promise<CleanupStats>
     stats.total = allPublications.length;
     
     console.log(`📊 Found ${stats.total} total publications\n`);
-    console.log(`🎯 Scanning for HTML entities...\n`);
+    console.log(`🎯 Scanning for HTML entities and all-caps titles...\n`);
     
     const fieldsToClean: Array<'title' | 'abstract' | 'journal'> = 
       options.field && options.field !== 'all' 
