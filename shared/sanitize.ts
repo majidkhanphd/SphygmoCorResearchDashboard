@@ -131,12 +131,12 @@ const ACRONYM_CANONICAL: Record<string, string> = {};
   "NHANES", "WHO", "FDA", "NIH", "NHS", "AHA", "ESC", "ACC",
   "USA", "UK", "EU", "II", "III", "IV", "VI", "VII", "VIII", "IX",
   "RAAS", "GFR", "IMT", "FMD", "CPP", "MAP", "SBP", "DBP",
-  "CI", "OR", "RR", "SD", "SE", "IQR", "AUC", "ROC",
+  "CI", "RR", "SD", "SE", "IQR", "AUC", "ROC",
   "GWAS", "SNP", "PCR", "ELISA", "MMP", "CRP", "TNF", "IL",
   "NO", "ROS", "ATP", "ADP",
   "PMC", "PMID", "DOI", "PDF", "URL",
   "CVD", "CHD", "MI", "PAD", "AF", "HF", "LV", "RV", "LA", "RA",
-  "RCT", "COVID", "SARS", "ICH", "TIA", "DVT", "PE",
+  "RCT", "COVID", "SARS", "ICH", "TIA", "DVT", "PE", "SIOP",
 ].forEach(a => { ACRONYM_CANONICAL[a] = a; });
 
 const SPECIAL_CASE_TERMS: Record<string, string> = {
