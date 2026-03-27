@@ -14,6 +14,8 @@ if (!process.env.DATABASE_URL) {
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle({ client: pool, schema });
 
+export let ftsReady = false;
+
 export async function ensureFullTextSearch() {
   const client = await pool.connect();
   try {
@@ -83,6 +85,7 @@ export async function ensureFullTextSearch() {
       END $$;
     `);
 
+    ftsReady = true;
     console.log("[db] Full-text search setup complete");
   } finally {
     client.release();

@@ -1,6 +1,6 @@
 import { type Publication, type InsertPublication, type Category, type InsertCategory, type SearchPublicationsParams, type FilterCounts, type SearchPublicationsResponse, type SuggestedCategory, type BackgroundTask, type TaskProgress, type TaskStats, type TaskHistoryEntry } from "@shared/schema";
 import { publications, categories, backgroundTasks } from "@shared/schema";
-import { db } from "./db";
+import { db, ftsReady } from "./db";
 import { eq, and, or, like, sql, desc, asc, inArray } from "drizzle-orm";
 import { normalizeJournalName, findParentGroup, getChildJournals, JOURNAL_GROUPS } from "@shared/journal-mappings";
 
@@ -91,7 +91,7 @@ export interface IStorage {
   // Background task persistence methods
   getBackgroundTask(taskType: string): Promise<BackgroundTask | undefined>;
   upsertBackgroundTask(taskType: string, data: Partial<Omit<BackgroundTask, 'id' | 'taskType'>>): Promise<BackgroundTask>;
-  markInterruptedTasks(): Promise<number>;
+  markInterruptedTasks(bootTime?: Date): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -183,13 +183,25 @@ export class DatabaseStorage implements IStorage {
     if (params.query) {
       const sanitized = params.query.trim();
       if (sanitized.length > 0) {
-        tsQueryExpr = sql`(
-          plainto_tsquery('english', ${sanitized}) ||
-          plainto_tsquery('simple', ${sanitized})
-        )`;
-        conditions.push(
-          sql`search_vector @@ ${tsQueryExpr}`
-        );
+        if (ftsReady) {
+          tsQueryExpr = sql`(
+            plainto_tsquery('english', ${sanitized}) ||
+            plainto_tsquery('simple', ${sanitized})
+          )`;
+          conditions.push(
+            sql`search_vector @@ ${tsQueryExpr}`
+          );
+        } else {
+          const likePattern = `%${escapeLikePattern(sanitized.toLowerCase())}%`;
+          conditions.push(
+            or(
+              sql`LOWER(${publications.title}) LIKE ${likePattern}`,
+              sql`LOWER(${publications.authors}) LIKE ${likePattern}`,
+              sql`LOWER(${publications.journal}) LIKE ${likePattern}`,
+              sql`LOWER(${publications.abstract}) LIKE ${likePattern}`,
+            )
+          );
+        }
       }
     }
 
@@ -830,7 +842,8 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async markInterruptedTasks(): Promise<number> {
+  async markInterruptedTasks(bootTime?: Date): Promise<number> {
+    const cutoff = bootTime || new Date();
     const result = await db
       .update(backgroundTasks)
       .set({
@@ -840,7 +853,12 @@ export class DatabaseStorage implements IStorage {
         endTime: new Date(),
         updatedAt: new Date(),
       })
-      .where(eq(backgroundTasks.status, "running"))
+      .where(
+        and(
+          eq(backgroundTasks.status, "running"),
+          sql`${backgroundTasks.updatedAt} < ${cutoff}`
+        )
+      )
       .returning();
     return result.length;
   }

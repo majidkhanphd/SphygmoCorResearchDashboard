@@ -244,10 +244,11 @@ function extractAbstractFromXml(xmlString: string): string {
   return sections.join('\n\n');
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  
+const processBootTime = new Date();
+
+export async function initializeBackgroundTrackers(): Promise<void> {
   try {
-    const interruptedCount = await storage.markInterruptedTasks();
+    const interruptedCount = await storage.markInterruptedTasks(processBootTime);
     if (interruptedCount > 0) {
       console.log(`[STARTUP] Marked ${interruptedCount} interrupted background task(s)`);
     }
@@ -261,6 +262,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   } catch (err) {
     console.error("[STARTUP] Failed to initialize background task trackers (table may not exist yet):", err);
   }
+}
+
+export async function registerRoutes(app: Express): Promise<Server> {
+
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok" });
+  });
 
   // Get all categories
   app.get("/api/categories", async (req, res) => {
