@@ -1,0 +1,15 @@
+High-Impact Improvements
+Admin routes have no authentication — Anyone who knows the URL can trigger PubMed syncs, approve/reject publications, or modify data. Adding basic auth protection to all /api/admin/* routes would be a critical security fix.
+Major performance bottleneck on the Research page — The mouse-tracking gradient animation updates state at the top level of a ~1,350-line component, causing the entire page to re-render on every animation frame while the mouse moves. This should be isolated to avoid impacting the rest of the page.
+Large monolithic page files — Both the Research page (~1,350 lines) and Admin page (~1,470 lines) handle everything in one place. Breaking them into smaller, focused components would improve maintainability and performance significantly.
+
+Medium-Impact Improvements
+Missing memoization across the Research page — Filter calculations (venues, research areas, available years) and callback handlers are recalculated on every render. Adding caching for computed values and stable references for callbacks would reduce unnecessary work.
+Search efficiency at scale — The current text search uses SQL LIKE with leading wildcards, which can't use database indexes. As your publication count grows, switching to PostgreSQL full-text search would keep things fast.
+Accessibility gaps — Filter buttons don't indicate their active/selected state to screen readers, some color contrast ratios are borderline (especially the purple accent), and heading hierarchy could be improved in card components.
+Input validation gaps on admin routes — Several admin endpoints accept request bodies without strict validation, and pagination limits aren't enforced on all routes, which could lead to memory issues with large requests.
+
+Lower-Impact (But Worth Noting)
+Hardcoded stats — Some statistics (countries count, institutions count) appear to be mock data rather than real calculated values.
+Background task state is in-memory — If the server restarts during a PubMed sync or citation update, the progress tracking is lost.
+Category filter input trimming — Comma-separated category filters from the URL don't trim whitespace, which could cause subtle matching issues.
