@@ -264,10 +264,16 @@ export async function initializeBackgroundTrackers(): Promise<void> {
   }
 }
 
+let backgroundInitComplete = false;
+
+export function markBackgroundInitComplete() {
+  backgroundInitComplete = true;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok" });
+    res.json({ status: "ok", ready: backgroundInitComplete });
   });
 
   // Get all categories

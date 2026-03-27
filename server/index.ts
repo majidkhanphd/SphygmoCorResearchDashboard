@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes, initializeBackgroundTrackers } from "./routes";
+import { registerRoutes, initializeBackgroundTrackers, markBackgroundInitComplete } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ensureFullTextSearch } from "./db";
 
@@ -48,13 +48,21 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
 
-    Promise.all([
-      ensureFullTextSearch().catch(err => {
-        console.error("[STARTUP] Full-text search setup failed:", err);
-      }),
+    Promise.allSettled([
+      ensureFullTextSearch(),
       initializeBackgroundTrackers(),
-    ]).then(() => {
-      log("background initialization complete");
+    ]).then((results) => {
+      const ftsResult = results[0];
+      const trackerResult = results[1];
+      if (ftsResult.status === "rejected") {
+        console.error("[STARTUP] Full-text search setup failed:", ftsResult.reason);
+      }
+      if (trackerResult.status === "rejected") {
+        console.error("[STARTUP] Tracker initialization failed:", trackerResult.reason);
+      }
+      const allOk = results.every(r => r.status === "fulfilled");
+      markBackgroundInitComplete();
+      log(`background initialization ${allOk ? "complete" : "complete with errors"}`);
     });
   });
 })();
