@@ -44,16 +44,16 @@ export default function ResearchStatistics() {
             <div className="text-muted-foreground">Publications</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-primary mb-2" data-testid="stat-countries">
-              {stats?.countriesCount || "150+"}
+            <div className="text-4xl font-bold text-primary mb-2" data-testid="stat-journals">
+              {stats?.uniqueJournalsCount != null ? stats.uniqueJournalsCount.toLocaleString() : "N/A"}
             </div>
-            <div className="text-muted-foreground">Countries</div>
+            <div className="text-muted-foreground">Journals</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-primary mb-2" data-testid="stat-institutions">
-              {stats?.institutionsCount || "500+"}
+            <div className="text-4xl font-bold text-primary mb-2" data-testid="stat-research-areas">
+              {stats?.researchAreasCount != null ? stats.researchAreasCount.toLocaleString() : "N/A"}
             </div>
-            <div className="text-muted-foreground">Institutions</div>
+            <div className="text-muted-foreground">Research Areas</div>
           </div>
           <div className="text-center">
             <div className="text-4xl font-bold text-primary mb-2" data-testid="stat-citations">

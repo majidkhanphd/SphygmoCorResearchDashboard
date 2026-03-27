@@ -16,9 +16,16 @@ export async function searchPubMed(query: string, maxResults: number = 20): Prom
   return response.json();
 }
 
-export async function getPublicationStats() {
+export async function getPublicationStats(): Promise<{
+  totalPublications: number;
+  totalCitations: number;
+  uniqueJournalsCount: number;
+  researchAreasCount: number;
+  totalByStatus?: Record<string, number>;
+}> {
   const response = await apiRequest("GET", "/api/publications/stats");
-  return response.json();
+  const data = await response.json();
+  return data.stats;
 }
 
 export async function getFeaturedPublications() {

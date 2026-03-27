@@ -66,7 +66,7 @@ export interface IStorage {
   getFilterCounts(params: SearchPublicationsParams): Promise<FilterCounts>;
   getFeaturedPublications(): Promise<Publication[]>;
   toggleFeatured(id: string): Promise<Publication | undefined>;
-  getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number, totalByStatus?: Record<string, number>}>;
+  getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, uniqueJournalsCount: number, researchAreasCount: number, totalByStatus?: Record<string, number>}>;
   getMostRecentPublicationDate(): Promise<Date | null>;
 
   // Category methods
@@ -435,7 +435,7 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, countriesCount: number, institutionsCount: number, totalByStatus?: Record<string, number>}> {
+  async getPublicationStats(): Promise<{totalPublications: number, totalCitations: number, uniqueJournalsCount: number, researchAreasCount: number, totalByStatus?: Record<string, number>}> {
     const [statsResult] = await db
       .select({
         totalPublications: sql<number>`count(*)::int`,
@@ -457,11 +457,33 @@ export class DatabaseStorage implements IStorage {
       totalByStatus[status] = count;
     });
 
+    const [journalsResult] = await db
+      .select({
+        count: sql<number>`count(distinct ${publications.journal})::int`
+      })
+      .from(publications)
+      .where(eq(publications.status, "approved"));
+
+    const allApprovedPubs = await db
+      .select({ categories: publications.categories })
+      .from(publications)
+      .where(eq(publications.status, "approved"));
+
+    const uniqueAreas = new Set<string>();
+    for (const pub of allApprovedPubs) {
+      if (Array.isArray(pub.categories)) {
+        for (const cat of pub.categories) {
+          if (cat) uniqueAreas.add(cat);
+        }
+      }
+    }
+    const researchAreasCount = uniqueAreas.size;
+
     return {
       totalPublications: statsResult?.totalPublications || 0,
       totalCitations: statsResult?.totalCitations || 0,
-      countriesCount: 150, // Mock data
-      institutionsCount: 500, // Mock data
+      uniqueJournalsCount: journalsResult?.count || 0,
+      researchAreasCount,
       totalByStatus
     };
   }
