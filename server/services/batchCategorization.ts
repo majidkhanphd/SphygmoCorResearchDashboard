@@ -17,9 +17,9 @@ export async function startBatchCategorization(
   }
 
   // Start processing in the background (don't await)
-  processBatchCategorization(filter).catch((error) => {
+  processBatchCategorization(filter).catch(async (error) => {
     console.error("Batch categorization error:", error);
-    batchCategorizationTracker.error(error.message);
+    await batchCategorizationTracker.error(error.message);
   });
 
   return { message: "Batch categorization started", filter };
@@ -33,7 +33,7 @@ async function processBatchCategorization(
     batchCategorizationTracker.updatePhase("Fetching publications...");
     const publications = await getPublicationsForCategorization(filter);
     
-    batchCategorizationTracker.start(filter, publications.length);
+    await batchCategorizationTracker.start(filter, publications.length);
     batchCategorizationTracker.updatePhase(`Processing ${publications.length} publications...`);
 
     // Process in batches sequentially (to avoid rate limits)
@@ -109,6 +109,7 @@ async function processBatchCategorization(
       globalProcessed += batchCompleted;
       batchCategorizationTracker.incrementBatch(batchSuccess, batchFailed, batchSkipped);
       batchCategorizationTracker.updateProgress(globalProcessed, lastTitle);
+      batchCategorizationTracker.persistProgress();
 
       // Add delay between batches (except for the last batch)
       if (i + BATCH_SIZE < publications.length) {
@@ -116,10 +117,10 @@ async function processBatchCategorization(
       }
     }
 
-    batchCategorizationTracker.complete();
+    await batchCategorizationTracker.complete();
   } catch (error: any) {
     console.error("Batch categorization processing error:", error);
-    batchCategorizationTracker.error(error.message);
+    await batchCategorizationTracker.error(error.message);
   }
 }
 

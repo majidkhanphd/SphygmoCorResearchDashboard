@@ -1,7 +1,5 @@
-/**
- * In-memory sync status tracker for PubMed synchronization
- * Singleton pattern to track ongoing sync operations
- */
+import { storage } from "./storage";
+import type { TaskProgress, TaskStats, TaskHistoryEntry } from "@shared/schema";
 
 export type SyncStatus = "idle" | "running" | "completed" | "error" | "cancelled";
 
@@ -36,6 +34,8 @@ export interface SyncHistoryEntry {
   dryRun: boolean;
 }
 
+const TASK_TYPE = "pubmed_sync";
+
 class SyncTracker {
   private state: SyncState = {
     status: "idle",
@@ -57,6 +57,77 @@ class SyncTracker {
   private lastSuccessTime: number | null = null;
   private history: SyncHistoryEntry[] = [];
   private maxHistorySize: number = 50;
+  private initialized: boolean = false;
+  private persistQueue: Promise<void> = Promise.resolve();
+
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
+    try {
+      const task = await storage.getBackgroundTask(TASK_TYPE);
+      if (task) {
+        const progress = task.progress as TaskProgress | null;
+        const stats = task.stats as TaskStats | null;
+        this.state = {
+          status: (task.status as SyncStatus) || "idle",
+          type: (stats?.type as "full" | "incremental" | null) || null,
+          phase: task.phase || "Idle",
+          processed: progress?.processed || 0,
+          total: progress?.total || 0,
+          imported: stats?.imported || 0,
+          skipped: stats?.skipped || 0,
+          approved: stats?.approved || 0,
+          pending: stats?.pending || 0,
+          startTime: task.startTime ? task.startTime.getTime() : null,
+          endTime: task.endTime ? task.endTime.getTime() : null,
+          error: task.error || null,
+          cancelRequested: false,
+          dryRun: stats?.dryRun || false,
+        };
+        this.lastSuccessTime = task.lastSuccessTime ? task.lastSuccessTime.getTime() : null;
+        this.history = (task.history as SyncHistoryEntry[]) || [];
+      }
+      this.initialized = true;
+      console.log(`[SYNC] Initialized from database: status=${this.state.status}`);
+    } catch (err) {
+      console.error("[SYNC] Failed to initialize from database:", err);
+      this.initialized = true;
+    }
+  }
+
+  private enqueuePersist(): void {
+    this.persistQueue = this.persistQueue.then(() => this.doPersist()).catch((err) => {
+      console.error("[SYNC] Failed to persist state:", err);
+    });
+  }
+
+  private async awaitPersist(): Promise<void> {
+    const p = this.persistQueue.then(() => this.doPersist()).catch((err) => {
+      console.error("[SYNC] Failed to persist state:", err);
+    });
+    this.persistQueue = p;
+    await p;
+  }
+
+  private async doPersist(): Promise<void> {
+    await storage.upsertBackgroundTask(TASK_TYPE, {
+      status: this.state.status,
+      phase: this.state.phase,
+      progress: { processed: this.state.processed, total: this.state.total } satisfies TaskProgress,
+      stats: {
+        type: this.state.type,
+        imported: this.state.imported,
+        skipped: this.state.skipped,
+        approved: this.state.approved,
+        pending: this.state.pending,
+        dryRun: this.state.dryRun,
+      } satisfies TaskStats,
+      error: this.state.error,
+      startTime: this.state.startTime ? new Date(this.state.startTime) : null,
+      endTime: this.state.endTime ? new Date(this.state.endTime) : null,
+      lastSuccessTime: this.lastSuccessTime ? new Date(this.lastSuccessTime) : null,
+      history: this.history as TaskHistoryEntry[],
+    });
+  }
 
   isRunning(): boolean {
     return this.state.status === "running";
@@ -73,19 +144,21 @@ class SyncTracker {
     this.state.cancelRequested = true;
     this.state.phase = "Cancelling...";
     console.log("[SYNC] Cancel requested by user");
+    this.enqueuePersist();
     return true;
   }
 
-  cancelled() {
+  async cancelled() {
     this.state.status = "cancelled";
     this.state.phase = "Sync cancelled by user";
     this.state.endTime = Date.now();
     this.state.cancelRequested = false;
     console.log("[SYNC] Sync cancelled successfully");
     this.addToHistory();
+    await this.awaitPersist();
   }
 
-  start(type: "full" | "incremental", dryRun: boolean = false) {
+  async start(type: "full" | "incremental", dryRun: boolean = false) {
     if (this.isRunning()) {
       throw new Error("Sync is already running. Please wait for it to complete.");
     }
@@ -106,6 +179,7 @@ class SyncTracker {
       cancelRequested: false,
       dryRun,
     };
+    await this.awaitPersist();
   }
 
   private addToHistory() {
@@ -127,7 +201,6 @@ class SyncTracker {
 
     this.history.unshift(entry);
     
-    // Keep only the most recent entries
     if (this.history.length > this.maxHistorySize) {
       this.history = this.history.slice(0, this.maxHistorySize);
     }
@@ -157,7 +230,11 @@ class SyncTracker {
     }
   }
 
-  complete() {
+  persistProgress() {
+    this.enqueuePersist();
+  }
+
+  async complete() {
     if (this.state.status === "running") {
       this.state.status = "completed";
       this.state.phase = this.state.dryRun ? "Dry run complete" : "Sync complete";
@@ -166,15 +243,17 @@ class SyncTracker {
         this.lastSuccessTime = Date.now();
       }
       this.addToHistory();
+      await this.awaitPersist();
     }
   }
 
-  error(errorMessage: string) {
+  async error(errorMessage: string) {
     this.state.status = "error";
     this.state.phase = "Sync failed";
     this.state.endTime = Date.now();
     this.state.error = errorMessage;
     this.addToHistory();
+    await this.awaitPersist();
   }
 
   reset() {
@@ -193,6 +272,7 @@ class SyncTracker {
       error: null,
       cancelRequested: false,
     };
+    this.enqueuePersist();
   }
 
   getStatus(): SyncState & { lastSuccessTime: number | null } {
@@ -208,8 +288,8 @@ class SyncTracker {
 
   clearHistory() {
     this.history = [];
+    this.enqueuePersist();
   }
 }
 
-// Export singleton instance
 export const syncTracker = new SyncTracker();

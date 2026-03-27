@@ -1,5 +1,5 @@
-import { type Publication, type InsertPublication, type Category, type InsertCategory, type SearchPublicationsParams, type FilterCounts, type SearchPublicationsResponse, type SuggestedCategory } from "@shared/schema";
-import { publications, categories } from "@shared/schema";
+import { type Publication, type InsertPublication, type Category, type InsertCategory, type SearchPublicationsParams, type FilterCounts, type SearchPublicationsResponse, type SuggestedCategory, type BackgroundTask, type TaskProgress, type TaskStats, type TaskHistoryEntry } from "@shared/schema";
+import { publications, categories, backgroundTasks } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, like, sql, desc, asc, inArray } from "drizzle-orm";
 import { normalizeJournalName, findParentGroup, getChildJournals, JOURNAL_GROUPS } from "@shared/journal-mappings";
@@ -87,6 +87,11 @@ export interface IStorage {
   findDuplicates(limit?: number, offset?: number): Promise<{ groups: Array<{ reason: string, publications: Publication[] }>, totalGroups: number }>;
   getMissingDataAlerts(filter: 'all' | 'no-abstract' | 'no-doi' | 'no-categories' | 'no-authors', limit: number, offset: number): Promise<{ publications: Publication[], total: number, counts: { noAbstract: number, noDoi: number, noCategories: number, noAuthors: number } }>;
   getDataQualitySummary(): Promise<{ totalPublications: number, duplicatesCount: number, missingAbstractCount: number, missingDoiCount: number, missingCategoriesCount: number, missingAuthorsCount: number }>;
+
+  // Background task persistence methods
+  getBackgroundTask(taskType: string): Promise<BackgroundTask | undefined>;
+  upsertBackgroundTask(taskType: string, data: Partial<Omit<BackgroundTask, 'id' | 'taskType'>>): Promise<BackgroundTask>;
+  markInterruptedTasks(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -801,6 +806,39 @@ export class DatabaseStorage implements IStorage {
       missingCategoriesCount: noCategoriesResult?.count || 0,
       missingAuthorsCount: noAuthorsResult?.count || 0
     };
+  }
+
+  async getBackgroundTask(taskType: string): Promise<BackgroundTask | undefined> {
+    const [task] = await db.select().from(backgroundTasks).where(eq(backgroundTasks.taskType, taskType));
+    return task || undefined;
+  }
+
+  async upsertBackgroundTask(taskType: string, data: Partial<Omit<BackgroundTask, 'id' | 'taskType'>>): Promise<BackgroundTask> {
+    const payload = { taskType, ...data, updatedAt: new Date() };
+    const [result] = await db
+      .insert(backgroundTasks)
+      .values(payload)
+      .onConflictDoUpdate({
+        target: backgroundTasks.taskType,
+        set: { ...data, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
+  }
+
+  async markInterruptedTasks(): Promise<number> {
+    const result = await db
+      .update(backgroundTasks)
+      .set({
+        status: "error",
+        phase: "Interrupted by server restart",
+        error: "Task was running when the server restarted",
+        endTime: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(backgroundTasks.status, "running"))
+      .returning();
+    return result.length;
   }
 }
 

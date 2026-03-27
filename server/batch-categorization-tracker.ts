@@ -1,7 +1,5 @@
-/**
- * In-memory state tracker for batch ML categorization
- * Singleton pattern to track ongoing categorization operations
- */
+import { storage } from "./storage";
+import type { TaskProgress, TaskStats } from "@shared/schema";
 
 export type BatchCategorizationStatus = "idle" | "running" | "completed" | "error";
 
@@ -21,6 +19,8 @@ export interface BatchCategorizationState {
   etaSeconds: number | null;
 }
 
+const TASK_TYPE = "batch_categorization";
+
 class BatchCategorizationTracker {
   private state: BatchCategorizationState = {
     status: "idle",
@@ -38,11 +38,76 @@ class BatchCategorizationTracker {
     etaSeconds: null,
   };
 
+  private initialized: boolean = false;
+  private persistQueue: Promise<void> = Promise.resolve();
+
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
+    try {
+      const task = await storage.getBackgroundTask(TASK_TYPE);
+      if (task) {
+        const progress = task.progress as TaskProgress | null;
+        const stats = task.stats as TaskStats | null;
+        this.state = {
+          status: (task.status as BatchCategorizationStatus) || "idle",
+          filter: (stats?.filter as BatchCategorizationState["filter"]) || null,
+          phase: task.phase || "Idle",
+          processed: progress?.processed || 0,
+          total: progress?.total || 0,
+          successful: stats?.successful || 0,
+          failed: stats?.failed || 0,
+          skipped: stats?.skipped || 0,
+          startTime: task.startTime ? task.startTime.getTime() : null,
+          endTime: task.endTime ? task.endTime.getTime() : null,
+          error: task.error || null,
+          currentPublication: null,
+          etaSeconds: null,
+        };
+      }
+      this.initialized = true;
+      console.log(`[BATCH_CAT] Initialized from database: status=${this.state.status}`);
+    } catch (err) {
+      console.error("[BATCH_CAT] Failed to initialize from database:", err);
+      this.initialized = true;
+    }
+  }
+
+  private enqueuePersist(): void {
+    this.persistQueue = this.persistQueue.then(() => this.doPersist()).catch((err) => {
+      console.error("[BATCH_CAT] Failed to persist state:", err);
+    });
+  }
+
+  private async awaitPersist(): Promise<void> {
+    const p = this.persistQueue.then(() => this.doPersist()).catch((err) => {
+      console.error("[BATCH_CAT] Failed to persist state:", err);
+    });
+    this.persistQueue = p;
+    await p;
+  }
+
+  private async doPersist(): Promise<void> {
+    await storage.upsertBackgroundTask(TASK_TYPE, {
+      status: this.state.status,
+      phase: this.state.phase,
+      progress: { processed: this.state.processed, total: this.state.total } satisfies TaskProgress,
+      stats: {
+        filter: this.state.filter,
+        successful: this.state.successful,
+        failed: this.state.failed,
+        skipped: this.state.skipped,
+      } satisfies TaskStats,
+      error: this.state.error,
+      startTime: this.state.startTime ? new Date(this.state.startTime) : null,
+      endTime: this.state.endTime ? new Date(this.state.endTime) : null,
+    });
+  }
+
   isRunning(): boolean {
     return this.state.status === "running";
   }
 
-  start(filter: "all" | "uncategorized" | "pending" | "approved", total: number) {
+  async start(filter: "all" | "uncategorized" | "pending" | "approved", total: number) {
     if (this.isRunning()) {
       throw new Error("Batch categorization is already running. Please wait for it to complete.");
     }
@@ -62,6 +127,7 @@ class BatchCategorizationTracker {
       currentPublication: null,
       etaSeconds: null,
     };
+    await this.awaitPersist();
   }
 
   updatePhase(phase: string) {
@@ -75,7 +141,6 @@ class BatchCategorizationTracker {
       this.state.processed = processed;
       this.state.currentPublication = currentPublication;
       
-      // Calculate ETA based on server-side timing
       if (this.state.startTime && processed > 0) {
         const elapsedMs = Date.now() - this.state.startTime;
         const avgMsPerPub = elapsedMs / processed;
@@ -114,21 +179,27 @@ class BatchCategorizationTracker {
     }
   }
 
-  complete() {
+  persistProgress() {
+    this.enqueuePersist();
+  }
+
+  async complete() {
     if (this.state.status === "running") {
       this.state.status = "completed";
       this.state.phase = "Batch categorization complete";
       this.state.endTime = Date.now();
       this.state.currentPublication = null;
+      await this.awaitPersist();
     }
   }
 
-  error(errorMessage: string) {
+  async error(errorMessage: string) {
     this.state.status = "error";
     this.state.phase = "Batch categorization failed";
     this.state.endTime = Date.now();
     this.state.error = errorMessage;
     this.state.currentPublication = null;
+    await this.awaitPersist();
   }
 
   reset() {
@@ -147,6 +218,7 @@ class BatchCategorizationTracker {
       currentPublication: null,
       etaSeconds: null,
     };
+    this.enqueuePersist();
   }
 
   getStatus(): BatchCategorizationState {
@@ -154,5 +226,4 @@ class BatchCategorizationTracker {
   }
 }
 
-// Export singleton instance
 export const batchCategorizationTracker = new BatchCategorizationTracker();

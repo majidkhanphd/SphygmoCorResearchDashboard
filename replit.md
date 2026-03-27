@@ -24,7 +24,14 @@ Key improvements: shared `invalidateAdminQueries()` helper, shared `baseColumns`
 The backend is developed with Express.js and TypeScript on Node.js, providing RESTful API endpoints for publications, categories, and PubMed integration. It features centralized route organization, custom logging, and comprehensive error handling. A core component is the asynchronous PubMed synchronization service, supporting both full and incremental syncs with real-time progress tracking. An intelligent approval workflow automates approval for complete publications and flags incomplete ones for manual review. An ML-powered Category Suggestion Service, integrated with OpenAI GPT-5 nano (optimized for classification tasks), analyzes publication abstracts to suggest relevant research areas, supported by a hybrid keyword-based fallback system. All category suggestions are automatically normalized to lowercase slugs (e.g., "eva", "ckd", "copd") for consistent data storage.
 
 ## Data Storage
-The application utilizes Drizzle ORM with PostgreSQL for data persistence. The schema includes tables for publications and categories, leveraging JSON fields for flexible data storage. Drizzle migrations manage schema changes and ensure database evolution.
+The application utilizes Drizzle ORM with PostgreSQL for data persistence. The schema includes tables for publications, categories, and background_tasks, leveraging JSON fields for flexible data storage. Drizzle migrations manage schema changes and ensure database evolution.
+
+**Background Task Persistence:**
+- The `background_tasks` table persists state for PubMed sync, citation updates, and batch categorization trackers
+- Task status, progress, stats, error messages, and sync history survive server restarts
+- On startup, any tasks left in "running" status are automatically marked as "interrupted by server restart"
+- Trackers (`server/sync-tracker.ts`, `server/citation-tracker.ts`, `server/batch-categorization-tracker.ts`) restore state from DB on initialization
+- Progress is persisted at batch boundaries during long operations; critical state transitions (start, complete, error) are awaited
 
 ## System Design Choices
 The system prioritizes type safety, developer experience, and scalable data management. UI/UX design balances Apple's aesthetic principles with practical full-width responsive layout, incorporating SF Pro Display font, #007AFF blue accents, consistent spacing, and a unified visual style. Responsiveness is achieved primarily through CSS-only techniques, avoiding JavaScript for layout adjustments. All text fields are subject to a comprehensive HTML sanitization process during import and display to ensure data cleanliness and prevent rendering issues.

@@ -46,6 +46,55 @@ export const databaseBackups = pgTable("database_backups", {
   data: jsonb("data").notNull(),
 });
 
+export interface TaskProgress {
+  processed: number;
+  total: number;
+}
+
+export interface TaskStats {
+  type?: string | null;
+  imported?: number;
+  skipped?: number;
+  approved?: number;
+  pending?: number;
+  dryRun?: boolean;
+  updated?: number;
+  filter?: string | null;
+  successful?: number;
+  failed?: number;
+}
+
+export interface TaskHistoryEntry {
+  id: string;
+  type: string;
+  status: string;
+  startTime: number;
+  endTime: number | null;
+  imported: number;
+  skipped: number;
+  approved: number;
+  pending: number;
+  error: string | null;
+  dryRun: boolean;
+}
+
+export const backgroundTasks = pgTable("background_tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  taskType: text("task_type").notNull().unique(),
+  status: text("status").notNull().default("idle"),
+  phase: text("phase").default("Idle"),
+  progress: jsonb("progress").$type<TaskProgress>().default({ processed: 0, total: 0 }),
+  stats: jsonb("stats").$type<TaskStats>().default({}),
+  error: text("error"),
+  startTime: timestamp("start_time"),
+  endTime: timestamp("end_time"),
+  lastSuccessTime: timestamp("last_success_time"),
+  history: jsonb("history").$type<TaskHistoryEntry[]>().default([]),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type BackgroundTask = typeof backgroundTasks.$inferSelect;
+
 export const categories = pgTable("categories", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull().unique(),

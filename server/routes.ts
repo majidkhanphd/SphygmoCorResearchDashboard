@@ -246,6 +246,22 @@ function extractAbstractFromXml(xmlString: string): string {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  try {
+    const interruptedCount = await storage.markInterruptedTasks();
+    if (interruptedCount > 0) {
+      console.log(`[STARTUP] Marked ${interruptedCount} interrupted background task(s)`);
+    }
+
+    await Promise.all([
+      syncTracker.initialize(),
+      citationTracker.initialize(),
+      batchCategorizationTracker.initialize(),
+    ]);
+    console.log("[STARTUP] Background task trackers initialized from database");
+  } catch (err) {
+    console.error("[STARTUP] Failed to initialize background task trackers (table may not exist yet):", err);
+  }
+
   // Get all categories
   app.get("/api/categories", async (req, res) => {
     try {
@@ -554,7 +570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Start tracking
-      syncTracker.start("full", dryRun);
+      await syncTracker.start("full", dryRun);
       const modeLabel = dryRun ? "(DRY RUN - no changes will be saved)" : "(progressive mode - saves in batches)";
       console.log(`Starting PubMed full sync ${modeLabel}...`);
       
@@ -597,7 +613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Check for cancellation request
                 if (syncTracker.isCancelRequested()) {
                   console.log(`[SYNC] Cancellation detected during batch processing`);
-                  syncTracker.cancelled();
+                  await syncTracker.cancelled();
                   return;
                 }
                 
@@ -652,8 +668,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
               
-              // Update tracker stats
               syncTracker.updateStats(imported, skipped, approved, pending);
+              syncTracker.persistProgress();
               
               console.log(`  Batch complete: ${imported} total imported (${approved} approved, ${pending} pending), ${skipped} skipped`);
             }
@@ -683,18 +699,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Mark as complete
-          syncTracker.complete();
+          await syncTracker.complete();
         } catch (error: any) {
           console.error("PubMed sync error:", error);
-          syncTracker.error(error.message || "Unknown error");
+          await syncTracker.error(error.message || "Unknown error");
         }
-      })().catch((error) => {
+      })().catch(async (error) => {
         console.error("Fatal sync error:", error);
-        syncTracker.error(error.message || "Unknown error");
+        await syncTracker.error(error.message || "Unknown error");
       });
     } catch (error: any) {
       console.error("PubMed sync error:", error);
-      syncTracker.error(error.message || "Unknown error");
+      await syncTracker.error(error.message || "Unknown error");
       res.status(500).json({ 
         success: false,
         message: "Failed to start full sync from PubMed", 
@@ -726,7 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const syncFromDate = oneYearAgo;
       
       // Start tracking
-      syncTracker.start("incremental", dryRun);
+      await syncTracker.start("incremental", dryRun);
       syncTracker.updatePhase(`Syncing publications from past year (since ${syncFromDate.toLocaleDateString()})...`);
       
       console.log(`Syncing from date: ${syncFromDate.toLocaleDateString()}`);
@@ -776,7 +792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Check for cancellation request
             if (syncTracker.isCancelRequested()) {
               console.log(`[SYNC] Cancellation detected at publication ${i + 1}/${publications.length}`);
-              syncTracker.cancelled();
+              await syncTracker.cancelled();
               console.log(`Incremental sync cancelled: ${imported} imported, ${skipped} updated before cancellation`);
               return;
             }
@@ -827,12 +843,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
               
-              // Update progress EVERY iteration (not just on import)
               syncTracker.updateProgress(i + 1, publications.length);
               syncTracker.updateStats(imported, skipped, approved, pending);
               
-              // Log progress every 50 articles
               if ((i + 1) % 50 === 0) {
+                syncTracker.persistProgress();
                 console.log(`Import progress: ${i + 1}/${publications.length} processed (${imported} ${dryRun ? 'would be imported' : 'imported'}, ${skipped} ${dryRun ? 'duplicates' : 'updated'})...`);
               }
             } catch (error) {
@@ -858,18 +873,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Mark as complete
-          syncTracker.complete();
+          await syncTracker.complete();
         } catch (error: any) {
           console.error("Incremental sync error:", error);
-          syncTracker.error(error.message || "Unknown error");
+          await syncTracker.error(error.message || "Unknown error");
         }
-      })().catch((error) => {
+      })().catch(async (error) => {
         console.error("Fatal incremental sync error:", error);
-        syncTracker.error(error.message || "Unknown error");
+        await syncTracker.error(error.message || "Unknown error");
       });
     } catch (error: any) {
       console.error("Incremental sync error:", error);
-      syncTracker.error(error.message || "Unknown error");
+      await syncTracker.error(error.message || "Unknown error");
       res.status(500).json({ 
         success: false,
         message: "Failed to start incremental sync from PubMed", 
@@ -981,7 +996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Found ${pubsWithoutAbstract.length} publications without abstracts. Starting re-fetch...`);
       
       // Start tracking (use "incremental" type since abstract-refetch is not a defined type)
-      syncTracker.start("incremental");
+      await syncTracker.start("incremental");
       syncTracker.updatePhase("Re-fetching missing abstracts from PubMed...");
       
       // Respond immediately
@@ -1003,12 +1018,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const batch = pmids.slice(i, i + BATCH_SIZE);
             syncTracker.updateProgress(i, pmids.length);
             syncTracker.updatePhase(`Fetching batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(pmids.length / BATCH_SIZE)}...`);
+            syncTracker.persistProgress();
             
             try {
-              // Fetch article details from PubMed Central
               const fetchedArticles = await pubmedService.fetchArticleDetails(batch);
               
-              // Update each publication that now has an abstract
               for (const article of fetchedArticles) {
                 if (article.abstract) {
                   const pub = pubsWithoutAbstract.find(p => p.pmid === article.pmid);
@@ -1032,10 +1046,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`Abstract re-fetch complete. Updated: ${updated}, Failed: ${failed}`);
           syncTracker.updateStats(updated, failed, 0, 0);
-          syncTracker.complete();
+          await syncTracker.complete();
         } catch (error: any) {
           console.error("Abstract re-fetch error:", error);
-          syncTracker.error(error.message || "Unknown error");
+          await syncTracker.error(error.message || "Unknown error");
         }
       })();
       
@@ -1090,7 +1104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Run async re-processing
       (async () => {
-        syncTracker.start("full");
+        await syncTracker.start("full");
         syncTracker.updatePhase("Starting abstract reprocessing...");
         
         let updated = 0;
@@ -1105,6 +1119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const batch = pmcIds.slice(i, i + BATCH_SIZE);
             syncTracker.updateProgress(i, totalCount);
             syncTracker.updatePhase(`Re-fetching PMC batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(pmcIds.length / BATCH_SIZE)}...`);
+            syncTracker.persistProgress();
             
             try {
               const fetchedArticles = await pubmedService.fetchArticleDetails(batch);
@@ -1126,7 +1141,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           
-          // Process PubMed articles
           const pubmedIds = pubmedPubs.map(p => p.pmid).filter(Boolean) as string[];
           
           for (let i = 0; i < pubmedIds.length; i += BATCH_SIZE) {
@@ -1134,6 +1148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const progressOffset = pmcIds.length + i;
             syncTracker.updateProgress(progressOffset, totalCount);
             syncTracker.updatePhase(`Re-fetching PubMed batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(pubmedIds.length / BATCH_SIZE)}...`);
+            syncTracker.persistProgress();
             
             try {
               const abstractMap = await pubmedService.fetchPubMedAbstracts(batch);
@@ -1157,10 +1172,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`Abstract reprocessing complete. Updated: ${updated}, Failed: ${failed}`);
           syncTracker.updateStats(updated, failed, 0, 0);
-          syncTracker.complete();
+          await syncTracker.complete();
         } catch (error: any) {
           console.error("Abstract reprocessing error:", error);
-          syncTracker.error(error.message || "Unknown error");
+          await syncTracker.error(error.message || "Unknown error");
         }
       })();
       
@@ -1847,7 +1862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      citationTracker.start(allPubs.length);
+      await citationTracker.start(allPubs.length);
       
       res.json({
         success: true,
@@ -1879,21 +1894,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (processed % 100 === 0) {
               citationTracker.updateProgress(processed, updated);
+              citationTracker.persistProgress();
             }
           }
 
           citationTracker.updateProgress(processed, updated);
           console.log(`Updated citation counts for ${updated} publications`);
-          citationTracker.complete();
+          await citationTracker.complete();
         } catch (error: any) {
           console.error("Error updating citation counts:", error);
-          citationTracker.error(error.message);
+          await citationTracker.error(error.message);
         }
       })();
 
     } catch (error: any) {
       console.error("Error starting citation update:", error);
-      citationTracker.error(error.message);
+      await citationTracker.error(error.message);
       res.status(500).json({
         success: false,
         message: "Failed to start citation update",
