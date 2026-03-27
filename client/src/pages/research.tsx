@@ -17,7 +17,7 @@ import { PublicationsList } from "@/components/research/PublicationsList";
 export default function Home() {
   const [inputValue, setInputValue] = useState("");
   const debouncedSearchQuery = useDebounce(inputValue, 400);
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "most-cited" | "trending">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "most-cited" | "trending" | "relevance">("newest");
   const [selectedResearchArea, setSelectedResearchArea] = useState<string | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -83,6 +83,15 @@ export default function Home() {
       setIsSidebarCollapsed(true);
     }
   }, [initialSidebarCollapsed]);
+
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      setSortBy("relevance");
+    } else if (sortBy === "relevance") {
+      setSortBy("newest");
+    }
+  }, [debouncedSearchQuery]);
+
 
   useEffect(() => {
     setCurrentPage(1);
@@ -230,6 +239,7 @@ export default function Home() {
         <ResearchSearchControls
           inputValue={inputValue}
           sortBy={sortBy}
+          debouncedSearchQuery={debouncedSearchQuery}
           onInputChange={setInputValue}
           onSortChange={setSortBy}
         />

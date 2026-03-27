@@ -179,21 +179,18 @@ export class DatabaseStorage implements IStorage {
     // Always filter for approved publications only (for frontend display)
     conditions.push(eq(publications.status, "approved"));
 
-    // Build search query conditions
+    let tsQueryExpr: ReturnType<typeof sql> | null = null;
     if (params.query) {
-      const escapedQuery = escapeLikePattern(params.query.toLowerCase());
-      const searchQuery = `%${escapedQuery}%`;
-      conditions.push(
-        or(
-          sql`LOWER(${publications.title}) LIKE ${searchQuery} ESCAPE '\\'`,
-          sql`LOWER(${publications.authors}) LIKE ${searchQuery} ESCAPE '\\'`,
-          sql`LOWER(${publications.abstract}) LIKE ${searchQuery} ESCAPE '\\'`,
-          sql`LOWER(${publications.journal}) LIKE ${searchQuery} ESCAPE '\\'`,
-          sql`LOWER(${publications.doi}) LIKE ${searchQuery} ESCAPE '\\'`,
-          sql`LOWER(${publications.pmcId}) LIKE ${searchQuery} ESCAPE '\\'`,
-          sql`LOWER(CAST(${publications.pmid} AS TEXT)) LIKE ${searchQuery} ESCAPE '\\'`
-        )
-      );
+      const sanitized = params.query.trim();
+      if (sanitized.length > 0) {
+        tsQueryExpr = sql`(
+          plainto_tsquery('english', ${sanitized}) ||
+          plainto_tsquery('simple', ${sanitized})
+        )`;
+        conditions.push(
+          sql`search_vector @@ ${tsQueryExpr}`
+        );
+      }
     }
 
     if (params.venue) {
@@ -224,9 +221,16 @@ export class DatabaseStorage implements IStorage {
     // Build where clause
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Determine sort order
+    const effectiveSort = (tsQueryExpr && params.sortBy === "newest") ? "relevance" : (params.sortBy || "newest");
     let orderBy;
-    switch (params.sortBy) {
+    switch (effectiveSort) {
+      case "relevance":
+        if (tsQueryExpr) {
+          orderBy = desc(sql`ts_rank(search_vector, ${tsQueryExpr})`);
+        } else {
+          orderBy = desc(publications.publicationDate);
+        }
+        break;
       case "oldest":
         orderBy = asc(publications.publicationDate);
         break;

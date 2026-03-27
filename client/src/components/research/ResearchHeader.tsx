@@ -3,9 +3,11 @@ import { Search, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getResearchAreaDisplayName } from "@shared/schema";
 
+type SortOption = "newest" | "oldest" | "most-cited" | "trending" | "relevance";
+
 interface ResearchHeaderProps {
   inputValue: string;
-  sortBy: "newest" | "oldest" | "most-cited" | "trending";
+  sortBy: SortOption;
   selectedResearchArea: string | null;
   selectedVenue: string | null;
   selectedYear: number | null;
@@ -14,7 +16,7 @@ interface ResearchHeaderProps {
   bannerRef: React.RefObject<HTMLDivElement>;
   contentAreaRef: React.RefObject<HTMLDivElement>;
   onInputChange: (value: string) => void;
-  onSortChange: (value: "newest" | "oldest" | "most-cited" | "trending") => void;
+  onSortChange: (value: SortOption) => void;
   onClearFilter: (filterType: 'researchArea' | 'venue' | 'year') => void;
   onClearAllFilters: () => void;
 }
@@ -52,9 +54,10 @@ export function ResearchBanner({ smoothPos, bannerRef }: { smoothPos: { x: numbe
 export function ResearchSearchControls({
   inputValue,
   sortBy,
+  debouncedSearchQuery,
   onInputChange,
   onSortChange,
-}: Pick<ResearchHeaderProps, 'inputValue' | 'sortBy' | 'onInputChange' | 'onSortChange'>) {
+}: Pick<ResearchHeaderProps, 'inputValue' | 'sortBy' | 'onInputChange' | 'onSortChange'> & { debouncedSearchQuery?: string }) {
   const handleReset = () => {
     onInputChange("");
   };
@@ -90,7 +93,7 @@ export function ResearchSearchControls({
         </div>
 
         <div className="w-full sm:w-48 flex-shrink-0">
-          <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "most-cited" | "trending") => onSortChange(value)}>
+          <Select value={sortBy} onValueChange={(value: SortOption) => onSortChange(value)}>
             <SelectTrigger
               className="w-full rounded-[5px] transition-all duration-200 ease-in-out py-2 sm:py-3 text-sm sm:text-base research-sort-dropdown"
               data-testid="sort-dropdown"
@@ -98,6 +101,9 @@ export function ResearchSearchControls({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              {debouncedSearchQuery && (
+                <SelectItem value="relevance" data-testid="sort-relevance">Relevance</SelectItem>
+              )}
               <SelectItem value="newest" data-testid="sort-newest">Newest</SelectItem>
               <SelectItem value="oldest" data-testid="sort-oldest">Oldest</SelectItem>
               <SelectItem value="most-cited" data-testid="sort-most-cited">Most Cited</SelectItem>
