@@ -139,13 +139,20 @@ const ACRONYM_CANONICAL: Record<string, string> = {};
   "RCT", "COVID", "SARS", "ICH", "TIA", "DVT", "PE",
 ].forEach(a => { ACRONYM_CANONICAL[a] = a; });
 
-const MIXED_CASE_ACRONYMS: Record<string, string> = {
+const SPECIAL_CASE_TERMS: Record<string, string> = {
   "EGFR": "eGFR",
   "HBA1C": "HbA1c",
   "CAMP": "cAMP",
   "CGMP": "cGMP",
+  "SPHYGMOCOR": "SphygmoCor",
+  "ENOS": "eNOS",
+  "INOS": "iNOS",
+  "MRNA": "mRNA",
+  "MIRNA": "miRNA",
+  "HDLC": "HDL-C",
+  "LDLC": "LDL-C",
 };
-Object.entries(MIXED_CASE_ACRONYMS).forEach(([k, v]) => { ACRONYM_CANONICAL[k] = v; });
+Object.entries(SPECIAL_CASE_TERMS).forEach(([k, v]) => { ACRONYM_CANONICAL[k] = v; });
 
 const LOWERCASE_WORDS = new Set([
   "a", "an", "the", "and", "but", "or", "nor", "for", "yet", "so",
