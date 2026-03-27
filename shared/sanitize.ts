@@ -123,6 +123,104 @@ export function sanitizeText(text: string | null | undefined): string {
   return cleaned;
 }
 
+const ACRONYM_CANONICAL: Record<string, string> = {};
+[
+  "DNA", "RNA", "HIV", "AIDS", "BMI", "ECG", "EKG", "MRI", "CT", "ICU",
+  "COPD", "CKD", "EVA", "PWV", "BP", "HR", "LDL", "HDL",
+  "ACE", "ARB", "CAFE", "ASCOT", "SPRINT", "MESA", "ARIC", "CHS",
+  "NHANES", "WHO", "FDA", "NIH", "NHS", "AHA", "ESC", "ACC",
+  "USA", "UK", "EU", "II", "III", "IV", "VI", "VII", "VIII", "IX",
+  "RAAS", "GFR", "IMT", "FMD", "CPP", "MAP", "SBP", "DBP",
+  "CI", "OR", "RR", "SD", "SE", "IQR", "AUC", "ROC",
+  "GWAS", "SNP", "PCR", "ELISA", "MMP", "CRP", "TNF", "IL",
+  "NO", "ROS", "ATP", "ADP",
+  "PMC", "PMID", "DOI", "PDF", "URL",
+  "CVD", "CHD", "MI", "PAD", "AF", "HF", "LV", "RV", "LA", "RA",
+  "RCT", "COVID", "SARS", "ICH", "TIA", "DVT", "PE",
+].forEach(a => { ACRONYM_CANONICAL[a] = a; });
+
+const MIXED_CASE_ACRONYMS: Record<string, string> = {
+  "EGFR": "eGFR",
+  "HBA1C": "HbA1c",
+  "CAMP": "cAMP",
+  "CGMP": "cGMP",
+};
+Object.entries(MIXED_CASE_ACRONYMS).forEach(([k, v]) => { ACRONYM_CANONICAL[k] = v; });
+
+const LOWERCASE_WORDS = new Set([
+  "a", "an", "the", "and", "but", "or", "nor", "for", "yet", "so",
+  "in", "on", "at", "to", "by", "of", "up", "as", "is", "it",
+  "with", "from", "into", "than", "that", "vs", "via", "per",
+]);
+
+function isAllCapsTitle(title: string): boolean {
+  const alpha = title.replace(/[^a-zA-Z]/g, '');
+  if (alpha.length < 10) return false;
+  const upperCount = alpha.replace(/[^A-Z]/g, '').length;
+  return upperCount / alpha.length > 0.85;
+}
+
+function convertWord(word: string, isFirstWord: boolean): string {
+  const leadingPunct = word.match(/^([^a-zA-Z0-9]*)/)?.[1] || '';
+  const trailingPunct = word.match(/([^a-zA-Z0-9]*)$/)?.[1] || '';
+  const core = word.slice(leadingPunct.length, word.length - (trailingPunct.length || 0));
+
+  if (!core) {
+    return word;
+  }
+
+  if (core.includes('-')) {
+    const parts = core.split('-');
+    const converted = parts.map((p, i) => {
+      if (!p) return p;
+      const upperP = p.toUpperCase();
+      const canonical = ACRONYM_CANONICAL[upperP];
+      if (canonical) return canonical;
+      const lowerP = p.toLowerCase();
+      if (i > 0 || !isFirstWord) {
+        if (LOWERCASE_WORDS.has(lowerP)) return lowerP;
+      }
+      return lowerP.charAt(0).toUpperCase() + lowerP.slice(1);
+    });
+    return leadingPunct + converted.join('-') + trailingPunct;
+  }
+
+  const upperCore = core.toUpperCase();
+  const canonical = ACRONYM_CANONICAL[upperCore];
+  if (canonical) {
+    return leadingPunct + canonical + trailingPunct;
+  }
+
+  const lowerCore = core.toLowerCase();
+
+  if (!isFirstWord && LOWERCASE_WORDS.has(lowerCore)) {
+    return leadingPunct + lowerCore + trailingPunct;
+  }
+
+  return leadingPunct + lowerCore.charAt(0).toUpperCase() + lowerCore.slice(1) + trailingPunct;
+}
+
+function toTitleCase(title: string): string {
+  const words = title.split(/(\s+)/);
+
+  let isFirstWord = true;
+  return words.map((word) => {
+    if (/^\s+$/.test(word)) {
+      return word;
+    }
+
+    const result = convertWord(word, isFirstWord);
+    isFirstWord = false;
+    return result;
+  }).join('');
+}
+
+export function normalizeAllCapsTitle(title: string | null | undefined): string {
+  if (!title) return '';
+  if (!isAllCapsTitle(title)) return title;
+  return toTitleCase(title);
+}
+
 /**
  * Sanitizes author names by:
  * 1. Decoding HTML entities (&#228; → ä, &#8211; → –, etc.)

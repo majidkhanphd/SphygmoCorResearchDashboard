@@ -18,7 +18,7 @@
 
 import { db } from "../db";
 import { publications } from "@shared/schema";
-import { sanitizeText } from "@shared/sanitize";
+import { sanitizeText, normalizeAllCapsTitle } from "@shared/sanitize";
 import { eq } from "drizzle-orm";
 
 interface CleanupStats {
@@ -62,11 +62,15 @@ async function cleanPublication(
 ): Promise<{ changed: boolean; original: string; cleaned: string } | null> {
   const originalValue = publication[field];
   
-  if (!originalValue || !containsHTMLEntities(originalValue)) {
+  if (!originalValue) {
     return null;
   }
-  
-  const cleanedValue = sanitizeText(originalValue);
+
+  let cleanedValue = containsHTMLEntities(originalValue) ? sanitizeText(originalValue) : originalValue;
+
+  if (field === 'title') {
+    cleanedValue = normalizeAllCapsTitle(cleanedValue);
+  }
   
   // Check if sanitization actually changed the value
   if (originalValue === cleanedValue) {

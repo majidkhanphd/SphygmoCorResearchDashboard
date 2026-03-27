@@ -1,7 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
 import type { InsertPublication } from "@shared/schema";
 import { PUBMED_SEARCH_TERMS, MAX_RESULTS_PER_TERM } from "../config/search-terms";
-import { sanitizeText } from "@shared/sanitize";
+import { sanitizeText, normalizeAllCapsTitle } from "@shared/sanitize";
 
 // Retry configuration for PubMed API calls
 const RETRY_CONFIG = {
@@ -477,7 +477,7 @@ export class PubMedService {
 
       // Parse title (use placeholder if missing)
       const rawTitle = this.parseTitle(articleMeta["title-group"]) || "Untitled Publication";
-      const title = sanitizeText(rawTitle);
+      const title = normalizeAllCapsTitle(sanitizeText(rawTitle));
 
       // Parse authors (use placeholder if missing)
       const rawAuthors = this.parseAuthors(articleMeta["contrib-group"]);
