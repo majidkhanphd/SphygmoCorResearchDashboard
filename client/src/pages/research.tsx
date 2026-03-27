@@ -35,11 +35,116 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string
 };
 
 const getBadgeDisplayName = (category: string): string => {
-  // Use the new getCategoryBadgeName function which handles all formats
-  // Returns uppercase abbreviations (CKD, EVA, COPD) for those categories
   const badgeName = getCategoryBadgeName(category);
   return badgeName || category;
 };
+
+interface MouseGradientBannerProps {
+  contentAreaRef: React.RefObject<HTMLDivElement>;
+  children: React.ReactNode;
+}
+
+function MouseGradientBanner({ contentAreaRef, children }: MouseGradientBannerProps) {
+  const [isTrackingMouse, setIsTrackingMouse] = useState(false);
+  const [animationsReady, setAnimationsReady] = useState(false);
+  const targetPosRef = useRef({ x: 50, y: 50 });
+  const [smoothPos, setSmoothPos] = useState({ x: 50, y: 50 });
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimationsReady(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!animationsReady) return;
+
+    let animationFrame: number;
+    const startTime = Date.now();
+
+    const animate = () => {
+      const elapsed = (Date.now() - startTime) / 1000;
+
+      if (!isTrackingMouse) {
+        const idleX = Math.sin(elapsed * 0.3) * 15 + Math.sin(elapsed * 0.7) * 8;
+        const idleY = Math.cos(elapsed * 0.4) * 12 + Math.cos(elapsed * 0.6) * 6;
+        targetPosRef.current = { x: 50 + idleX, y: 50 + idleY };
+      }
+
+      setSmoothPos(prev => ({
+        x: prev.x + (targetPosRef.current.x - prev.x) * 0.06,
+        y: prev.y + (targetPosRef.current.y - prev.y) * 0.06
+      }));
+
+      animationFrame = requestAnimationFrame(animate);
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [isTrackingMouse, animationsReady]);
+
+  const TRACKING_BUFFER = 50;
+
+  useEffect(() => {
+    if (!animationsReady) return;
+
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      if (!bannerRef.current || !contentAreaRef.current) {
+        setIsTrackingMouse(false);
+        return;
+      }
+
+      const contentRect = contentAreaRef.current.getBoundingClientRect();
+
+      const isInContentArea =
+        e.clientX >= contentRect.left - TRACKING_BUFFER &&
+        e.clientX <= contentRect.right + TRACKING_BUFFER &&
+        e.clientY >= contentRect.top - TRACKING_BUFFER &&
+        e.clientY <= contentRect.bottom + TRACKING_BUFFER;
+
+      if (isInContentArea) {
+        setIsTrackingMouse(true);
+
+        const bannerRect = bannerRef.current.getBoundingClientRect();
+        const x = ((e.clientX - bannerRect.left) / bannerRect.width) * 100;
+        const y = ((e.clientY - bannerRect.top) / bannerRect.height) * 100;
+
+        const clampedX = Math.max(-300, Math.min(400, x));
+        const clampedY = Math.max(-300, Math.min(400, y));
+        targetPosRef.current = { x: clampedX, y: clampedY };
+      } else {
+        setIsTrackingMouse(false);
+      }
+    };
+
+    window.addEventListener('mousemove', handleWindowMouseMove);
+
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+    };
+  }, [animationsReady, contentAreaRef]);
+
+  return (
+    <div
+      ref={bannerRef}
+      className="inline-block px-6 sm:px-10 md:px-16 py-6 sm:py-8 md:py-10 rounded-lg banner-glow-pulse research-banner"
+      style={{
+        background: `
+          radial-gradient(
+            ellipse 150% 150% at ${smoothPos.x}% ${smoothPos.y}%,
+            rgba(175, 135, 255, 0.09) 0%,
+            rgba(200, 175, 255, 0.05) 30%,
+            rgba(225, 215, 255, 0.025) 50%,
+            rgba(246, 246, 246, 1) 80%
+          )
+        `
+      }}
+      data-testid="publications-banner"
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function Home() {
   const [inputValue, setInputValue] = useState("");
@@ -88,100 +193,7 @@ export default function Home() {
     return typeof window !== 'undefined' && window.innerWidth < 640;
   });
   
-  // Mouse-reactive gradient for Publications banner with smooth animation
-  const [isTrackingMouse, setIsTrackingMouse] = useState(false);
-  const [animationsReady, setAnimationsReady] = useState(false);
-  const targetPosRef = useRef({ x: 50, y: 50 });
-  const [smoothPos, setSmoothPos] = useState({ x: 50, y: 50 });
-  const bannerRef = useRef<HTMLDivElement>(null);
-  const bannerSectionRef = useRef<HTMLDivElement>(null);
-  
-  // Defer heavy animations until after initial render (300ms)
-  useEffect(() => {
-    const timer = setTimeout(() => setAnimationsReady(true), 300);
-    return () => clearTimeout(timer);
-  }, []);
-  
-  // Continuous smooth position interpolation - only runs after initial render
-  useEffect(() => {
-    if (!animationsReady) return;
-    
-    let animationFrame: number;
-    const startTime = Date.now();
-    
-    const animate = () => {
-      const elapsed = (Date.now() - startTime) / 1000;
-      
-      // If not tracking mouse, add gentle idle drift
-      if (!isTrackingMouse) {
-        const idleX = Math.sin(elapsed * 0.3) * 15 + Math.sin(elapsed * 0.7) * 8;
-        const idleY = Math.cos(elapsed * 0.4) * 12 + Math.cos(elapsed * 0.6) * 6;
-        targetPosRef.current = { x: 50 + idleX, y: 50 + idleY };
-      }
-      
-      // Smoothly interpolate toward target
-      setSmoothPos(prev => ({
-        x: prev.x + (targetPosRef.current.x - prev.x) * 0.06,
-        y: prev.y + (targetPosRef.current.y - prev.y) * 0.06
-      }));
-      
-      animationFrame = requestAnimationFrame(animate);
-    };
-    
-    animationFrame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [isTrackingMouse, animationsReady]);
-  
-  // Content area ref for real-time bounds checking
   const contentAreaRef = useRef<HTMLDivElement>(null);
-  const TRACKING_BUFFER = 50; // Pixels of buffer around content area
-  
-  // Window-level mouse tracking - check bounds in real-time on each move
-  // Deferred until animations are ready to avoid blocking initial render
-  useEffect(() => {
-    if (!animationsReady) return;
-    
-    const handleWindowMouseMove = (e: MouseEvent) => {
-      if (!bannerRef.current || !contentAreaRef.current) {
-        setIsTrackingMouse(false);
-        return;
-      }
-      
-      // Get content area bounds (carousel + banner + publications)
-      const contentRect = contentAreaRef.current.getBoundingClientRect();
-      
-      // Check if mouse is within content area (with buffer)
-      const isInContentArea = 
-        e.clientX >= contentRect.left - TRACKING_BUFFER &&
-        e.clientX <= contentRect.right + TRACKING_BUFFER &&
-        e.clientY >= contentRect.top - TRACKING_BUFFER &&
-        e.clientY <= contentRect.bottom + TRACKING_BUFFER;
-      
-      if (isInContentArea) {
-        setIsTrackingMouse(true);
-        
-        // Calculate position relative to banner for gradient positioning
-        // This keeps the gradient centered on the banner while allowing tracking beyond its edges
-        const bannerRect = bannerRef.current.getBoundingClientRect();
-        const x = ((e.clientX - bannerRect.left) / bannerRect.width) * 100;
-        const y = ((e.clientY - bannerRect.top) / bannerRect.height) * 100;
-        
-        // Extended clamp range to allow smooth tracking when mouse is far above/below banner
-        // -300% to 400% gives enough range for carousel above and publications below
-        const clampedX = Math.max(-300, Math.min(400, x));
-        const clampedY = Math.max(-300, Math.min(400, y));
-        targetPosRef.current = { x: clampedX, y: clampedY };
-      } else {
-        setIsTrackingMouse(false);
-      }
-    };
-    
-    window.addEventListener('mousemove', handleWindowMouseMove);
-    
-    return () => {
-      window.removeEventListener('mousemove', handleWindowMouseMove);
-    };
-  }, [animationsReady]);
 
   // Update sidebar default size and min size on window resize
   useEffect(() => {
@@ -467,35 +479,18 @@ export default function Home() {
         
         {/* Publications Section */}
         <div 
-          ref={bannerSectionRef}
           className="w-full py-1 sm:py-2 md:py-2"
         >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 research-font-family">
-        {/* Main title - Apple's exact typography - Responsive */}
         <div className="text-center mb-4 sm:mb-6 md:mb-8 px-2 sm:px-4">
-          <div 
-            ref={bannerRef}
-            className="inline-block px-6 sm:px-10 md:px-16 py-6 sm:py-8 md:py-10 rounded-lg banner-glow-pulse research-banner"
-            style={{ 
-              background: `
-                radial-gradient(
-                  ellipse 150% 150% at ${smoothPos.x}% ${smoothPos.y}%,
-                  rgba(175, 135, 255, 0.09) 0%,
-                  rgba(200, 175, 255, 0.05) 30%,
-                  rgba(225, 215, 255, 0.025) 50%,
-                  rgba(246, 246, 246, 1) 80%
-                )
-              `
-            }}
-            data-testid="publications-banner"
-          >
+          <MouseGradientBanner contentAreaRef={contentAreaRef}>
             <h1 className="text-2xl sm:text-4xl md:text-5xl font-light mb-3 sm:mb-4 research-main-title" data-testid="main-title">
               Publications
             </h1>
             <p className="text-sm sm:text-base md:text-lg px-2 sm:px-4 md:px-6 text-center w-full research-subtitle">
               Browse our comprehensive collection of peer-reviewed research spanning decades of our SphygmoCor technology in practice worldwide.
             </p>
-          </div>
+          </MouseGradientBanner>
         </div>
         
         {/* Page Last Updated */}
